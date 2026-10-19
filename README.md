@@ -23,9 +23,10 @@ From that problem, the project is designed to gradually support:
 
 ## Project Status
 
-Planning and architecture stage.
+Feature 0 project foundation implemented.
 
-No application code has been implemented yet.
+The repository contains a minimal React frontend, an Express backend, and a
+health endpoint at `GET /api/health`.
 
 ## Planned Stack
 
@@ -106,3 +107,28 @@ family-life-hub/
 ├── postman/
 ├── AGENTS.md
 └── README.md
+```
+
+## Local Development
+
+Prerequisite: Node.js 22.12 or a newer LTS release.
+
+Install and start the backend:
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+In another terminal, install and start the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend runs at `http://localhost:5174` and proxies `/api` requests to
+the backend at `http://localhost:3001` by default. Copy either `.env.example`
+to `.env` when local port or origin overrides are needed.

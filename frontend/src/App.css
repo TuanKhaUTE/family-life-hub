@@ -1,0 +1,98 @@
+.app-shell {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 24px;
+}
+
+.welcome-card {
+  width: min(100%, 620px);
+  padding: 32px 24px;
+  border: 1px solid #f1e5db;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(73, 59, 50, 0.08);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #56745a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #493b32;
+  font-size: clamp(2rem, 8vw, 2.75rem);
+  line-height: 1.1;
+}
+
+.intro {
+  max-width: 46ch;
+  margin: 16px 0 0;
+  color: #77665b;
+  line-height: 1.65;
+}
+
+.status-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff9f3;
+}
+
+.status-card h2,
+.status-card p {
+  margin: 0;
+}
+
+.status-card h2 {
+  color: #493b32;
+  font-size: 1rem;
+}
+
+.status-card p {
+  margin-top: 2px;
+  color: #77665b;
+  font-size: 0.92rem;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(73, 59, 50, 0.12);
+}
+
+.status-dot--ready,
+.status-dot--connected {
+  background: #719b76;
+}
+
+.status-dot--checking {
+  background: #dfa44a;
+}
+
+.status-dot--unavailable {
+  background: #c96a63;
+}
+
+@media (min-width: 640px) {
+  .welcome-card {
+    padding: 48px;
+  }
+}
