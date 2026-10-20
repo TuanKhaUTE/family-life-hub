@@ -30,3 +30,10 @@ export async function hashPin(pin: string): Promise<string> {
     hashLength: 32,
   })
 }
+
+export async function verifyPin(
+  pin: string,
+  pinHash: string,
+): Promise<boolean> {
+  return argon2.verify(pinHash, pin)
+}

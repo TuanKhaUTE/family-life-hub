@@ -4,6 +4,7 @@ import {
   hashPin,
   PinValidationError,
   validatePin,
+  verifyPin,
 } from '../src/security/pin.js'
 
 const syntheticPin = '123456'
@@ -42,5 +43,14 @@ describe('hashPin', () => {
     const secondHash = await hashPin(syntheticPin)
 
     expect(firstHash).not.toBe(secondHash)
+  })
+})
+
+describe('verifyPin', () => {
+  it('accepts the matching PIN and rejects a different valid PIN', async () => {
+    const hash = await hashPin(syntheticPin)
+
+    await expect(verifyPin(syntheticPin, hash)).resolves.toBe(true)
+    await expect(verifyPin('654321', hash)).resolves.toBe(false)
   })
 })
