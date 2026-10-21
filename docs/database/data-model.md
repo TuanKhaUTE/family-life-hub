@@ -154,7 +154,7 @@ READ
 
 Reusable dish catalog.
 
-Suggested fields:
+Implemented fields:
 
 id
 
@@ -176,9 +176,7 @@ This table may include both breakfast catalog dishes and reusable household dish
 
 Controls which dishes appear in recurring breakfast selection.
 
-Suggested fields:
-
-id
+Implemented fields:
 
 dish_id
 
@@ -187,6 +185,8 @@ display_order
 is_active
 
 created_at
+
+updated_at
 
 Initial breakfast catalog:
 
@@ -222,7 +222,7 @@ Custom and Not Eating are application states and do not necessarily need to be s
 
 Stores daily breakfast answers.
 
-Suggested fields:
+Implemented fields:
 
 id
 
@@ -236,13 +236,13 @@ dish_id
 
 custom_dish_name
 
-submitted_at
+created_at
 
 updated_at
 
 Possible selection types:
 
-DISH
+SELECTED
 
 CUSTOM
 

@@ -1,5 +1,6 @@
 import type { FamilyProfile } from './auth-api'
 import { ProfileAvatar } from './ProfileSelector'
+import { BreakfastSection } from '../breakfast/BreakfastSection'
 
 interface AuthenticatedShellProps {
   profile: FamilyProfile
@@ -48,15 +49,7 @@ export function AuthenticatedShell({
         </p>
       )}
 
-      <article className="upcoming-card">
-        <span className="upcoming-icon" aria-hidden="true">
-          ♥
-        </span>
-        <div>
-          <h2>Your family hub is ready</h2>
-          <p>More helpful spaces for daily family life are coming next.</p>
-        </div>
-      </article>
+      <BreakfastSection profile={profile} />
     </section>
   )
 }

@@ -750,6 +750,16 @@ NOT_EATING
 
 These states must never be inferred from one another.
 
+The implemented breakfast API is backend-only and session-protected:
+
+- `GET /api/breakfast/catalog` returns active catalog choices;
+- `GET /api/breakfast/days/:date` returns the authorized view for a family date (or `next`);
+- `PUT /api/breakfast/days/:date/response` creates or replaces only the signed-in member's response.
+
+`PARENT` profiles receive active non-parent response statuses and do not submit a breakfast response for themselves. `ADMIN` and `MEMBER` profiles receive and change only their own response. Role alone never grants write access to another member's response.
+
+Breakfast dates and the midnight deadline are interpreted centrally in `Asia/Ho_Chi_Minh`; persisted timestamps remain UTC instants. The frontend consumes these endpoints through the Express API and does not query Supabase directly.
+
 ---
 
 ## 13.2 Lunch and Dinner

@@ -52,7 +52,13 @@ export function ProfileSelector({
   )
 }
 
-export function ProfileAvatar({ profile }: { profile: FamilyProfile }) {
+interface AvatarProfile {
+  displayName: string
+  avatarType: string | null
+  avatarValue: string | null
+}
+
+export function ProfileAvatar({ profile }: { profile: AvatarProfile }) {
   const [imageFailed, setImageFailed] = useState(false)
   const avatarValue = profile.avatarValue?.trim() ?? ''
   const avatarType = profile.avatarType?.toUpperCase() ?? ''

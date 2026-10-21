@@ -1,0 +1,269 @@
+.breakfast-card {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid #eadfd4;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 16px 38px rgba(91, 70, 56, 0.07);
+}
+
+.breakfast-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.breakfast-heading h2,
+.breakfast-heading p {
+  margin: 0;
+}
+
+.breakfast-heading h2 {
+  font-size: clamp(1.45rem, 6vw, 1.9rem);
+  letter-spacing: -0.025em;
+}
+
+.breakfast-date {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border-radius: 999px;
+  color: var(--sage-deep);
+  background: #edf4ed;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.saved-choice,
+.breakfast-parent-copy,
+.breakfast-message {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.saved-choice {
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border-left: 4px solid var(--peach);
+  border-radius: 9px 13px 13px 9px;
+  background: var(--cream-secondary);
+  font-weight: 750;
+}
+
+.breakfast-form {
+  margin-top: 20px;
+}
+
+.breakfast-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.breakfast-form legend,
+.custom-choice > span {
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.breakfast-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.breakfast-option {
+  position: relative;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px;
+  border: 2px solid #e5ddd5;
+  border-radius: 17px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  font-size: 0.91rem;
+  font-weight: 750;
+  line-height: 1.28;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.breakfast-option:hover {
+  border-color: var(--sage);
+  transform: translateY(-1px);
+}
+
+.breakfast-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.breakfast-option:has(input:focus-visible) {
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
+}
+
+.breakfast-option i {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  place-items: center;
+  border: 1px solid #d8cec5;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.76rem;
+  font-style: normal;
+}
+
+.breakfast-option.is-selected {
+  border-color: var(--sage-deep);
+  background: #edf5ed;
+}
+
+.breakfast-option.is-selected i {
+  border-color: var(--sage-deep);
+  background: var(--sage-deep);
+}
+
+.breakfast-option--peach.is-selected {
+  border-color: var(--terracotta);
+  background: #fff0e8;
+}
+
+.breakfast-option--peach.is-selected i {
+  border-color: var(--terracotta);
+  background: var(--terracotta);
+}
+
+.breakfast-option--quiet.is-selected {
+  border-color: #9b8b80;
+  background: #f5f1ed;
+}
+
+.breakfast-option--quiet.is-selected i {
+  border-color: #786960;
+  background: #786960;
+}
+
+.custom-choice {
+  display: grid;
+  margin-top: 18px;
+}
+
+.custom-choice input {
+  min-height: 50px;
+  padding: 11px 14px;
+  border: 2px solid #dfd4ca;
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--surface-soft);
+}
+
+.custom-choice input:focus {
+  border-color: var(--terracotta);
+}
+
+.breakfast-save {
+  margin-top: 18px;
+}
+
+.breakfast-save-error {
+  margin: 14px 0 0;
+  color: var(--error);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.breakfast-closed,
+.breakfast-message--error {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 17px;
+  border: 1px solid #ecd7ca;
+  border-radius: 17px;
+  color: var(--text-secondary);
+  background: var(--cream-secondary);
+}
+
+.breakfast-closed strong {
+  color: var(--text);
+}
+
+.breakfast-parent-copy {
+  margin: 14px 0 0;
+}
+
+.breakfast-status-list {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breakfast-status-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 13px;
+  padding: 13px;
+  border: 1px solid #e9dfd6;
+  border-radius: 17px;
+  background: var(--surface-soft);
+}
+
+.breakfast-status-list .profile-avatar {
+  width: 50px;
+  height: 50px;
+  grid-row: auto;
+  border-radius: 17px;
+  font-size: 1.2rem;
+}
+
+.breakfast-status-list li > div {
+  display: grid;
+  gap: 4px;
+}
+
+.breakfast-status-list span {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.breakfast-status-list .status-selected {
+  color: var(--sage-deep);
+}
+
+.breakfast-status-list .status-custom {
+  color: var(--terracotta);
+}
+
+.breakfast-status-list .status-not_eating {
+  color: #786960;
+}
+
+.breakfast-status-list .status-no_response {
+  color: var(--text-muted);
+}
+
+@media (min-width: 620px) {
+  .breakfast-card {
+    padding: 28px;
+  }
+
+  .breakfast-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .breakfast-status-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

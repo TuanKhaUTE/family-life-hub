@@ -2,6 +2,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('../breakfast/BreakfastSection', () => ({
+  BreakfastSection: () => null,
+}))
+
 import { AuthFlow } from './AuthFlow'
 import type { FamilyProfile } from './auth-api'
 
