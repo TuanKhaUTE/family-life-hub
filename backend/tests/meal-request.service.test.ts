@@ -164,6 +164,16 @@ describe('MealRequestService', () => {
     repository = new FakeRepository()
     service = new MealRequestService(repository, () => now)
   })
+  it('forwards explicit confirmation when recreating a cancelled slot', async () => {
+    await service.create(parent, {
+      mealDate: '2026-10-21',
+      mealType: 'DINNER',
+      mode: 'OPEN_CHOICE',
+      deadlineAt: '2026-10-21T12:00:00Z',
+      confirmResponseReset: true,
+    })
+    expect(repository.createdInputs[0]?.confirmResponseReset).toBe(true)
+  })
 
   it('lists current requests and represents absent responses as NO_RESPONSE for a parent', async () => {
     const result = await service.listCurrent(parent)

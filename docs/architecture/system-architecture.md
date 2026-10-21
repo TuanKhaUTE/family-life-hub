@@ -785,7 +785,7 @@ Mom later confirms the actual final meal.
 
 The implemented Feature 2C API keeps this workflow behind the backend:
 
-- `GET /api/meals/requests/current` returns current and future lunch/dinner requests, with only the signed-in member's response unless the viewer is the parent;
+- `GET /api/meals/requests/current` returns only today's non-cancelled DINNER plan in family time, with only the signed-in member's response unless the viewer is the parent; parent responses include deduplicated `candidates` derived from active non-parent responses;
 - `POST /api/meals/requests` creates one parent-owned request per date and meal type;
 - `PATCH /api/meals/requests/:id` lets the parent edit the complete plan (mode, deadline, options, note) or cancel it using the same request ID;
 - `PUT /api/meals/requests/:id/response` saves only the signed-in non-parent member's response.
@@ -833,6 +833,8 @@ Feature 2D stores actual lunch/dinner dishes in `final_meals` and `final_meal_di
 Routes, controllers, services, and repositories retain their existing responsibilities. Session context supplies the actor; `ADMIN` has no parent write permissions. Restricted `SECURITY INVOKER` database functions atomically reconcile dishes and fan out ready notifications. Reads return dish IDs; saves carry retained IDs, update their rows, create ID-less entries, and delete only omitted dishes. Same-meal ownership and distinct IDs are checked inside the transaction, and deferrable order uniqueness allows swaps without replacing dishes. Existing ratings therefore survive edits to retained dishes. Slot locking and database constraints prevent duplicate meals, mismatched request links, empty finalized meals, and contradictory self-service/cooked states. Child responses remain unchanged.
 
 The first ready action sets a UTC `ready_at` timestamp and creates one `MEAL_READY` notification per active non-parent member. Retries and message edits reuse the same notification identity, preserve `read_at`, and retain the original ready time. Browser roles cannot access these tables or RPCs directly. The UI formats time in the family timezone using Vietnamese locale.
+
+Feature 2G narrows the normal frontend to next breakfast and today's dinner without date selectors. Date-capable technical APIs and lunch history remain compatible. Finalization uses the parent's response-derived candidates with an optional manual extra, through the existing final-meal REST save. Ready composition is checked in the service and by a service-only, fixed-search-path SECURITY INVOKER database trigger; row locks serialize dish changes with readiness. Ready messages remain editable. The optional explicit-confirmation create RPC overload safely reuses a cancelled slot with incompatible old responses, without changing the legacy RPC contract. Ratings reuse the existing REST backend inside a focused portal sheet with keyboard containment and focus restoration.
 
 ---
 

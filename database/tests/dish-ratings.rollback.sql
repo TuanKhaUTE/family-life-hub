@@ -141,10 +141,13 @@ begin
   perform public.mark_final_meal_ready(p,'2098-06-16','DINNER',null);
   perform public.save_final_meal_dish_rating(m,other_dish_id,1,null);
   if not exists(select 1 from public.final_meal_dish_ratings where final_meal_dish_id=dish_id and member_id=m and rating=3) then raise exception 'cross-meal feedback overwritten'; end if;
-  delete from public.final_meal_dishes where id=soup_id;
-  if exists(select 1 from public.final_meal_dish_ratings where final_meal_dish_id=soup_id) then raise exception 'dish cascade missing'; end if;
+  begin
+    delete from public.final_meal_dishes where id=soup_id;
+    raise exception 'served dish removal accepted';
+  exception when sqlstate 'P2003' then null; end;
+  if not exists(select 1 from public.final_meal_dish_ratings where final_meal_dish_id=soup_id) then raise exception 'ready guard lost rating'; end if;
   delete from public.final_meals where id=meal_id;
-  if exists(select 1 from public.final_meal_dish_ratings where final_meal_dish_id=dish_id) then raise exception 'meal cascade missing'; end if;
+  if exists(select 1 from public.final_meal_dish_ratings where final_meal_dish_id in (dish_id,soup_id)) then raise exception 'meal/dish cascade missing'; end if;
   delete from public.family_members where id=m;
   if exists(select 1 from public.final_meal_dish_ratings where member_id=m) then raise exception 'member cascade missing'; end if;
 end;

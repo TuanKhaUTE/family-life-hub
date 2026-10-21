@@ -107,14 +107,21 @@ export class FinalMealService {
     })
     const ids = dishes.flatMap((dish) => (dish.id ? [dish.id] : []))
     if (new Set(ids).size !== ids.length) invalid()
-    return this.run(() =>
-      this.repository.save({
+    return this.run(async () => {
+      const current = await this.repository.get(slot.mealDate, slot.mealType)
+      if (current?.readyAt)
+        throw new FinalMealError(
+          409,
+          'FINAL_MEAL_LOCKED',
+          'Ready meal composition cannot be changed',
+        )
+      return this.repository.save({
         ...slot,
         actorMemberId: profile.id,
         mealRequestId,
         dishes,
-      }),
-    )
+      })
+    })
   }
 
   async ready(

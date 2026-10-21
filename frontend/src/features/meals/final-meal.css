@@ -3,11 +3,66 @@
   padding: 1rem;
   border: 1px solid #dfd8c9;
   border-radius: 1.25rem;
-  background: #fffdf9;
+  background: #fff7dd;
   color: #493b32;
 }
 .final-meal-section h3 {
   margin-top: 0;
+}
+.meal-choice small {
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+.final-meal-section .meal-choice {
+  display: flex;
+  min-height: 48px;
+}
+.final-meal-section .meal-choice input {
+  width: 1.2rem;
+  height: 1.2rem;
+  min-height: 1.2rem;
+  padding: 0;
+  flex: 0 0 auto;
+}
+.final-meal-section
+  :is(button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #66896b;
+  outline-offset: 3px;
+}
+.meal-feedback-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: rgb(49 42 34 / 0.35);
+}
+.meal-feedback-sheet.final-meal-section {
+  margin: 0;
+  width: min(100%, 42rem);
+  max-height: 90dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 1.5rem 1.5rem 0 0;
+  padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: #fff9f3;
+}
+.meal-feedback-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.meal-feedback-sheet button {
+  min-height: 44px;
+}
+.meal-feedback-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 .final-meal-content,
 .dish-editor,

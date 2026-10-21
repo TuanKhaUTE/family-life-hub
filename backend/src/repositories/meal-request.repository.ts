@@ -130,6 +130,7 @@ export class SupabaseMealRequestRepository implements MealRequestRepository {
     input: Parameters<MealRequestRepository['createRequest']>[0],
   ): Promise<string> {
     const { data, error } = await this.getClient().rpc('create_meal_request', {
+      ...(input.confirmResponseReset ? { p_confirm_response_reset: true } : {}),
       p_actor_member_id: input.actorMemberId,
       p_meal_date: input.mealDate,
       p_meal_type: input.mealType,

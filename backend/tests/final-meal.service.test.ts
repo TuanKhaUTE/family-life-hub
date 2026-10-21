@@ -26,6 +26,17 @@ function setup() {
   return { repository, service: new FinalMealService(repository) }
 }
 describe('final meal service', () => {
+  it('refuses dish composition edits after ready without calling save', async () => {
+    const { repository, service } = setup()
+    repository.get.mockResolvedValueOnce({
+      id: parent.id,
+      readyAt: '2099-05-01T12:00:00Z',
+    })
+    await expect(
+      service.save(parent, ...slot, { dishes }),
+    ).rejects.toMatchObject({ code: 'FINAL_MEAL_LOCKED', status: 409 })
+    expect(repository.save).not.toHaveBeenCalled()
+  })
   it('carries existing identities while allowing new dishes without IDs', async () => {
     const { repository, service } = setup()
     await service.save(parent, ...slot, {

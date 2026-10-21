@@ -289,11 +289,11 @@ Kha and Bin should receive an in-app notification and, when supported, a push no
 
 ---
 
-# 7. Lunch and Dinner Meal Requests
+# 7. Daily Dinner Requests
 
-Lunch and dinner behave differently from breakfast.
+Feature 2G limits the active Bếp flow to the next breakfast and today's dinner, interpreted in `Asia/Ho_Chi_Minh`. The family normally skips lunch. Lunch schema and historical data remain intact, but no lunch controls, arbitrary date pickers, future planning or history lists appear in the normal kitchen experience.
 
-Mom decides whether a lunch or dinner request is needed.
+Mom decides whether today's dinner needs a question, choices, or a self-service plan. Breakfast stays recurring and automatically uses the next relevant breakfast; neither Mom nor children choose a breakfast date.
 
 If no request is necessary, the system should not automatically create one.
 
@@ -340,7 +340,7 @@ Kha and Bin select from the provided options.
 
 # 8. Meal Request Deadline
 
-Lunch and dinner requests support deadlines.
+Today's dinner supports a same-day response deadline, entered as a time rather than an arbitrary calendar date. Technical APIs remain date-capable for compatibility; this does not expose date planning in the normal UI.
 
 Suggested presets:
 
@@ -370,7 +370,7 @@ Example:
 
 This should notify Kha and Bin.
 
-Mom may choose **Chỉnh sửa** on an existing request to edit its complete plan, switching directly between open choice, option poll, and self-service without a detour. Incompatible responses require a Vietnamese confirmation before removal; compatible responses are preserved. **Hủy kế hoạch** requires confirmation and retains a cancelled record for history. Cancelled slots can later be reconfigured using the same request. Deadline expiry is not cancellation.
+Mom may choose **Chỉnh sửa** on today's plan to edit the complete question/choices/self-service mode, deadline and note without a detour. Incompatible responses require a Vietnamese confirmation before removal; compatible responses are preserved. **Xóa kế hoạch** asks for confirmation and hides the plan from the active kitchen while retaining a CANCELLED record internally. It blocks further responses and updates its existing notification to non-actionable wording without resetting read state. The slot can be used again; discarding incompatible old responses on recreation also requires explicit confirmation. Deadline expiry is not cancellation.
 
 ---
 
@@ -378,7 +378,7 @@ Mom may choose **Chỉnh sửa** on an existing request to edit its complete pla
 
 Mom is responsible for confirming what was actually prepared.
 
-An active PARENT can save actual lunch/dinner dishes with or without a meal request. Each date and meal type has at most one final meal. A linked request must use the same slot, and saving dishes leaves family responses unchanged. Self-service must first be changed through **Chỉnh sửa**. ADMIN and MEMBER have read-only access to final meals.
+An active PARENT confirms today's dinner primarily from the children's responses: selected poll labels and open-choice texts become unique candidate dishes, normalized for Unicode, case and whitespace. A shared choice is shown once with the children who chose it. NOT_EATING and NO_RESPONSE never become candidates. Mom selects candidates without retyping them and may use the secondary **Thêm món khác** escape hatch. Categories use defaults and are optional advanced controls for extra dishes. Each slot still has at most one final meal; technical date-capable lunch/dinner APIs remain compatible. Saving dishes leaves family responses unchanged. Self-service must first change through **Chỉnh sửa**. ADMIN/MEMBER cannot edit the cooked dishes.
 
 A meal can contain multiple dishes.
 
@@ -426,7 +426,7 @@ Example:
 
 If no custom message is provided, a simple default message should be sent.
 
-The implemented action is **Bữa ăn đã sẵn sàng**. Retrying it retains the first ready time and reuses each recipient's notification. Mom can edit the ready message afterward without resetting read state. Parents and inactive members do not receive meal-ready notifications.
+The implemented action is **Bữa ăn đã sẵn sàng**. Retrying it retains the first ready time and reuses each recipient's notification. Once ready, dish composition is locked server-side: no add/remove/rename/reorder, while Mom can still edit the ready message. Existing ratings remain attached to immutable served dishes. Parents and inactive members do not receive meal-ready notifications.
 
 ---
 
@@ -459,7 +459,7 @@ Mom can read all ratings and comments for dishes she prepared.
 
 Feature 2E allows active ADMIN/MEMBER profiles to rate individual dish instances only after the final meal is ready. Each dish is optional: one integer 1–5 score and an optional trimmed comment up to 300 characters, editable by its author. Members see only their own feedback; PARENT sees named feedback grouped by dish and has no rating controls. Saved forms collapse into stars/comment with **Chỉnh sửa đánh giá**; unrated dishes offer **Đánh giá món**. Ratings do not apply to generic catalog dish names.
 
-Editing a finalized meal preserves the identity and ratings of retained dishes, including renaming, changing categories, reordering, and adding other dishes. Explicitly removing a dish deletes only that dish's feedback. Technical dish IDs are carried internally and never displayed in the UI.
+Before ready, edits preserve retained dish identities; removing a dish explicitly removes that instance. After ready, composition cannot change. Technical IDs remain internal. The main kitchen shows only **Đánh giá bữa tối** for members or **Xem góp ý bữa ăn** for Mom. These open a focused, dismissible sheet; per-dish forms and named feedback are not expanded inline in Bếp.
 
 ---
 

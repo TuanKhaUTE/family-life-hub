@@ -330,6 +330,8 @@ There is one request per `(meal_date, meal_type)`. Interactive requests require 
 
 Cancellation retains the request, its mode/options/deadline and responses for history, but blocks new responses. The parent can reconfigure the same slot afterward. Expiry remains a closed read state and is not cancellation. RLS is enabled with no browser policies; only the backend service role has table access.
 
+Feature 2G excludes CANCELLED, lunch and non-today plans from active kitchen lookup without deleting history or changing meal-type constraints. A service-only eight-argument `create_meal_request` overload accepts explicit confirmation before discarding incompatible historical responses on slot reuse; the original seven-argument RPC remains compatible. Compatible responses and notification `read_at` remain intact.
+
 ---
 
 ## meal_request_options
@@ -410,6 +412,8 @@ updated_at
 
 One row per `(meal_date, meal_type)`. A composite foreign key ensures an optional request has the same slot. A meal may also be finalized without a request. A self-service slot must explicitly change plans first. `ready_at` is null while preparing and is set once when the parent marks the meal ready; message updates preserve that timestamp. Finalization does not change family responses.
 
+After readiness, `guard_ready_meal_composition` prevents dish inserts, updates and deletes, and prevents resetting readiness or changing the slot. Message-only updates remain valid. Preparing dish identities still survive reconciliation. The guard uses meal-row locks, SECURITY INVOKER, a fixed search path and no browser execute privileges. Parent-meal deletion still cascades for database integrity; no meal deletion API is introduced.
+
 ---
 
 ## final_meal_dishes
@@ -450,7 +454,7 @@ Rating for a specific meal dish.
 
 Implemented fields: `id`, `final_meal_dish_id`, `member_id`, `rating`, optional `comment`, `created_at`, `updated_at`.
 
-The score is an integer from 1–5. Comments are trimmed, nonblank when stored, and at most 300 characters; blank input becomes null. A unique `(final_meal_dish_id, member_id)` constraint makes saves update the same rating. Dish and member foreign keys cascade on deletion; deleting a final meal cascades through its dishes. Retained dish identities preserve their ratings through meal edits, renames, reordering and additions. Explicitly removing a dish removes only its own ratings; recreating that dish later creates a new identity without the old ratings.
+The score is an integer from 1–5. Comments are trimmed, nonblank when stored, and at most 300 characters; blank input becomes null. A unique `(final_meal_dish_id, member_id)` constraint makes saves update the same rating. Dish and member foreign keys cascade on deletion; deleting a final meal cascades through its dishes. Dishes keep their identity during preparation edits, then their composition is locked once ready so existing ratings stay attached to the same served dishes. The foreign keys retain cascading integrity for technical parent-record deletion, without exposing a meal/rating deletion UI.
 
 Only active ADMIN/MEMBER actors may rate a ready meal. A database guard checks active role and readiness, and prohibits moving a rating to another member or dish. Service-only `SECURITY INVOKER` RPCs use a fixed empty search path. RLS is enabled with no browser policies; PUBLIC, anon, and authenticated have no table or function access. Backend sessions supply the actor. Members read only their own feedback; an active PARENT reads named feedback grouped by dish, but cannot rate.
 

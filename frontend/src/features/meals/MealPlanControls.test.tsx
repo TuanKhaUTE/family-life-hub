@@ -122,12 +122,12 @@ describe('whole meal plan controls', () => {
       )
     vi.stubGlobal('fetch', fetchMock)
     render(<MealPlanControls request={request} onChanged={changed} />)
-    await user.click(screen.getByRole('button', { name: 'Hủy kế hoạch' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa kế hoạch' }))
     await user.click(screen.getByRole('button', { name: 'Quay lại' }))
     expect(fetchMock).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Hủy kế hoạch' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa kế hoạch' }))
     await user.click(
-      screen.getByRole('button', { name: 'Đồng ý, hủy kế hoạch' }),
+      screen.getByRole('button', { name: 'Đồng ý, xóa kế hoạch' }),
     )
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/meals/requests/${id}`,

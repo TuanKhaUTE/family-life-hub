@@ -3,7 +3,7 @@ import type { FamilyProfile } from '../auth/auth-api'
 import {
   familyDate,
   localInputToUtc,
-  toLocalDateTimeInput,
+  defaultDinnerDeadline,
 } from './family-time'
 import {
   createMealRequest,
@@ -16,7 +16,6 @@ import {
   type MealMode,
   type MealRequest,
   type MealSubmission,
-  type MealType,
 } from './meal-request-api'
 import './meals.css'
 import { FinalMealSection } from './FinalMealSection'
@@ -31,7 +30,14 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
     void fetchCurrentMealRequests()
       .then((items) => {
         if (active) {
-          setRequests(items)
+          setRequests(
+            items.filter(
+              (item) =>
+                item.mealDate === familyDate() &&
+                item.mealType === 'DINNER' &&
+                item.status !== 'CANCELLED',
+            ),
+          )
           setState('ready')
         }
       })
@@ -44,9 +50,10 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
   }, [reload])
   const replace = (item: MealRequest) =>
     setRequests((current) =>
-      [...current.filter((request) => request.id !== item.id), item].sort(
-        sortRequests,
-      ),
+      [
+        ...current.filter((request) => request.id !== item.id),
+        ...(item.status === 'CANCELLED' ? [] : [item]),
+      ].sort(sortRequests),
     )
   if (state === 'loading')
     return (
@@ -59,7 +66,7 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
     return (
       <section className="meals-card">
         <Heading />
-        <p>Hiện chưa thể tải kế hoạch bữa trưa và bữa tối.</p>
+        <p>Hiện chưa thể tải kế hoạch bữa tối hôm nay.</p>
         <button
           className="secondary-button"
           onClick={() => {
@@ -72,25 +79,29 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
       </section>
     )
   return (
-    <section className="meals-card" aria-labelledby="meals-title">
-      <Heading />
-      {profile.role === 'PARENT' && <ParentComposer onCreated={replace} />}
-      <div className="meal-list">
-        {requests.length === 0 ? (
-          <p className="meal-empty">Chưa có kế hoạch bữa trưa hoặc bữa tối.</p>
-        ) : (
-          requests.map((request) => (
-            <MealCard
-              key={request.id}
-              request={request}
-              profile={profile}
-              onChanged={replace}
-            />
-          ))
+    <>
+      <section className="meals-card" aria-labelledby="meals-title">
+        <Heading />
+        {profile.role === 'PARENT' && requests.length === 0 && (
+          <ParentComposer onCreated={replace} />
         )}
-      </div>
+        <div className="meal-list">
+          {requests.length === 0 ? (
+            <p className="meal-empty">Chưa có kế hoạch bữa tối hôm nay.</p>
+          ) : (
+            requests.map((request) => (
+              <MealCard
+                key={request.id}
+                request={request}
+                profile={profile}
+                onChanged={replace}
+              />
+            ))
+          )}
+        </div>
+      </section>
       <FinalMealSection profile={profile} requests={requests} />
-    </section>
+    </>
   )
 }
 function Heading() {
@@ -98,7 +109,7 @@ function Heading() {
     <header className="meals-heading">
       <div>
         <p className="eyebrow">Bữa ăn gia đình</p>
-        <h2 id="meals-title">Bữa trưa &amp; bữa tối</h2>
+        <h2 id="meals-title">Bữa tối hôm nay</h2>
       </div>
       <span aria-hidden="true">🍲</span>
     </header>
@@ -111,12 +122,11 @@ function ParentComposer({
   onCreated: (request: MealRequest) => void
 }) {
   const [open, setOpen] = useState(false)
-  const [mealDate, setMealDate] = useState(familyDate())
-  const [mealType, setMealType] = useState<MealType>('LUNCH')
+  const [confirmReset, setConfirmReset] = useState(false)
+  const mealDate = familyDate()
+  const mealType = 'DINNER' as const
   const [mode, setMode] = useState<MealMode | 'SELF_SERVICE'>('OPEN_CHOICE')
-  const [deadline, setDeadline] = useState(() =>
-    toLocalDateTimeInput(new Date(Date.now() + 3 * 60 * 60 * 1000)),
-  )
+  const [deadline, setDeadline] = useState(() => defaultDinnerDeadline())
   const [options, setOptions] = useState(['', ''])
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
@@ -129,16 +139,14 @@ function ParentComposer({
     new Set(normalizedOptions.map((value) => value.toLocaleLowerCase()))
       .size === normalizedOptions.length
   const setPreset = (preset: 'NOON' | 'THREE_HOURS') =>
-    setDeadline(
-      preset === 'NOON'
-        ? `${mealDate}T12:00`
-        : toLocalDateTimeInput(new Date(Date.now() + 3 * 60 * 60 * 1000)),
-    )
-  async function submit(event: FormEvent) {
-    event.preventDefault()
+    setDeadline(preset === 'NOON' ? '12:00' : defaultDinnerDeadline())
+  async function submit(event?: FormEvent, confirmed = false) {
+    event?.preventDefault()
     if (pending) return
     const deadlineAt =
-      mode === 'SELF_SERVICE' ? null : localInputToUtc(deadline)
+      mode === 'SELF_SERVICE'
+        ? null
+        : localInputToUtc(`${mealDate}T${deadline}`)
     if (mode !== 'SELF_SERVICE' && !deadlineAt) {
       setError('Hãy chọn thời hạn hợp lệ.')
       return
@@ -171,12 +179,19 @@ function ParentComposer({
     setPending(true)
     setError(null)
     try {
-      const saved = await createMealRequest(input)
+      const saved = await createMealRequest({
+        ...input,
+        ...(confirmed ? { confirmResponseReset: true } : {}),
+      })
       onCreated(saved)
       setOpen(false)
       setMessage('')
       setOptions(['', ''])
     } catch (cause) {
+      if (cause instanceof MealResetRequiredApiError) {
+        setConfirmReset(true)
+        return
+      }
       setError(
         cause instanceof MealConflictApiError ||
           cause instanceof MealResetRequiredApiError
@@ -197,27 +212,8 @@ function ParentComposer({
       </button>
     )
   return (
-    <form className="meal-composer" onSubmit={submit}>
+    <form className="meal-composer" onSubmit={(event) => void submit(event)}>
       <div className="meal-form-grid">
-        <label>
-          Ngày
-          <input
-            type="date"
-            value={mealDate}
-            min={familyDate()}
-            onChange={(event) => setMealDate(event.target.value)}
-          />
-        </label>
-        <label>
-          Bữa ăn
-          <select
-            value={mealType}
-            onChange={(event) => setMealType(event.target.value as MealType)}
-          >
-            <option value="LUNCH">Bữa trưa</option>
-            <option value="DINNER">Bữa tối</option>
-          </select>
-        </label>
         <label>
           Cách cả nhà trả lời
           <select
@@ -244,9 +240,9 @@ function ParentComposer({
             </button>
           </div>
           <label>
-            Ngày giờ tùy chọn
+            Giờ trả lời hôm nay
             <input
-              type="datetime-local"
+              type="time"
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
             />
@@ -333,6 +329,29 @@ function ParentComposer({
           Hủy
         </button>
       </div>
+      {confirmReset && (
+        <div role="alertdialog" aria-label="Xác nhận tạo lại kế hoạch">
+          <p>
+            Kế hoạch mới sẽ bỏ những phản hồi cũ không còn phù hợp. Mẹ có muốn
+            tạo lại không?
+          </p>
+          <button
+            type="button"
+            className="primary-button"
+            disabled={pending}
+            onClick={() => void submit(undefined, true)}
+          >
+            Đồng ý, tạo lại kế hoạch
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setConfirmReset(false)}
+          >
+            Quay lại
+          </button>
+        </div>
+      )}
     </form>
   )
 }

@@ -61,6 +61,12 @@ export class SupabaseFinalMealRepository implements FinalMealRepository {
 }
 function checkError(error: { code?: string } | null) {
   if (!error) return
+  if (error.code === 'P2003')
+    throw new FinalMealError(
+      409,
+      'FINAL_MEAL_LOCKED',
+      'Ready meal composition cannot be changed',
+    )
   if (error.code === '42501')
     throw new FinalMealError(
       403,

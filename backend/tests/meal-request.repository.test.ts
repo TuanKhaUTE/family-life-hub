@@ -91,6 +91,23 @@ function harness() {
 }
 
 describe('SupabaseMealRequestRepository', () => {
+  it('selects the explicit confirmation overload only for confirmed recreation', async () => {
+    const { client, repository } = harness()
+    await repository.createRequest({
+      actorMemberId: requestId,
+      mealDate: '2099-05-01',
+      mealType: 'DINNER',
+      mode: 'OPEN_CHOICE',
+      deadlineAt: '2099-05-01T10:00:00Z',
+      parentMessage: null,
+      options: [],
+      confirmResponseReset: true,
+    })
+    expect(client.rpcCalls[0]).toMatchObject({
+      name: 'create_meal_request',
+      args: { p_confirm_response_reset: true },
+    })
+  })
   it('configures the whole plan atomically with an explicit reset flag', async () => {
     const { client, repository } = harness()
     await repository.configureRequest({

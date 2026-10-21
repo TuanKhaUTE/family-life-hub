@@ -24,6 +24,7 @@ export interface MealResponse {
   updatedAt: string | null
 }
 export interface MealRequest {
+  candidates?: { name: string; chosenBy: string[] }[]
   id: string
   mealDate: string
   mealType: MealType
@@ -40,6 +41,7 @@ export interface MealRequest {
   responses: MealResponse[]
 }
 export type CreateMealRequest = {
+  confirmResponseReset?: boolean
   mealDate: string
   mealType: MealType
   parentMessage?: string | null

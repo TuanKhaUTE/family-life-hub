@@ -467,6 +467,8 @@ These should remain visually clear and distinct from normal dishes.
 
 # 16. Meal Request UI
 
+Feature 2G uses three distinct daily regions: peach **Bữa sáng tiếp theo**, sage **Bữa tối hôm nay**, and warm yellow/cream **Bữa tối đã chốt**. Do not show lunch, calendar date pickers, future planning, or cancelled/history cards in normal Bếp. Dinner deadlines use time-only controls. Parent finalization starts with **Món hai đứa đã chọn** candidates; **Thêm món khác** stays secondary. Category controls are optional, not mandatory setup. **Xóa kế hoạch** confirms removal from the active view while history remains internal.
+
 Parent-created meal requests should feel conversational.
 
 Example:
@@ -500,6 +502,8 @@ Mom's feedback view should focus on useful comments rather than numerical scorin
 Avoid designs that make low ratings feel hostile.
 
 Ready-meal dish cards start with **Đánh giá món**, not permanently open forms. Use native keyboard-accessible star radio inputs with at least 44px touch targets and visible focus. Saving collapses to stars, optional comment, and **Chỉnh sửa đánh giá**; reopening restores the values. PARENT sees warm, named feedback grouped by dish, with no inputs. All new feedback states and actions use natural Vietnamese.
+
+In the main kitchen, show only the compact **Đánh giá bữa tối** / **Xem góp ý bữa ăn** action. Open the existing per-dish experience in a separate focused sheet with Escape dismissal, contained keyboard focus, body scroll locking and restored trigger focus. Do not render rating forms/comments inline. Ready meals expose only message editing, never composition controls.
 
 ---
 

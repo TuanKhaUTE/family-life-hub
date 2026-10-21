@@ -130,7 +130,7 @@ describe('member breakfast flow', () => {
     render(<BreakfastSection profile={member} />)
 
     expect(
-      await screen.findByRole('heading', { name: 'Bữa sáng' }),
+      await screen.findByRole('heading', { name: 'Bữa sáng tiếp theo' }),
     ).toBeTruthy()
     expect(screen.getByRole('radio', { name: 'Không ăn' })).toBeTruthy()
     expect(

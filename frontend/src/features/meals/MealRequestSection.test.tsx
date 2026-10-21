@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FamilyProfile } from '../auth/auth-api'
 import { MealRequestSection } from './MealRequestSection'
 import type { MealRequest } from './meal-request-api'
+import { familyDate } from './family-time'
 
 vi.mock('./FinalMealSection', () => ({ FinalMealSection: () => null }))
 
@@ -25,7 +26,7 @@ const requestId = '44444444-4444-4444-8444-444444444444'
 function meal(overrides: Partial<MealRequest> = {}): MealRequest {
   return {
     id: requestId,
-    mealDate: '2026-10-21',
+    mealDate: familyDate(),
     mealType: 'DINNER',
     mode: 'OPTION_POLL',
     status: 'OPEN',
@@ -216,6 +217,69 @@ describe('member lunch and dinner flow', () => {
 })
 
 describe('parent lunch and dinner flow', () => {
+  it('hides lunch, future and cancelled history and exposes no date planning', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      fetchFor([
+        meal({ mealType: 'LUNCH' }),
+        meal({ mealDate: '2099-05-01' }),
+        meal({ status: 'CANCELLED' }),
+      ]),
+    )
+    const { container } = render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
+    )
+    expect(
+      container.querySelector(
+        'input[type="date"],input[type="datetime-local"]',
+      ),
+    ).toBeNull()
+    expect(screen.queryByText('Kế hoạch đã hủy')).toBeNull()
+    expect(screen.queryByText('Bữa trưa')).toBeNull()
+  })
+  it('removes a mistaken plan only after confirmation and makes its slot available again', async () => {
+    const user = userEvent.setup()
+    const fetchMock = fetchFor([meal()])
+    vi.stubGlobal('fetch', fetchMock)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Xóa kế hoạch' }),
+    )
+    expect(screen.getByRole('button', { name: 'Chỉnh sửa' })).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', { name: 'Đồng ý, xóa kế hoạch' }),
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
+    ).toBeTruthy()
+    expect(screen.queryByText('Kế hoạch đã hủy')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Chỉnh sửa' })).toBeNull()
+  })
+  it('requires explicit confirmation when recreating a slot would discard old incompatible responses', async () => {
+    const user = userEvent.setup()
+    const fetchMock = fetchFor([])
+    vi.stubGlobal('fetch', fetchMock)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
+    )
+    fetchMock.mockResolvedValueOnce(
+      json({ error: { code: 'MEAL_RESPONSE_RESET_REQUIRED' } }, 409),
+    )
+    await user.click(screen.getByRole('button', { name: 'Tạo yêu cầu' }))
+    expect(await screen.findByRole('alertdialog')).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', { name: 'Đồng ý, tạo lại kế hoạch' }),
+    )
+    const saves = fetchMock.mock.calls.filter(
+      ([, init]) => init?.method === 'POST',
+    )
+    expect(JSON.parse(saves[1]![1]!.body as string).confirmResponseReset).toBe(
+      true,
+    )
+  })
   it('changes self service to open choice through the existing request', async () => {
     const user = userEvent.setup()
     const fetchMock = fetchFor([
@@ -330,7 +394,7 @@ describe('parent lunch and dinner flow', () => {
     )!
     expect(JSON.parse(call[1]?.body as string)).toMatchObject({
       mode: 'SELF_SERVICE',
-      mealType: 'LUNCH',
+      mealType: 'DINNER',
     })
   })
   it('offers deadline presets and creates a 2-option poll', async () => {
@@ -474,13 +538,11 @@ describe('parent lunch and dinner flow', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<MealRequestSection profile={parent} />)
     expect(
-      await screen.findByText(
-        'Hiện chưa thể tải kế hoạch bữa trưa và bữa tối.',
-      ),
+      await screen.findByText('Hiện chưa thể tải kế hoạch bữa tối hôm nay.'),
     ).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Thử tải lại' }))
     expect(
-      await screen.findByText('Chưa có kế hoạch bữa trưa hoặc bữa tối.'),
+      await screen.findByText('Chưa có kế hoạch bữa tối hôm nay.'),
     ).toBeTruthy()
   })
 })

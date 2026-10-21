@@ -252,8 +252,8 @@ function BreakfastHeader({ day }: { day?: BreakfastDay }) {
   return (
     <header className="breakfast-heading">
       <div>
-        <p className="eyebrow">Bữa sáng tiếp theo</p>
-        <h2 id="breakfast-title">Bữa sáng</h2>
+        <p className="eyebrow">Cả nhà ăn sáng nhé</p>
+        <h2 id="breakfast-title">Bữa sáng tiếp theo</h2>
       </div>
       <span className="breakfast-date">
         {day ? formatFamilyDate(day.date, day.timeZone) : 'Ngày tiếp theo'}

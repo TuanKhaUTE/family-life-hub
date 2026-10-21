@@ -7,6 +7,12 @@ export function familyDate(now = new Date()) {
     day: '2-digit',
   }).format(now)
 }
+export function defaultDinnerDeadline(now = new Date()) {
+  const later = toLocalDateTimeInput(
+    new Date(now.getTime() + 3 * 60 * 60 * 1000),
+  )
+  return later.slice(0, 10) === familyDate(now) ? later.slice(11) : '23:59'
+}
 export function toLocalDateTimeInput(date: Date) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: FAMILY_TIME_ZONE,

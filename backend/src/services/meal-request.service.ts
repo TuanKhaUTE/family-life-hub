@@ -53,6 +53,7 @@ export interface MealResponseRecord {
 }
 
 export interface MealRequestView extends MealRequestRecord {
+  candidates?: { name: string; chosenBy: string[] }[]
   timeZone: string
   isOpen: boolean
   responses: Array<{
@@ -84,6 +85,7 @@ export interface MealRequestRepository {
   findRequest(id: string): Promise<MealRequestRecord | null>
   findResponse(id: string): Promise<MealResponseRecord | null>
   createRequest(input: {
+    confirmResponseReset?: boolean
     actorMemberId: string
     mealDate: string
     mealType: MealType
@@ -139,7 +141,15 @@ export class MealRequestService {
       const requests = await this.repository.listCurrentRequests(
         getFamilyDate(this.clock()),
       )
-      return await this.hydrate(requests, profile)
+      return await this.hydrate(
+        requests.filter(
+          (request) =>
+            request.mealDate === getFamilyDate(this.clock()) &&
+            request.mealType === 'DINNER' &&
+            request.status !== 'CANCELLED',
+        ),
+        profile,
+      )
     } catch (error) {
       if (isKnown(error)) throw error
       throw new MealRequestUnavailableError(
@@ -158,6 +168,9 @@ export class MealRequestService {
       const id = await this.repository.createRequest({
         actorMemberId: profile.id,
         ...normalized,
+        ...(isObject(input) && input.confirmResponseReset === true
+          ? { confirmResponseReset: true }
+          : {}),
       })
       return await this.getHydrated(id, profile)
     } catch (error) {
@@ -353,31 +366,56 @@ export class MealRequestService {
         response,
       ]),
     )
-    return requests.map((request) => ({
-      ...request,
-      status: effectiveStatus(request, this.clock()),
-      timeZone: FAMILY_TIME_ZONE,
-      isOpen: effectiveStatus(request, this.clock()) === 'OPEN',
-      responses:
-        request.status === 'SELF_SERVICE'
-          ? []
-          : members.map((member) => {
-              const response = responseMap.get(`${request.id}:${member.id}`)
-              return {
-                member: {
-                  id: member.id,
-                  displayName: member.displayName,
-                  avatarType: member.avatarType,
-                  avatarValue: member.avatarValue,
-                },
-                state: response?.responseType ?? 'NO_RESPONSE',
-                option: response?.option ?? null,
-                customText: response?.customText ?? null,
-                updatedAt: response?.updatedAt ?? null,
-              }
-            }),
-    }))
+    return requests
+      .map<MealRequestView>((request) => ({
+        ...request,
+        status: effectiveStatus(request, this.clock()),
+        timeZone: FAMILY_TIME_ZONE,
+        isOpen: effectiveStatus(request, this.clock()) === 'OPEN',
+        responses:
+          request.status === 'SELF_SERVICE'
+            ? []
+            : members.map((member) => {
+                const response = responseMap.get(`${request.id}:${member.id}`)
+                return {
+                  member: {
+                    id: member.id,
+                    displayName: member.displayName,
+                    avatarType: member.avatarType,
+                    avatarValue: member.avatarValue,
+                  },
+                  state: response?.responseType ?? 'NO_RESPONSE',
+                  option: response?.option ?? null,
+                  customText: response?.customText ?? null,
+                  updatedAt: response?.updatedAt ?? null,
+                }
+              }),
+      }))
+      .map((view) =>
+        profile.role === 'PARENT'
+          ? { ...view, candidates: deriveMealCandidates(view.responses) }
+          : view,
+      )
   }
+}
+
+export function deriveMealCandidates(responses: MealRequestView['responses']) {
+  const candidates = new Map<string, { name: string; chosenBy: string[] }>()
+  for (const response of responses) {
+    const value =
+      response.state === 'SELECTED_OPTION'
+        ? response.option?.label
+        : response.state === 'CUSTOM'
+          ? response.customText
+          : null
+    const name = value?.normalize('NFC').trim().replace(/\s+/g, ' ')
+    if (!name) continue
+    const key = name.toLocaleLowerCase('vi-VN')
+    const existing = candidates.get(key)
+    if (existing) existing.chosenBy.push(response.member.displayName)
+    else candidates.set(key, { name, chosenBy: [response.member.displayName] })
+  }
+  return [...candidates.values()]
 }
 
 function normalizeCreate(
@@ -396,7 +434,13 @@ function normalizeCreate(
       'deadlineAt',
       'parentMessage',
       'options',
+      'confirmResponseReset',
     ])
+  )
+    bad()
+  if (
+    input.confirmResponseReset !== undefined &&
+    typeof input.confirmResponseReset !== 'boolean'
   )
     bad()
   if (!isFamilyDate(input.mealDate) || input.mealDate < getFamilyDate(now))

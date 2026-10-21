@@ -1,5 +1,9 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { localInputToUtc, toLocalDateTimeInput } from './family-time'
+import {
+  defaultDinnerDeadline,
+  localInputToUtc,
+  toLocalDateTimeInput,
+} from './family-time'
 import {
   MealConflictApiError,
   MealResetRequiredApiError,
@@ -20,13 +24,9 @@ export function MealPlanControls({
     request.mode ?? 'SELF_SERVICE',
   )
   const [deadline, setDeadline] = useState(() =>
-    toLocalDateTimeInput(
-      new Date(
-        request.deadlineAt && Date.parse(request.deadlineAt) > Date.now()
-          ? request.deadlineAt
-          : Date.now() + 3 * 60 * 60 * 1000,
-      ),
-    ),
+    request.deadlineAt && Date.parse(request.deadlineAt) > Date.now()
+      ? toLocalDateTimeInput(new Date(request.deadlineAt)).slice(11)
+      : defaultDinnerDeadline(),
   )
   const [options, setOptions] = useState(
     request.options.length
@@ -60,7 +60,9 @@ export function MealPlanControls({
   async function save(confirmed = false) {
     if (guard.current) return
     const deadlineAt =
-      mode === 'SELF_SERVICE' ? null : localInputToUtc(deadline)
+      mode === 'SELF_SERVICE'
+        ? null
+        : localInputToUtc(`${request.mealDate}T${deadline}`)
     if (
       !valid ||
       (mode !== 'SELF_SERVICE' &&
@@ -170,7 +172,7 @@ export function MealPlanControls({
               <label>
                 Hạn trả lời
                 <input
-                  type="datetime-local"
+                  type="time"
                   value={deadline}
                   onChange={(event) => setDeadline(event.target.value)}
                 />
@@ -268,7 +270,7 @@ export function MealPlanControls({
               className="text-button"
               onClick={() => setConfirmation('cancel')}
             >
-              Hủy kế hoạch
+              Xóa kế hoạch
             </button>
           )}
         </div>
@@ -280,13 +282,13 @@ export function MealPlanControls({
           aria-label={
             confirmation === 'reset'
               ? 'Xác nhận thay đổi'
-              : 'Xác nhận hủy kế hoạch'
+              : 'Xác nhận xóa kế hoạch'
           }
         >
           <p>
             {confirmation === 'reset'
               ? 'Một số phản hồi hiện tại sẽ không còn phù hợp với kế hoạch mới. Chỉ các phản hồi không còn phù hợp sẽ bị xóa; cả nhà cần chọn lại nếu cần. Mẹ có muốn tiếp tục không?'
-              : 'Hủy kế hoạch bữa này? Yêu cầu và phản hồi vẫn được lưu, nhưng cả nhà không thể trả lời thêm.'}
+              : 'Xóa kế hoạch bữa tối khỏi Bếp? Cả nhà sẽ không cần trả lời nữa. Mẹ có thể tạo lại kế hoạch sau.'}
           </p>
           <div className="meal-actions">
             <button
@@ -298,7 +300,7 @@ export function MealPlanControls({
             >
               {confirmation === 'reset'
                 ? 'Đồng ý, lưu kế hoạch'
-                : 'Đồng ý, hủy kế hoạch'}
+                : 'Đồng ý, xóa kế hoạch'}
             </button>
             <button
               className="secondary-button"
