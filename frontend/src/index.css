@@ -1,9 +1,23 @@
 :root {
+  --cream: #fff9f3;
+  --cream-secondary: #fdf2e7;
+  --surface: #ffffff;
+  --surface-soft: #fffdfc;
+  --sage: #93b995;
+  --sage-deep: #66896b;
+  --peach: #f6b38e;
+  --terracotta: #d97a5b;
+  --yellow: #f4c86a;
+  --rose: #efa7a7;
+  --text: #493b32;
+  --text-secondary: #77665b;
+  --text-muted: #9a8b82;
+  --error: #a94f49;
   font-family:
-    Inter, ui-rounded, 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont,
+    Inter, 'Nunito Sans', ui-rounded, system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
-  color: #493b32;
-  background: #fff9f3;
+  color: var(--text);
+  background: var(--cream);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,4 +32,26 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--cream);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
+}
+
+::selection {
+  color: var(--text);
+  background: #f9d9c8;
 }
