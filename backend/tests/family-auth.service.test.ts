@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { generateSessionToken } from '../src/security/session-token.js'
 import {
   AuthUnavailableError,
   AuthValidationError,
@@ -9,11 +10,17 @@ import {
   type FamilyLoginRecord,
   type SafeFamilyProfile,
 } from '../src/services/family-auth.service.js'
+import type {
+  AuthenticatedFamilySession,
+  CreatedFamilySession,
+  FamilySessionOperations,
+} from '../src/services/family-session.service.js'
 
 const memberId = '11111111-1111-4111-8111-111111111111'
 const syntheticPin = '123456'
 const syntheticHash = '$argon2id$synthetic-test-hash-value'
 const now = new Date('2026-10-21T00:00:00.000Z')
+const sessionExpiresAt = new Date('2026-10-28T00:00:00.000Z')
 
 const profile: SafeFamilyProfile = {
   id: memberId,
@@ -79,12 +86,41 @@ class FakeAuthRepository implements FamilyAuthRepository {
   }
 }
 
-function createHarness(repository = new FakeAuthRepository()) {
+class FakeSessionService implements FamilySessionOperations {
+  readonly createCalls: string[] = []
+  readonly createdSession: CreatedFamilySession = {
+    token: generateSessionToken(),
+    expiresAt: sessionExpiresAt,
+  }
+  createError?: Error
+
+  async createSession(requestedMemberId: string): Promise<CreatedFamilySession> {
+    this.createCalls.push(requestedMemberId)
+
+    if (this.createError) {
+      throw this.createError
+    }
+
+    return this.createdSession
+  }
+
+  async authenticate(): Promise<AuthenticatedFamilySession> {
+    throw new Error('not used')
+  }
+
+  async logout(): Promise<void> {}
+}
+
+function createHarness(
+  repository = new FakeAuthRepository(),
+  sessionService = new FakeSessionService(),
+) {
   const verificationCalls: Array<{ pin: string; pinHash: string }> = []
   let verificationResult = true
   let verificationError: Error | undefined
   const service = new FamilyAuthService(
     repository,
+    sessionService,
     async (pin, pinHash) => {
       verificationCalls.push({ pin, pinHash })
 
@@ -99,6 +135,7 @@ function createHarness(repository = new FakeAuthRepository()) {
 
   return {
     repository,
+    sessionService,
     service,
     verificationCalls,
     setVerificationResult(value: boolean) {
@@ -130,17 +167,22 @@ describe('FamilyAuthService.listProfiles', () => {
 })
 
 describe('FamilyAuthService.login', () => {
-  it('returns a safe profile and resets state after a matching PIN', async () => {
-    const { repository, service, verificationCalls } = createHarness()
+  it('returns a safe profile/session and resets state after a matching PIN', async () => {
+    const { repository, service, sessionService, verificationCalls } =
+      createHarness()
 
     await expect(service.login({ memberId, pin: syntheticPin })).resolves.toEqual(
-      profile,
+      {
+        profile,
+        session: sessionService.createdSession,
+      },
     )
     expect(verificationCalls).toEqual([
       { pin: syntheticPin, pinHash: syntheticHash },
     ])
     expect(repository.failedCalls).toEqual([])
     expect(repository.completeCalls).toEqual([memberId])
+    expect(sessionService.createCalls).toEqual([memberId])
   })
 
   it('records a failed attempt and returns invalid credentials for a wrong PIN', async () => {
@@ -152,12 +194,14 @@ describe('FamilyAuthService.login', () => {
     await expect(result).rejects.toBeInstanceOf(InvalidCredentialsError)
     expect(harness.repository.failedCalls).toEqual([memberId])
     expect(harness.repository.completeCalls).toEqual([])
+    expect(harness.sessionService.createCalls).toEqual([])
   })
 
   it('rejects a missing or inactive member without verifying a PIN', async () => {
     const repository = new FakeAuthRepository()
     repository.loginRecord = null
-    const { service, verificationCalls } = createHarness(repository)
+    const { service, sessionService, verificationCalls } =
+      createHarness(repository)
 
     await expect(
       service.login({ memberId, pin: syntheticPin }),
@@ -165,6 +209,7 @@ describe('FamilyAuthService.login', () => {
     expect(verificationCalls).toEqual([])
     expect(repository.failedCalls).toEqual([])
     expect(repository.completeCalls).toEqual([])
+    expect(sessionService.createCalls).toEqual([])
   })
 
   it('rejects an active lock without invoking Argon2 or changing state', async () => {
@@ -174,7 +219,8 @@ describe('FamilyAuthService.login', () => {
       failedAttemptCount: 5,
       lockedUntil: new Date('2026-10-21T00:14:59.000Z'),
     }
-    const { service, verificationCalls } = createHarness(repository)
+    const { service, sessionService, verificationCalls } =
+      createHarness(repository)
 
     await expect(
       service.login({ memberId, pin: syntheticPin }),
@@ -182,6 +228,7 @@ describe('FamilyAuthService.login', () => {
     expect(verificationCalls).toEqual([])
     expect(repository.failedCalls).toEqual([])
     expect(repository.completeCalls).toEqual([])
+    expect(sessionService.createCalls).toEqual([])
   })
 
   it('records a new failed sequence after a lock has expired', async () => {
@@ -208,10 +255,10 @@ describe('FamilyAuthService.login', () => {
       failedAttemptCount: 5,
       lockedUntil: new Date('2026-10-20T23:59:59.000Z'),
     }
-    const { service } = createHarness(repository)
+    const { service, sessionService } = createHarness(repository)
 
     await expect(service.login({ memberId, pin: syntheticPin })).resolves.toEqual(
-      profile,
+      { profile, session: sessionService.createdSession },
     )
     expect(repository.completeCalls).toEqual([memberId])
   })
@@ -226,6 +273,17 @@ describe('FamilyAuthService.login', () => {
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
   })
 
+  it('returns a safe availability error when session creation fails', async () => {
+    const sessionService = new FakeSessionService()
+    sessionService.createError = new Error('secret session storage detail')
+    const { service } = createHarness(new FakeAuthRepository(), sessionService)
+
+    const result = service.login({ memberId, pin: syntheticPin })
+
+    await expect(result).rejects.toBeInstanceOf(AuthUnavailableError)
+    await expect(result).rejects.not.toThrow('secret')
+  })
+
   it.each([
     { memberId: '', pin: syntheticPin, label: 'an empty member ID' },
     { memberId: 'not-a-uuid', pin: syntheticPin, label: 'a malformed member ID' },
@@ -233,13 +291,15 @@ describe('FamilyAuthService.login', () => {
     { memberId, pin: '12345a', label: 'a nonnumeric PIN' },
     { memberId, pin: '１２３４５６', label: 'non-ASCII digits' },
   ])('rejects $label before repository access', async (input) => {
-    const { repository, service, verificationCalls } = createHarness()
+    const { repository, service, sessionService, verificationCalls } =
+      createHarness()
 
     await expect(service.login(input)).rejects.toBeInstanceOf(
       AuthValidationError,
     )
     expect(repository.findCalls).toEqual([])
     expect(verificationCalls).toEqual([])
+    expect(sessionService.createCalls).toEqual([])
   })
 
   it.each(['find', 'verify', 'record', 'complete'] as const)(

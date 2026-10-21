@@ -1,4 +1,8 @@
 import { verifyPin } from '../security/pin.js'
+import type {
+  CreatedFamilySession,
+  FamilySessionOperations,
+} from './family-session.service.js'
 
 export type FamilyMemberRole = 'ADMIN' | 'PARENT' | 'MEMBER'
 
@@ -15,6 +19,11 @@ export interface FamilyLoginRecord {
   pinHash: string
   failedAttemptCount: number
   lockedUntil: Date | null
+}
+
+export interface SuccessfulFamilyLogin {
+  profile: SafeFamilyProfile
+  session: CreatedFamilySession
 }
 
 export interface FamilyAuthRepository {
@@ -55,6 +64,10 @@ export class AuthUnavailableError extends Error {
 export class FamilyAuthService {
   constructor(
     private readonly repository: FamilyAuthRepository,
+    private readonly sessionCreator: Pick<
+      FamilySessionOperations,
+      'createSession'
+    >,
     private readonly pinVerifier: PinVerifier = verifyPin,
     private readonly clock: Clock = () => new Date(),
   ) {}
@@ -67,7 +80,7 @@ export class FamilyAuthService {
     }
   }
 
-  async login(input: unknown): Promise<SafeFamilyProfile> {
+  async login(input: unknown): Promise<SuccessfulFamilyLogin> {
     const { memberId, pin } = validateLoginInput(input)
     const loginRecord = await this.findLoginRecord(memberId)
 
@@ -88,7 +101,9 @@ export class FamilyAuthService {
       throw new InvalidCredentialsError()
     }
 
-    return loginRecord.profile
+    const session = await this.createSession(memberId)
+
+    return { profile: loginRecord.profile, session }
   }
 
   private async findLoginRecord(
@@ -120,6 +135,14 @@ export class FamilyAuthService {
   private async completeSuccess(memberId: string): Promise<boolean> {
     try {
       return await this.repository.completeSuccessfulLogin(memberId)
+    } catch {
+      throw new AuthUnavailableError()
+    }
+  }
+
+  private async createSession(memberId: string): Promise<CreatedFamilySession> {
+    try {
+      return await this.sessionCreator.createSession(memberId)
     } catch {
       throw new AuthUnavailableError()
     }

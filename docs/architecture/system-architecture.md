@@ -418,11 +418,15 @@ Users can later change their PIN.
 
 Authentication should be handled by the backend.
 
-The preferred production approach is a secure server-managed authentication token/session.
+Authentication uses an opaque server-managed session token in the `family_session` cookie.
+
+The backend stores only the token's SHA-256 hash. Session tokens expire after a fixed seven days and are not refreshed on use.
+
+The cookie is HttpOnly, SameSite=Lax, scoped to `/`, and Secure in production. The raw token must not appear in JSON responses, URLs, or logs.
+
+Protected backend routes use centralized authentication middleware to require an unexpired session belonging to an active family member. Logout deletes only the presented session and clears its cookie.
 
 Sensitive authentication data must not be exposed in URLs.
-
-Exact cookie/token implementation should be finalized during the authentication feature while considering the final Vercel deployment structure.
 
 Authentication code must be centralized rather than duplicated across features.
 

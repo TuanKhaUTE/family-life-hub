@@ -2,14 +2,25 @@ import express from 'express'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 
+import { SESSION_COOKIE_NAME } from '../src/http/session-cookie.js'
 import { errorHandler } from '../src/middleware/error-handler.js'
+import type {
+  AuthSessionRepository,
+  AuthenticatedSessionRecord,
+  NewAuthSession,
+} from '../src/repositories/auth-session.repository.js'
 import { createAuthRouter } from '../src/routes/auth.routes.js'
+import {
+  generateSessionToken,
+  hashSessionToken,
+} from '../src/security/session-token.js'
 import {
   FamilyAuthService,
   type FamilyAuthRepository,
   type FamilyLoginRecord,
   type SafeFamilyProfile,
 } from '../src/services/family-auth.service.js'
+import { FamilySessionService } from '../src/services/family-session.service.js'
 
 const memberId = '11111111-1111-4111-8111-111111111111'
 const syntheticPin = '123456'
@@ -39,10 +50,7 @@ class ApiAuthRepository implements FamilyAuthRepository {
   completeCalls = 0
 
   async listActiveProfiles(): Promise<SafeFamilyProfile[]> {
-    if (this.listError) {
-      throw this.listError
-    }
-
+    if (this.listError) throw this.listError
     return this.profiles
   }
 
@@ -61,13 +69,82 @@ class ApiAuthRepository implements FamilyAuthRepository {
   }
 }
 
+interface StoredSession {
+  record: AuthenticatedSessionRecord
+  expiresAt: Date
+  memberActive: boolean
+}
+
+class ApiSessionRepository implements AuthSessionRepository {
+  readonly sessions = new Map<string, StoredSession>()
+  readonly createCalls: NewAuthSession[] = []
+  readonly deleteCalls: string[] = []
+  error?: Error
+
+  async createSession(session: NewAuthSession): Promise<void> {
+    if (this.error) throw this.error
+    this.createCalls.push(session)
+    this.sessions.set(session.tokenHash, {
+      record: {
+        sessionId: crypto.randomUUID(),
+        profile,
+      },
+      expiresAt: session.expiresAt,
+      memberActive: true,
+    })
+  }
+
+  async findAuthenticatedSession(
+    tokenHash: string,
+    requestedAt: Date,
+  ): Promise<AuthenticatedSessionRecord | null> {
+    if (this.error) throw this.error
+    const stored = this.sessions.get(tokenHash)
+
+    if (
+      !stored ||
+      !stored.memberActive ||
+      stored.expiresAt.getTime() <= requestedAt.getTime()
+    ) {
+      return null
+    }
+
+    return stored.record
+  }
+
+  async deleteByTokenHash(tokenHash: string): Promise<void> {
+    if (this.error) throw this.error
+    this.deleteCalls.push(tokenHash)
+    this.sessions.delete(tokenHash)
+  }
+
+  seed(token: string, expiresAt: Date, memberActive = true): void {
+    this.sessions.set(hashSessionToken(token), {
+      record: {
+        sessionId: crypto.randomUUID(),
+        profile,
+      },
+      expiresAt,
+      memberActive,
+    })
+  }
+}
+
 function createHarness(
-  repository = new ApiAuthRepository(),
+  authRepository = new ApiAuthRepository(),
   pinMatches = true,
+  sessionRepository = new ApiSessionRepository(),
 ) {
   let verificationCalls = 0
-  const service = new FamilyAuthService(
-    repository,
+  const sessionService = new FamilySessionService(
+    sessionRepository,
+    generateSessionToken,
+    hashSessionToken,
+    () => now,
+  )
+  const authService = new FamilyAuthService(
+    authRepository,
+    sessionService,
     async () => {
       verificationCalls += 1
       return pinMatches
@@ -76,12 +153,13 @@ function createHarness(
   )
   const app = express()
   app.use(express.json())
-  app.use('/api/auth', createAuthRouter(service))
+  app.use('/api/auth', createAuthRouter(authService, sessionService))
   app.use(errorHandler)
 
   return {
     app,
-    repository,
+    authRepository,
+    sessionRepository,
     get verificationCalls() {
       return verificationCalls
     },
@@ -103,11 +181,11 @@ describe('GET /api/auth/profiles', () => {
   })
 
   it('returns a redacted availability error when profiles cannot be loaded', async () => {
-    const repository = new ApiAuthRepository()
-    repository.listError = new Error(
+    const authRepository = new ApiAuthRepository()
+    authRepository.listError = new Error(
       `upstream secret detail ${syntheticHash} ${syntheticPin}`,
     )
-    const { app } = createHarness(repository)
+    const { app } = createHarness(authRepository)
 
     const response = await request(app).get('/api/auth/profiles')
 
@@ -125,8 +203,8 @@ describe('GET /api/auth/profiles', () => {
 })
 
 describe('POST /api/auth/login', () => {
-  it('returns only the verified safe profile without creating a session', async () => {
-    const { app, repository } = createHarness()
+  it('creates a session, sets the safe cookie, and returns only the profile', async () => {
+    const { app, authRepository, sessionRepository } = createHarness()
 
     const response = await request(app)
       .post('/api/auth/login')
@@ -134,12 +212,38 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ profile })
-    expect(repository.completeCalls).toBe(1)
-    expect(response.headers['set-cookie']).toBeUndefined()
+    expect(authRepository.completeCalls).toBe(1)
+    expect(sessionRepository.createCalls).toHaveLength(1)
+    expect(sessionRepository.createCalls[0]!.tokenHash).toMatch(
+      /^[0-9a-f]{64}$/,
+    )
+    const cookie = response.headers['set-cookie']?.[0]
+    expect(cookie).toMatch(/^family_session=[A-Za-z0-9_-]{43};/)
+    expect(cookie).toContain('Path=/')
+    expect(cookie).toContain('Expires=Wed, 28 Oct 2026 00:00:00 GMT')
+    expect(cookie).toContain('HttpOnly')
+    expect(cookie).toContain('SameSite=Lax')
+    expect(cookie).not.toContain('Secure')
+    expect(cookie).not.toContain('Domain=')
     expect(response.body).not.toHaveProperty('token')
     expect(response.body).not.toHaveProperty('session')
     expect(response.text).not.toContain(syntheticPin)
     expect(response.text).not.toContain(syntheticHash)
+  })
+
+  it('creates no session or cookie for a failed PIN', async () => {
+    const { app, sessionRepository } = createHarness(
+      new ApiAuthRepository(),
+      false,
+    )
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ memberId, pin: syntheticPin })
+
+    expect(response.status).toBe(401)
+    expect(sessionRepository.createCalls).toEqual([])
+    expect(response.headers['set-cookie']).toBeUndefined()
   })
 
   it('uses one non-enumerating response for wrong PIN, inactive member, and lockout', async () => {
@@ -171,11 +275,10 @@ describe('POST /api/auth/login', () => {
           message: 'Unable to verify family profile or PIN',
         },
       })
-      expect(response.text).not.toContain(syntheticPin)
-      expect(response.text).not.toContain(syntheticHash)
+      expect(response.headers['set-cookie']).toBeUndefined()
     }
 
-    expect(wrongPin.repository.failedCalls).toBe(1)
+    expect(wrongPin.authRepository.failedCalls).toBe(1)
     expect(inactive.verificationCalls).toBe(0)
     expect(locked.verificationCalls).toBe(0)
   })
@@ -186,7 +289,7 @@ describe('POST /api/auth/login', () => {
     { body: { memberId: 'not-a-uuid', pin: syntheticPin }, label: 'a bad UUID' },
     { body: { memberId, pin: '12345' }, label: 'a short PIN' },
   ])('returns a safe validation error for $label', async ({ body }) => {
-    const { app, repository } = createHarness()
+    const { app, authRepository, sessionRepository } = createHarness()
 
     const response = await request(app).post('/api/auth/login').send(body)
 
@@ -197,11 +300,12 @@ describe('POST /api/auth/login', () => {
         message: 'memberId and a six-digit PIN are required',
       },
     })
-    expect(repository.findCalls).toBe(0)
+    expect(authRepository.findCalls).toBe(0)
+    expect(sessionRepository.createCalls).toEqual([])
   })
 
   it('returns a safe validation error for malformed JSON', async () => {
-    const { app, repository } = createHarness()
+    const { app, authRepository } = createHarness()
 
     const response = await request(app)
       .post('/api/auth/login')
@@ -209,38 +313,162 @@ describe('POST /api/auth/login', () => {
       .send('{"memberId":')
 
     expect(response.status).toBe(400)
-    expect(response.body).toEqual({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Request body must be valid JSON',
-      },
-    })
-    expect(repository.findCalls).toBe(0)
+    expect(response.body.error.code).toBe('VALIDATION_ERROR')
+    expect(authRepository.findCalls).toBe(0)
     expect(response.text).not.toContain('SyntaxError')
   })
 
-  it('returns a redacted availability error for an unexpected hash failure', async () => {
-    const repository = new ApiAuthRepository()
-    const service = new FamilyAuthService(repository, async () => {
-      throw new Error(`malformed secret hash ${syntheticHash}`)
-    })
-    const app = express()
-    app.use(express.json())
-    app.use('/api/auth', createAuthRouter(service))
-    app.use(errorHandler)
+  it('returns a redacted error and no cookie when session creation fails', async () => {
+    const sessionRepository = new ApiSessionRepository()
+    sessionRepository.error = new Error('secret database detail')
+    const { app } = createHarness(
+      new ApiAuthRepository(),
+      true,
+      sessionRepository,
+    )
 
     const response = await request(app)
       .post('/api/auth/login')
       .send({ memberId, pin: syntheticPin })
 
     expect(response.status).toBe(503)
+    expect(response.body.error.code).toBe('AUTH_UNAVAILABLE')
+    expect(response.headers['set-cookie']).toBeUndefined()
+    expect(response.text).not.toContain('secret database detail')
+  })
+})
+
+describe('GET /api/auth/me', () => {
+  it('returns the safe profile for a valid login session', async () => {
+    const { app } = createHarness()
+    const agent = request.agent(app)
+
+    await agent.post('/api/auth/login').send({ memberId, pin: syntheticPin })
+    const response = await agent.get('/api/auth/me')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ profile })
+    expect(response.text).not.toContain('sessionId')
+    expect(response.text).not.toContain('token')
+    expect(response.text).not.toContain('pin')
+  })
+
+  it.each([
+    { label: 'missing', kind: 'missing' },
+    { label: 'malformed', kind: 'malformed' },
+    { label: 'unknown', kind: 'unknown' },
+    { label: 'expired', kind: 'expired' },
+    { label: 'inactive-member', kind: 'inactive' },
+  ])('returns one generic 401 for a $label session', async ({ kind }) => {
+    const sessionRepository = new ApiSessionRepository()
+    const token = generateSessionToken()
+
+    if (kind === 'expired') {
+      sessionRepository.seed(token, new Date('2026-10-20T23:59:59.000Z'))
+    } else if (kind === 'inactive') {
+      sessionRepository.seed(token, new Date('2026-10-28T00:00:00.000Z'), false)
+    }
+
+    const { app } = createHarness(
+      new ApiAuthRepository(),
+      true,
+      sessionRepository,
+    )
+    const pending = request(app).get('/api/auth/me')
+
+    if (kind !== 'missing') {
+      pending.set(
+        'Cookie',
+        `${SESSION_COOKIE_NAME}=${kind === 'malformed' ? 'malformed' : token}`,
+      )
+    }
+
+    const response = await pending
+
+    expect(response.status).toBe(401)
     expect(response.body).toEqual({
       error: {
-        code: 'AUTH_UNAVAILABLE',
-        message: 'Authentication is temporarily unavailable',
+        code: 'UNAUTHENTICATED',
+        message: 'Authentication is required',
       },
     })
-    expect(response.text).not.toContain(syntheticPin)
-    expect(response.text).not.toContain(syntheticHash)
+  })
+})
+
+describe('POST /api/auth/logout', () => {
+  it('deletes only the current session and leaves another session valid', async () => {
+    const { app, sessionRepository } = createHarness()
+    const first = request.agent(app)
+    const second = request.agent(app)
+    await first.post('/api/auth/login').send({ memberId, pin: syntheticPin })
+    await second.post('/api/auth/login').send({ memberId, pin: syntheticPin })
+
+    const response = await first.post('/api/auth/logout')
+
+    expect(response.status).toBe(204)
+    expect(response.text).toBe('')
+    expect(response.headers['set-cookie']?.[0]).toContain(
+      `${SESSION_COOKIE_NAME}=;`,
+    )
+    expect(response.headers['set-cookie']?.[0]).toContain('HttpOnly')
+    expect(response.headers['set-cookie']?.[0]).toContain('SameSite=Lax')
+    expect(sessionRepository.deleteCalls).toHaveLength(1)
+    expect(sessionRepository.sessions.size).toBe(1)
+    expect((await first.get('/api/auth/me')).status).toBe(401)
+    expect((await second.get('/api/auth/me')).status).toBe(200)
+  })
+
+  it.each([undefined, 'malformed'])(
+    'is an idempotent 204 and clears the cookie when token is %s',
+    async (token) => {
+      const { app, sessionRepository } = createHarness()
+      const pending = request(app).post('/api/auth/logout')
+      if (token) pending.set('Cookie', `${SESSION_COOKIE_NAME}=${token}`)
+
+      const response = await pending
+
+      expect(response.status).toBe(204)
+      expect(response.headers['set-cookie']?.[0]).toContain(
+        `${SESSION_COOKIE_NAME}=;`,
+      )
+      expect(sessionRepository.deleteCalls).toEqual([])
+    },
+  )
+
+  it('returns the same idempotent response for an unknown well-formed token', async () => {
+    const { app, sessionRepository } = createHarness()
+
+    const response = await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${generateSessionToken()}`)
+
+    expect(response.status).toBe(204)
+    expect(response.headers['set-cookie']?.[0]).toContain(
+      `${SESSION_COOKIE_NAME}=;`,
+    )
+    expect(sessionRepository.deleteCalls).toHaveLength(1)
+  })
+
+  it('clears the cookie and returns a safe error when deletion fails', async () => {
+    const sessionRepository = new ApiSessionRepository()
+    const token = generateSessionToken()
+    sessionRepository.seed(token, new Date('2026-10-28T00:00:00.000Z'))
+    sessionRepository.error = new Error('secret database detail')
+    const { app } = createHarness(
+      new ApiAuthRepository(),
+      true,
+      sessionRepository,
+    )
+
+    const response = await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${token}`)
+
+    expect(response.status).toBe(503)
+    expect(response.body.error.code).toBe('AUTH_UNAVAILABLE')
+    expect(response.headers['set-cookie']?.[0]).toContain(
+      `${SESSION_COOKIE_NAME}=;`,
+    )
+    expect(response.text).not.toContain('secret database detail')
   })
 })

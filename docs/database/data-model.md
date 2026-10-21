@@ -68,6 +68,26 @@ Raw PIN values must never be stored.
 
 ---
 
+## auth_sessions
+
+Stores opaque backend authentication sessions separately from profile and PIN credentials.
+
+Implemented fields:
+
+id
+
+member_id
+
+token_hash
+
+expires_at
+
+created_at
+
+`member_id` references `family_members` with cascading deletion. Only a SHA-256 session-token hash is stored; raw tokens remain in HttpOnly browser cookies. Multiple concurrent sessions per member are allowed.
+
+---
+
 # 3. Privacy Domain
 
 ## module_privacy_settings
