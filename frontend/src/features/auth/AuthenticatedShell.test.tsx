@@ -14,7 +14,7 @@ afterEach(() => {
 })
 describe('mobile family shell', () => {
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
-    'shows the same five destinations for %s and switches content',
+    'shows role-aware five destinations for %s and switches content',
     async (role) => {
       const user = userEvent.setup()
       vi.stubGlobal(
@@ -43,10 +43,16 @@ describe('mobile family shell', () => {
       expect(
         within(nav)
           .getAllByRole('button')
-          .map((button) =>
-            button.textContent?.replace(/[⌂🍲📅💰👤]/gu, '').trim(),
+          .map(
+            (button) => button.querySelector('span:last-child')?.textContent,
           ),
-      ).toEqual(['Trang chủ', 'Bếp', 'Lịch', 'Chi tiêu', 'Cá nhân'])
+      ).toEqual([
+        'Trang chủ',
+        'Bếp',
+        'Lịch',
+        role === 'PARENT' ? 'Chi tiêu' : 'Học & Luyện',
+        'Cá nhân',
+      ])
       expect(screen.queryByText('Bữa sáng thử nghiệm')).toBeNull()
       await user.click(within(nav).getByRole('button', { name: 'Bếp' }))
       expect(screen.getByText('Bữa sáng thử nghiệm')).toBeTruthy()
@@ -56,8 +62,16 @@ describe('mobile family shell', () => {
         screen.getByRole('heading', { name: 'Lịch của cả nhà' }),
       ).toBeTruthy()
       expect(screen.queryByText('Bữa sáng thử nghiệm')).toBeNull()
-      await user.click(within(nav).getByRole('button', { name: 'Chi tiêu' }))
-      expect(screen.getByRole('heading', { name: 'Góc chi tiêu' })).toBeTruthy()
+      await user.click(
+        within(nav).getByRole('button', {
+          name: role === 'PARENT' ? 'Chi tiêu' : 'Học & Luyện',
+        }),
+      )
+      expect(
+        screen.getByRole('heading', {
+          name: role === 'PARENT' ? 'Góc chi tiêu' : 'Học tập & Rèn luyện',
+        }),
+      ).toBeTruthy()
       await user.click(within(nav).getByRole('button', { name: 'Cá nhân' }))
       expect(screen.getByRole('heading', { name: 'Góc của bạn' })).toBeTruthy()
       expect(screen.queryByRole('dialog')).toBeNull()

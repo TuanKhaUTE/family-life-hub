@@ -295,7 +295,7 @@ The mobile experience remains the priority.
 
 # 9. Navigation
 
-The implemented mobile shell has the same five destinations for every role:
+The implemented mobile shell uses role-aware destinations. PARENT:
 
 - Trang chủ
 - Bếp
@@ -303,7 +303,11 @@ The implemented mobile shell has the same five destinations for every role:
 - Chi tiêu
 - Cá nhân
 
-Use a persistent bottom navigation with simple icons, Vietnamese labels, comfortable touch targets, and bottom safe-area spacing. Bếp contains the meal workflows. Lịch, Chi tiêu, and Cá nhân remain warm placeholders until their modules are implemented. Role permissions affect destination content, not the navigation labels.
+ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Personal spending will live under Cá nhân later. Học & Luyện has two warm placeholder sections, Học tập and Rèn luyện, marked “Sắp có” without fake numbers or charts.
+
+Use a persistent bottom navigation with simple icons, short Vietnamese labels, comfortable touch targets, and bottom safe-area spacing. Bếp contains the meal workflows. Unimplemented modules remain warm placeholders. Navigation is not a substitute for backend authorization.
+
+Trang chủ uses a cream greeting hero, soft peach/yellow attention card, sage breakfast and peach dinner summaries, recent-dish rating summaries, and muted future-module cards. Home links to Bếp instead of duplicating forms. Show only real actionable items; the calm empty state is “Hôm nay mọi việc đang ổn 💚”. Use Vietnamese family dates, warm loading cards, and a friendly retry state.
 
 The authenticated header contains a notification bell. Show a badge only when unread count is greater than zero. The bell opens a lightweight dismissible sheet; notifications are not permanently expanded on the page.
 

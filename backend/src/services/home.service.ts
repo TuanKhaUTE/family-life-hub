@@ -1,0 +1,159 @@
+import { ApiError } from '../errors/api-error.js'
+import { FAMILY_TIME_ZONE, getFamilyDate } from '../time/family-calendar.js'
+import type { SafeFamilyProfile } from './family-auth.service.js'
+import type { BreakfastService } from './breakfast.service.js'
+import type { MealRequestService } from './meal-request.service.js'
+import type { FinalMealService } from './final-meal.service.js'
+import type { DishRatingService } from './dish-rating.service.js'
+
+export interface RecentHomeDish {
+  id: string
+  name: string
+  mealDate: string
+  averageRating: number | null
+  ratingCount: number
+  ownRating: number | null
+}
+export interface HomeRepository {
+  listRecent(
+    memberId: string,
+    parent: boolean,
+    throughDate: string,
+  ): Promise<RecentHomeDish[]>
+}
+interface HomeDependencies {
+  breakfast: Pick<BreakfastService, 'getDay'>
+  requests: Pick<MealRequestService, 'listCurrent'>
+  meals: Pick<FinalMealService, 'get'>
+  ratings: Pick<DishRatingService, 'get'>
+  recent: HomeRepository
+}
+
+export class HomeService {
+  constructor(
+    private readonly dependencies: HomeDependencies,
+    private readonly clock = () => new Date(),
+  ) {}
+
+  async get(profile: SafeFamilyProfile) {
+    try {
+      const date = getFamilyDate(this.clock())
+      const parent = profile.role === 'PARENT'
+      const {
+        breakfast: breakfastService,
+        requests,
+        meals,
+        ratings,
+        recent,
+      } = this.dependencies
+      const [breakfast, plans, meal, recentDishes] = await Promise.all([
+        breakfastService.getDay(profile, 'next'),
+        requests.listCurrent(profile),
+        meals.get(date, 'DINNER'),
+        recent.listRecent(profile.id, parent, date),
+      ])
+      const plan = plans.find(
+        (p) =>
+          p.mealDate === date &&
+          p.mealType === 'DINNER' &&
+          p.status !== 'CANCELLED',
+      )
+      // Project explicitly: Home never serializes repository records or session state.
+      const breakfastResponses = breakfast.responses
+        .filter((r) => parent || r.member.id === profile.id)
+        .map((r) => ({
+          memberId: r.member.id,
+          displayName: r.member.displayName,
+          state: r.state,
+          choice: r.catalogItem?.name ?? r.customText,
+        }))
+      const dinnerResponses = (plan?.responses ?? [])
+        .filter((r) => parent || r.member.id === profile.id)
+        .map((r) => ({
+          memberId: r.member.id,
+          displayName: r.member.displayName,
+          state: r.state,
+          choice: r.option?.label ?? r.customText,
+        }))
+      let ownUnratedCount = 0
+      if (!parent && meal?.readyAt) {
+        const feedback = await ratings.get(profile, meal.id)
+        ownUnratedCount = feedback.dishes.filter(
+          (d) => !d.ratings.some((r) => r.memberId === profile.id),
+        ).length
+      }
+      const actions: { id: string; label: string }[] = []
+      if (breakfast.isOpen) {
+        for (const response of breakfastResponses.filter(
+          (r) => r.state === 'NO_RESPONSE',
+        )) {
+          actions.push({
+            id: parent ? `breakfast-${response.memberId}` : 'breakfast',
+            label: parent
+              ? `${response.displayName} chưa chọn bữa sáng`
+              : 'Chọn bữa sáng ngày mai',
+          })
+        }
+      }
+      if ((parent ? !meal : !meal?.readyAt) && plan?.isOpen) {
+        for (const response of dinnerResponses.filter(
+          (r) => r.state === 'NO_RESPONSE',
+        )) {
+          actions.push({
+            id: parent ? `dinner-${response.memberId}` : 'dinner-response',
+            label: parent
+              ? `${response.displayName} chưa trả lời bữa tối`
+              : 'Trả lời bữa tối',
+          })
+        }
+      }
+      if (parent && plan && plan.status !== 'SELF_SERVICE' && !meal)
+        actions.push({ id: 'dinner-finalize', label: 'Bữa tối chưa chốt' })
+      if (parent && meal && !meal.readyAt)
+        actions.push({
+          id: 'dinner-ready',
+          label: 'Bữa tối đã chốt nhưng chưa báo sẵn sàng',
+        })
+      if (!parent && ownUnratedCount > 0)
+        actions.push({
+          id: 'dinner-rating',
+          label: 'Bạn còn món chưa đánh giá',
+        })
+      return {
+        date,
+        timeZone: FAMILY_TIME_ZONE,
+        actions,
+        breakfast: {
+          date: breakfast.date,
+          isOpen: breakfast.isOpen,
+          purchased: breakfast.purchase !== null,
+          responses: breakfastResponses,
+        },
+        dinner: {
+          request: plan
+            ? {
+                status: plan.status,
+                isOpen: plan.isOpen,
+                responses: dinnerResponses,
+              }
+            : null,
+          meal: meal
+            ? {
+                ready: meal.readyAt !== null,
+                readyMessage: meal.readyMessage,
+                dishes: meal.dishes.map((d) => ({ id: d.id, name: d.name })),
+                ownUnratedCount,
+              }
+            : null,
+        },
+        recentDishes,
+      }
+    } catch {
+      throw new ApiError(
+        503,
+        'HOME_UNAVAILABLE',
+        'Home information is temporarily unavailable',
+      )
+    }
+  }
+}

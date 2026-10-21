@@ -4,6 +4,8 @@ import { ProfileAvatar } from './ProfileSelector'
 import { BreakfastSection } from '../breakfast/BreakfastSection'
 import { NotificationPanel } from '../notifications/NotificationPanel'
 import { MealRequestSection } from '../meals/MealRequestSection'
+import { HomePage, type HomeDestination } from '../home/HomePage'
+import { StudyPracticePlaceholder } from '../home/StudyPracticePlaceholder'
 import './shell.css'
 
 interface AuthenticatedShellProps {
@@ -19,12 +21,14 @@ export function AuthenticatedShell({
   error,
   onLogout,
 }: AuthenticatedShellProps) {
-  const [destination, setDestination] = useState('Trang chủ')
+  const [destination, setDestination] = useState<HomeDestination>('Trang chủ')
   const destinations = [
     ['Trang chủ', '⌂'],
     ['Bếp', '🍲'],
     ['Lịch', '📅'],
-    ['Chi tiêu', '💰'],
+    profile.role === 'PARENT'
+      ? (['Chi tiêu', '💰'] as const)
+      : (['Học & Luyện', '🌿'] as const),
     ['Cá nhân', '👤'],
   ] as const
   return (
@@ -53,17 +57,6 @@ export function AuthenticatedShell({
         </div>
       </header>
 
-      {destination === 'Trang chủ' && (
-        <div className="home-welcome">
-          <ProfileAvatar profile={profile} />
-          <div>
-            <p className="eyebrow">Không gian của cả nhà</p>
-            <h1 id="home-title">Chào {profile.displayName} về nhà</h1>
-            <p className="auth-copy">Cả nhà rất vui khi có bạn ở đây.</p>
-          </div>
-        </div>
-      )}
-
       {error && (
         <p className="shell-error" role="alert">
           {error}
@@ -71,6 +64,12 @@ export function AuthenticatedShell({
       )}
 
       <main className="shell-content" key={destination}>
+        {destination === 'Trang chủ' && (
+          <HomePage profile={profile} onNavigate={setDestination} />
+        )}
+        {destination === 'Học & Luyện' && profile.role !== 'PARENT' && (
+          <StudyPracticePlaceholder />
+        )}
         {destination === 'Bếp' && (
           <>
             <h1>Bếp nhà mình</h1>

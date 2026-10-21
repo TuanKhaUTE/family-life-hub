@@ -1,0 +1,236 @@
+.family-home {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1.25rem auto 0;
+  max-width: 960px;
+  color: #493b32;
+}
+.family-home * {
+  min-width: 0;
+}
+.family-home h1,
+.family-home h2,
+.family-home h3,
+.family-home p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.family-home h1 {
+  font-size: clamp(1.65rem, 5vw, 2.3rem);
+  line-height: 1.25;
+}
+.family-home h2 {
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+.family-home h3 {
+  font-size: 1rem;
+}
+.family-home p {
+  line-height: 1.65;
+}
+.home-hero {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.4rem;
+  border-radius: 1.7rem;
+  background: #fdf2e7;
+}
+.home-greeting {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.home-greeting .profile-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  font-size: 1.6rem;
+}
+.home-date,
+.home-meta {
+  font-size: 0.87rem;
+  color: #77665b;
+}
+.home-card {
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  padding: 1.15rem;
+  border: 1px solid #e8dccf;
+  border-radius: 1.5rem;
+  background: #fffdf9;
+  box-shadow: 0 3px 14px rgb(73 59 50 / 0.035);
+}
+.home-attention {
+  background: #fff3dc;
+  border-color: #f0dfbd;
+}
+.home-calm {
+  color: #405c40;
+}
+.home-actions,
+.home-responses,
+.home-dishes,
+.home-recent,
+.study-placeholder ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+.home-actions button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  min-height: 48px;
+  background: #fffaf1;
+  border: 1px solid #ebd9b8;
+  border-radius: 1rem;
+  padding: 0.75rem;
+  font: inherit;
+  color: #493b32;
+  cursor: pointer;
+}
+.home-link {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0.55rem 0.25rem;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  color: #405c40;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.family-home button:focus-visible {
+  outline: 3px solid #aa5b40;
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+.home-section-title {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+.home-meals-grid {
+  display: grid;
+  gap: 1rem;
+}
+.home-breakfast {
+  background: #edf2e7;
+  border-color: #d8e3d1;
+}
+.home-dinner {
+  background: #fceadd;
+  border-color: #eed6c7;
+}
+.home-card-icon {
+  font-size: 1.5rem;
+}
+.home-responses li {
+  display: grid;
+  gap: 0.15rem;
+}
+.home-responses li > span {
+  font-size: 0.87rem;
+  color: #77665b;
+}
+.home-responses strong {
+  font-weight: 600;
+}
+.home-dishes {
+  gap: 0.3rem;
+}
+.home-note {
+  padding: 0.65rem;
+  border-left: 3px solid #bc805f;
+  background: #fff8f0;
+  border-radius: 0.5rem;
+}
+.home-recent li {
+  display: flex;
+  gap: 0.85rem;
+  border-top: 1px solid #efe5da;
+  padding-top: 0.85rem;
+}
+.home-recent li > span {
+  display: grid;
+  place-items: center;
+  align-self: start;
+  flex: 0 0 42px;
+  height: 42px;
+  background: #f5ebdc;
+  border-radius: 1rem;
+}
+.home-recent li > div {
+  display: grid;
+  gap: 0.2rem;
+}
+.home-future {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}
+.home-future .home-card {
+  background: #f0edf3;
+  border-color: #e4dfea;
+}
+.home-future .home-card:nth-child(2) {
+  background: #edf2e7;
+  border-color: #d8e3d1;
+}
+.home-future h2 {
+  font-size: 1rem;
+}
+.coming-soon {
+  justify-self: start;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 650;
+  padding: 0.3rem 0.6rem;
+  border-radius: 1rem;
+  color: #65596b;
+  background: #e8e2ed;
+}
+.home-loading {
+  display: grid;
+  gap: 0.75rem;
+  color: #77665b;
+}
+.home-loading > div {
+  height: 110px;
+  border-radius: 1.5rem;
+  background: #f0e8dd;
+}
+.study-placeholder > .home-card:last-child {
+  background: #edf2e7;
+}
+.study-placeholder li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  border-bottom: 1px solid #e8dccf;
+  padding: 0.4rem 0;
+}
+@media (min-width: 640px) {
+  .home-meals-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-hero {
+    padding: 1.7rem;
+  }
+}

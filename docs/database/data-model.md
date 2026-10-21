@@ -458,6 +458,8 @@ The score is an integer from 1–5. Comments are trimmed, nonblank when stored, 
 
 Only active ADMIN/MEMBER actors may rate a ready meal. A database guard checks active role and readiness, and prohibits moving a rating to another member or dish. Service-only `SECURITY INVOKER` RPCs use a fixed empty search path. RLS is enabled with no browser policies; PUBLIC, anon, and authenticated have no table or function access. Backend sessions supply the actor. Members read only their own feedback; an active PARENT reads named feedback grouped by dish, but cannot rate.
 
+Home additionally exposes family rating averages/counts for up to three recent ready dinner dish instances, with only the signed-in member's own individual score. This read-only backend projection does not expose another member's score, comment, or identity, and does not change table grants, RLS, or the feedback API's ownership rules. No Home-specific tables are needed.
+
 ---
 
 # 5. Timetable Domain

@@ -12,7 +12,9 @@ The application should feel warm, cozy, friendly, playful, and family-oriented r
 
 The primary end-user UI language is Vietnamese.
 
-The mobile app shell uses the same five destinations for all roles: Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. Bếp contains the implemented meal workflows. Unimplemented destinations use simple placeholders. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
+The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; future personal spending belongs under Cá nhân. Bếp contains the implemented meal workflows. Unimplemented destinations remain placeholders. Học & Luyện contains study and fitness sections marked “Sắp có”, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
+
+Trang chủ is a compact “Hôm nay nhà mình có gì?” overview, not a second meal editor. Greeting and date use family time. PARENT sees family meal attention items; ADMIN/MEMBER sees only their own outstanding actions. It summarizes the next breakfast and today's dinner, with links to Bếp. Recent dishes show at most three ready dinner dish instances ordered by served date (then dish order); PARENT sees rated dishes with family average/count, while ADMIN/MEMBER also sees unrated dishes and their own score. Individual feedback from other members is not exposed here. Future-module cards contain no fake schedules, money, goals, or private-module data.
 
 The initial family consists of:
 

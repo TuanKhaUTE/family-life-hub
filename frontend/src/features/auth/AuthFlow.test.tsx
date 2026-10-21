@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,6 +22,23 @@ vi.mock('../meals/MealRequestSection', () => ({
 
 import { AuthFlow } from './AuthFlow'
 import type { FamilyProfile } from './auth-api'
+
+// Authentication tests isolate domain reads; Home interactions have their own suite.
+vi.mock('../home/home-api', () => ({
+  fetchHome: async () => ({
+    date: '2099-05-01',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    actions: [],
+    breakfast: {
+      date: '2099-05-02',
+      isOpen: true,
+      purchased: false,
+      responses: [],
+    },
+    dinner: { request: null, meal: null },
+    recentDishes: [],
+  }),
+}))
 
 const profile: FamilyProfile = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -79,9 +102,10 @@ describe('AuthFlow', () => {
     )
     expect(
       await screen.findByRole('heading', {
-        name: `Chào ${profile.displayName} về nhà`,
+        name: 'Hôm nay nhà mình có gì?',
       }),
     ).toBeTruthy()
+    expect(screen.getByText(new RegExp(profile.displayName))).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -146,13 +170,16 @@ describe('AuthFlow', () => {
     const input = await openPinForm(user)
 
     await user.type(input, '123456')
-    await user.click(screen.getByRole('button', { name: 'Vào Family Life Hub' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Vào Family Life Hub' }),
+    )
 
     expect(
       await screen.findByRole('heading', {
-        name: `Chào ${profile.displayName} về nhà`,
+        name: 'Hôm nay nhà mình có gì?',
       }),
     ).toBeTruthy()
+    expect(screen.getByText(new RegExp(profile.displayName))).toBeTruthy()
     const loginCall = fetchMock.mock.calls[2]
     expect(loginCall?.[0]).toBe('/api/auth/login')
     expect(JSON.parse(loginCall?.[1]?.body as string)).toEqual({
@@ -180,7 +207,9 @@ describe('AuthFlow', () => {
     const input = await openPinForm(user)
 
     await user.type(input, '123456')
-    await user.click(screen.getByRole('button', { name: 'Vào Family Life Hub' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Vào Family Life Hub' }),
+    )
 
     expect(
       await screen.findByText('Không thể xác minh hồ sơ hoặc mã PIN.'),
@@ -212,7 +241,7 @@ describe('AuthFlow', () => {
     resolveLogin?.(jsonResponse({ profile }))
     expect(
       await screen.findByRole('heading', {
-        name: `Chào ${profile.displayName} về nhà`,
+        name: 'Hôm nay nhà mình có gì?',
       }),
     ).toBeTruthy()
   })
@@ -228,7 +257,7 @@ describe('AuthFlow', () => {
     render(<AuthFlow />)
 
     await screen.findByRole('heading', {
-      name: `Chào ${profile.displayName} về nhà`,
+      name: 'Hôm nay nhà mình có gì?',
     })
     await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
@@ -278,12 +307,14 @@ describe('AuthFlow', () => {
     render(<AuthFlow />)
 
     await screen.findByRole('heading', {
-      name: `Chào ${profile.displayName} về nhà`,
+      name: 'Hôm nay nhà mình có gì?',
     })
     await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
     expect(
-      await screen.findByText('Không thể xác nhận đăng xuất. Vui lòng thử lại.'),
+      await screen.findByText(
+        'Không thể xác nhận đăng xuất. Vui lòng thử lại.',
+      ),
     ).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 

@@ -367,6 +367,8 @@ API responses should use consistent JSON structures.
 
 Detailed endpoint design will be created feature by feature rather than defining the entire API prematurely.
 
+`GET /api/home` is an authenticated, read-only composition of existing breakfast, today's dinner request/final meal, and rating data. Existing services retain deadline and ownership rules. Home explicitly projects compact DTOs; members receive only their own response states, PARENT receives family response states. Recent ready dinner dishes expose family average/count and only the actor's individual score, never other members' comments or rating identities. The session middleware rejects inactive/expired sessions. Responses are not cached. Home adds no future-module persistence, schema changes, or database writes.
+
 ---
 
 # 8. Authentication Architecture
