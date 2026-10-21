@@ -58,9 +58,7 @@ describe('mobile family shell', () => {
       expect(screen.getByText('Bữa sáng thử nghiệm')).toBeTruthy()
       expect(screen.getByText('Bữa trưa và tối thử nghiệm')).toBeTruthy()
       await user.click(within(nav).getByRole('button', { name: 'Lịch' }))
-      expect(
-        screen.getByRole('heading', { name: 'Lịch của cả nhà' }),
-      ).toBeTruthy()
+      expect(screen.getByRole('heading', { name: 'Lịch' })).toBeTruthy()
       expect(screen.queryByText('Bữa sáng thử nghiệm')).toBeNull()
       await user.click(
         within(nav).getByRole('button', {

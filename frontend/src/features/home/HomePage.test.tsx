@@ -34,6 +34,7 @@ function summary(): HomeSummary {
     },
     dinner: { request: null, meal: null },
     recentDishes: [],
+    calendar: { events: [] },
   }
 }
 function network(home = summary()) {
@@ -56,6 +57,40 @@ afterEach(() => {
 })
 
 describe('warm role-aware Home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'replaces %s calendar placeholder with real upcoming summary and navigation',
+    async (role) => {
+      const home = summary()
+      home.calendar.events = [
+        {
+          id: 'calendar-summary',
+          title: 'Hoạt động thật từ API',
+          startsAt: '2099-05-01T02:30:00Z',
+          endsAt: '2099-05-01T07:00:00Z',
+          owner: {
+            id: profile.id,
+            displayName: profile.displayName,
+            avatarType: null,
+            avatarValue: null,
+          },
+        },
+      ]
+      network(home)
+      const navigate = vi.fn()
+      render(<HomePage profile={{ ...profile, role }} onNavigate={navigate} />)
+      expect(
+        await screen.findByRole('heading', {
+          name:
+            role === 'PARENT'
+              ? 'Lịch gia đình hôm nay'
+              : 'Lịch của bạn hôm nay',
+        }),
+      ).toBeTruthy()
+      expect(screen.getByText('Hoạt động thật từ API')).toBeTruthy()
+      await userEvent.click(screen.getByRole('button', { name: 'Xem lịch' }))
+      expect(navigate).toHaveBeenCalledWith('Lịch')
+    },
+  )
   it('parent sees family attention and aggregate scores, not a personal rating prompt', async () => {
     const home = summary()
     home.actions = [
@@ -141,13 +176,18 @@ describe('warm role-aware Home', () => {
         }),
       ).toBeTruthy()
       expect(
-        screen.getByText(role === 'PARENT' ? 'Lịch gia đình' : 'Lịch của bạn'),
+        screen.getByRole('heading', {
+          name:
+            role === 'PARENT'
+              ? 'Lịch gia đình hôm nay'
+              : 'Lịch của bạn hôm nay',
+        }),
       ).toBeTruthy()
       expect(
         screen.getByText(role === 'PARENT' ? 'Chi tiêu gia đình' : 'Cá nhân'),
       ).toBeTruthy()
       expect(screen.getAllByText('Sắp có')).toHaveLength(
-        role === 'PARENT' ? 2 : 3,
+        role === 'PARENT' ? 1 : 2,
       )
     },
   )

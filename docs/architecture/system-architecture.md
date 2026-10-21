@@ -369,6 +369,10 @@ Detailed endpoint design will be created feature by feature rather than defining
 
 `GET /api/home` is an authenticated, read-only composition of existing breakfast, today's dinner request/final meal, and rating data. Existing services retain deadline and ownership rules. Home explicitly projects compact DTOs; members receive only their own response states, PARENT receives family response states. Recent ready dinner dishes expose family average/count and only the actor's individual score, never other members' comments or rating identities. The session middleware rejects inactive/expired sessions. Responses are not cached. Home adds no future-module persistence, schema changes, or database writes.
 
+Feature 3B adds calendar composition to Home using the same CalendarService as Lịch. It returns at most three non-cancelled ongoing/upcoming events today: all active owners for PARENT, only the actor for ADMIN/MEMBER. Calendar visibility is intentionally family-shared and does not change privacy defaults for other modules.
+
+Authenticated calendar APIs follow Route → Controller → Service → Repository → Database: `GET /api/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD&memberId=UUID` (inclusive range, up to 31 days; optional member filter), `POST /api/calendar/events`, `PUT /api/calendar/events/:eventId`, `DELETE /api/calendar/events/:eventId`, and `PUT /api/calendar/events/:eventId/occurrences/:date`. Mutation bodies cannot supply actor/owner identity. Full event updates and occurrence overrides are distinct. Service-only RPCs recheck active ownership and serialize series/exception writes with event-row locks. Recurrence expansion lives in the database read RPC rather than being duplicated on the client. No calendar/meal automation, push, external sync, or private-module reads are introduced.
+
 ---
 
 # 8. Authentication Architecture

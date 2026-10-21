@@ -6,6 +6,7 @@ import { NotificationPanel } from '../notifications/NotificationPanel'
 import { MealRequestSection } from '../meals/MealRequestSection'
 import { HomePage, type HomeDestination } from '../home/HomePage'
 import { StudyPracticePlaceholder } from '../home/StudyPracticePlaceholder'
+import { CalendarPage } from '../calendar/CalendarPage'
 import './shell.css'
 
 interface AuthenticatedShellProps {
@@ -77,13 +78,7 @@ export function AuthenticatedShell({
             <MealRequestSection profile={profile} />
           </>
         )}
-        {destination === 'Lịch' && (
-          <section className="shell-placeholder">
-            <span aria-hidden="true">📅</span>
-            <h1>Lịch của cả nhà</h1>
-            <p>Góc hẹn chung của nhà mình đang được chuẩn bị.</p>
-          </section>
-        )}
+        {destination === 'Lịch' && <CalendarPage profile={profile} />}
         {destination === 'Chi tiêu' && (
           <section className="shell-placeholder">
             <span aria-hidden="true">🌱</span>

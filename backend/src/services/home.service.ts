@@ -5,6 +5,7 @@ import type { BreakfastService } from './breakfast.service.js'
 import type { MealRequestService } from './meal-request.service.js'
 import type { FinalMealService } from './final-meal.service.js'
 import type { DishRatingService } from './dish-rating.service.js'
+import type { CalendarService } from './calendar.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -27,6 +28,7 @@ interface HomeDependencies {
   meals: Pick<FinalMealService, 'get'>
   ratings: Pick<DishRatingService, 'get'>
   recent: HomeRepository
+  calendar: Pick<CalendarService, 'list'>
 }
 
 export class HomeService {
@@ -37,7 +39,8 @@ export class HomeService {
 
   async get(profile: SafeFamilyProfile) {
     try {
-      const date = getFamilyDate(this.clock())
+      const now = this.clock()
+      const date = getFamilyDate(now)
       const parent = profile.role === 'PARENT'
       const {
         breakfast: breakfastService,
@@ -45,13 +48,16 @@ export class HomeService {
         meals,
         ratings,
         recent,
+        calendar,
       } = this.dependencies
-      const [breakfast, plans, meal, recentDishes] = await Promise.all([
-        breakfastService.getDay(profile, 'next'),
-        requests.listCurrent(profile),
-        meals.get(date, 'DINNER'),
-        recent.listRecent(profile.id, parent, date),
-      ])
+      const [breakfast, plans, meal, recentDishes, calendarView] =
+        await Promise.all([
+          breakfastService.getDay(profile, 'next'),
+          requests.listCurrent(profile),
+          meals.get(date, 'DINNER'),
+          recent.listRecent(profile.id, parent, date),
+          calendar.list(profile, date, date, parent ? undefined : profile.id),
+        ])
       const plan = plans.find(
         (p) =>
           p.mealDate === date &&
@@ -147,6 +153,29 @@ export class HomeService {
             : null,
         },
         recentDishes,
+        calendar: {
+          events: calendarView.occurrences
+            .filter(
+              (item) =>
+                !item.cancelled &&
+                Date.parse(item.endsAt) > now.getTime() &&
+                (parent || item.owner.id === profile.id),
+            )
+            .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+            .slice(0, 3)
+            .map((item) => ({
+              id: `${item.event.id}:${item.date}`,
+              title: item.title,
+              startsAt: item.startsAt,
+              endsAt: item.endsAt,
+              owner: {
+                id: item.owner.id,
+                displayName: item.owner.displayName,
+                avatarType: item.owner.avatarType,
+                avatarValue: item.owner.avatarValue,
+              },
+            })),
+        },
       }
     } catch {
       throw new ApiError(

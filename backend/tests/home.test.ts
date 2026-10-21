@@ -13,6 +13,7 @@ import type { SafeFamilyProfile } from '../src/services/family-auth.service.js'
 import type { BreakfastDay } from '../src/services/breakfast.service.js'
 import type { MealRequestView } from '../src/services/meal-request.service.js'
 import type { FinalMeal } from '../src/services/final-meal.service.js'
+import type { CalendarOccurrence } from '../src/services/calendar.service.js'
 
 const member: SafeFamilyProfile = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -91,6 +92,23 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
       })),
     },
     recent: { listRecent: vi.fn(async () => []) },
+    calendar: {
+      list: vi.fn(
+        async (): Promise<{
+          from: string
+          to: string
+          timeZone: string
+          members: []
+          occurrences: CalendarOccurrence[]
+        }> => ({
+          from: '2099-05-01',
+          to: '2099-05-01',
+          timeZone: 'Asia/Ho_Chi_Minh',
+          members: [],
+          occurrences: [],
+        }),
+      ),
+    },
   }
   return {
     profile,
@@ -106,6 +124,70 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'limits %s Home calendar to three current/upcoming appropriate events',
+    async (role) => {
+      const s = setup(role)
+      const event = {
+        id: member.id,
+        ownerMemberId: member.id,
+        title: 'Synthetic calendar',
+        category: 'SCHOOL' as const,
+        startsAt: '2099-05-01T04:00:00Z',
+        endsAt: '2099-05-01T05:00:00Z',
+        note: null,
+        weekdays: null,
+        recurrenceUntil: null,
+        createdAt: '2099-05-01T00:00:00Z',
+        updatedAt: '2099-05-01T00:00:00Z',
+      }
+      const own = {
+        event,
+        owner: member,
+        date: '2099-05-01',
+        title: event.title,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt,
+        note: null,
+        cancelled: false,
+        isException: false,
+      }
+      s.dependencies.calendar.list.mockResolvedValue({
+        from: '2099-05-01',
+        to: '2099-05-01',
+        timeZone: 'Asia/Ho_Chi_Minh',
+        members: [],
+        occurrences: [
+          { ...own, endsAt: '2099-05-01T02:00:00Z' },
+          { ...own, cancelled: true },
+          {
+            ...own,
+            owner: { ...member, id: 'other' },
+            event: { ...event, ownerMemberId: 'other' },
+          },
+          own,
+          { ...own, date: '2099-04-30' },
+          { ...own, date: '2099-04-29' },
+          { ...own, date: '2099-04-28' },
+        ],
+      })
+      const result = await s.service.get(s.profile)
+      expect(result.calendar.events).toHaveLength(3)
+      expect(s.dependencies.calendar.list).toHaveBeenCalledWith(
+        s.profile,
+        '2099-05-01',
+        '2099-05-01',
+        role === 'PARENT' ? undefined : member.id,
+      )
+      if (role !== 'PARENT')
+        expect(
+          result.calendar.events.every((e) => e.owner.id === member.id),
+        ).toBe(true)
+      expect(JSON.stringify(result.calendar)).not.toMatch(
+        /createdAt|updatedAt|note|session|weekdays/,
+      )
+    },
+  )
   it.each(['ADMIN', 'MEMBER'] as const)(
     '%s receives only own missing actions and safe summaries',
     async (role) => {

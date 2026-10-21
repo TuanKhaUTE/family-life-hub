@@ -183,6 +183,28 @@
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
 }
+.home-calendar {
+  background: #eaf1f5;
+  border-color: #d5e1e8;
+}
+.home-calendar-list {
+  display: grid;
+  gap: 0.85rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.home-calendar-list li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.home-calendar-list .profile-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
 .home-future .home-card {
   background: #f0edf3;
   border-color: #e4dfea;

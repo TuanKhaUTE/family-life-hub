@@ -513,6 +513,12 @@ In the main kitchen, show only the compact **Đánh giá bữa tối** / **Xem g
 
 # 18. Timetable Design
 
+Feature 3B's Lịch is a mobile-first family calendar headed “Lịch” / “Cùng nhau sắp xếp thời gian”. Default to today's vertical timeline, with Today/Week controls, date navigation, and active-member chips. Use cream surfaces, sage/peach/lavender/blue owner cards, avatars, category icons, and timeline dots. Labels and dates remain Vietnamese. Preserve comfortable touch targets at 320px and 390px, not a shrunken month grid.
+
+Own event details offer explicit edit/delete controls; another owner's details are read-only regardless of role. Weekly details distinguish “Chỉnh sửa lần này”, “Chỉnh sửa cả lịch”, “Hủy lần này”, and confirmed “Xóa cả lịch”. Cancelled occurrences stay visibly marked. The shared form closes after a successful save. Do not add fake chores or a real chore module; the timeline is a separate component region so future household sections can sit alongside it.
+
+Home's calendar placeholder is replaced with a compact “Lịch gia đình hôm nay” (PARENT) / “Lịch của bạn hôm nay” (ADMIN/MEMBER) card, owner avatars, up to three real upcoming/ongoing items, a calm empty state, and “Xem lịch”. No full editor is duplicated on Home.
+
 Timetable views should prioritize readability.
 
 Mobile:

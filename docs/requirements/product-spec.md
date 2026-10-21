@@ -490,7 +490,13 @@ The system should not create negative or embarrassing awards.
 
 # 14. Timetable
 
-Each student member can maintain their own university timetable.
+Feature 3B implements a shared family calendar before academic timetable specialization. Every active family member (including PARENT) can create and manage their own events; all active family members can view each other's calendars. Neither ADMIN nor PARENT may edit/delete another owner's event. Calendar sharing does not grant access to private study, wellness, grades, or expenses.
+
+The calendar supports one-time events and same-day weekly schedules with selected weekdays, a start date, and optional inclusive end date. A single recurring occurrence can be cancelled or given its own title, times, and note without changing the series. Cancelled occurrences remain visibly marked; moved occurrences appear in their destination date range. Whole-series schedule changes are refused once exceptions exist, to avoid silently invalidating those changes; edit individual occurrences instead. Deleting an owned series explicitly removes its exceptions.
+
+Lịch defaults to today's vertical timeline, with a week view, date navigation, and active-member filters. Owner-only controls are separate from read-only family details. Home shows up to three ongoing/upcoming events today: family-wide for PARENT, own events for ADMIN/MEMBER. There is no automatic interaction with meals, reminders, or chores.
+
+The following academic timetable features remain future work. Each student member will be able to maintain their own university timetable.
 
 Everyone in the family can view everyone's timetable.
 

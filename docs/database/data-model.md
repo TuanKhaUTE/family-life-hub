@@ -464,6 +464,16 @@ Home additionally exposes family rating averages/counts for up to three recent r
 
 # 5. Timetable Domain
 
+## Implemented family calendar (Feature 3B)
+
+`calendar_events` contains UUID `id`, `owner_member_id` (family-member FK), trimmed `title` (1–120 characters), `category`, UTC `starts_at` / `ends_at`, optional trimmed `note` (1–1000 characters), nullable integer-array `weekdays` (distinct ISO weekdays 1–7), optional `recurrence_until`, and created/updated timestamps. Null weekdays means one-time. Weekly anchor dates and times use `Asia/Ho_Chi_Minh`, with same-day start/end and optional inclusive end date. Times must be finite, ordered, and at most 31 days apart; supported family dates are 2000–2199. Categories: SCHOOL, WORK, FITNESS, FAMILY, APPOINTMENT, PERSONAL, OTHER.
+
+`calendar_occurrence_exceptions` uses `(event_id, occurrence_date)` as its primary key, with a cascading event FK. The date identifies the original recurring occurrence, even if moved. A cancelled row has no override fields. A non-cancelled row has its own title, UTC start/end, nullable note, and timestamps. Retry updates reuse the same exception. Triggers validate that the original date belongs to an active owner's weekly series. Series scheduling changes with existing exceptions fail rather than deleting or orphaning those exceptions.
+
+Both tables have default-deny RLS, no browser policies, and no PUBLIC/anon/authenticated privileges. Service-role-only SECURITY INVOKER functions use a fixed empty search path. Backend session actors are checked for activity and ownership inside mutation RPCs. Family reads omit inactive owners and project safe profiles only. Bounded reads expand at most 31 family dates and include moved exceptions based on their effective interval, not just their original date. Home uses these same reads without writing calendar data.
+
+The following academic-semester tables are future conceptual models, not part of Feature 3B.
+
 ## academic_semesters
 
 Suggested fields:

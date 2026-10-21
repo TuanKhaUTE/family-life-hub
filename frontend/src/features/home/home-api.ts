@@ -13,6 +13,20 @@ export interface HomeSummary {
   date: string
   timeZone: string
   actions: { id: string; label: string }[]
+  calendar: {
+    events: {
+      id: string
+      title: string
+      startsAt: string
+      endsAt: string
+      owner: {
+        id: string
+        displayName: string
+        avatarType: string | null
+        avatarValue: string | null
+      }
+    }[]
+  }
   breakfast: {
     date: string
     isOpen: boolean
@@ -98,6 +112,27 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (
+    !object(value.calendar) ||
+    !Array.isArray(value.calendar.events) ||
+    value.calendar.events.length > 3 ||
+    !value.calendar.events.every(
+      (item) =>
+        object(item) &&
+        text(item.id) &&
+        text(item.title) &&
+        text(item.startsAt) &&
+        Number.isFinite(Date.parse(item.startsAt)) &&
+        text(item.endsAt) &&
+        Number.isFinite(Date.parse(item.endsAt)) &&
+        object(item.owner) &&
+        text(item.owner.id) &&
+        text(item.owner.displayName) &&
+        nullableText(item.owner.avatarType) &&
+        nullableText(item.owner.avatarValue),
+    )
+  )
+    return false
   const { request, meal } = value.dinner
   return (
     day(b.date) &&

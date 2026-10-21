@@ -16,6 +16,8 @@ import { MealRequestService } from '../services/meal-request.service.js'
 import { FinalMealService } from '../services/final-meal.service.js'
 import { DishRatingService } from '../services/dish-rating.service.js'
 import { HomeService } from '../services/home.service.js'
+import { CalendarService } from '../services/calendar.service.js'
+import { SupabaseCalendarRepository } from '../repositories/calendar.repository.js'
 
 export function createHomeRouter(
   service: HomeService,
@@ -32,6 +34,7 @@ export default createHomeRouter(
     meals: new FinalMealService(new SupabaseFinalMealRepository()),
     ratings: new DishRatingService(new SupabaseDishRatingRepository()),
     recent: new SupabaseHomeRepository(),
+    calendar: new CalendarService(new SupabaseCalendarRepository()),
   }),
   new FamilySessionService(new SupabaseAuthSessionRepository()),
 )

@@ -4,6 +4,7 @@ import { ProfileAvatar } from '../auth/ProfileSelector'
 import { FAMILY_TIME_ZONE } from '../meals/family-time'
 import { fetchHome, type HomeSummary } from './home-api'
 import { greeting } from './home-time'
+import { HomeCalendarSummary } from './HomeCalendarSummary'
 import './home.css'
 
 export type HomeDestination =
@@ -62,7 +63,6 @@ export function HomePage({
   }).format(now)
   const future = parent
     ? [
-        { title: 'Lịch gia đình', icon: '📅', destination: 'Lịch' as const },
         {
           title: 'Chi tiêu gia đình',
           icon: '🌱',
@@ -70,7 +70,6 @@ export function HomePage({
         },
       ]
     : [
-        { title: 'Lịch của bạn', icon: '📅', destination: 'Lịch' as const },
         {
           title: 'Học & Luyện',
           icon: '🌿',
@@ -116,6 +115,11 @@ export function HomePage({
       )}
       {state === 'ready' && data && (
         <>
+          <HomeCalendarSummary
+            calendar={data.calendar}
+            parent={parent}
+            onOpen={() => onNavigate('Lịch')}
+          />
           <section
             className="home-card home-attention"
             aria-labelledby="home-actions-title"
