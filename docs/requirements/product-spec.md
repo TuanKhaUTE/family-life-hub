@@ -376,6 +376,8 @@ Mom may later choose **Đổi kế hoạch** and change the same meal slot from 
 
 Mom is responsible for confirming what was actually prepared.
 
+An active PARENT can save actual lunch/dinner dishes with or without a meal request. Each date and meal type has at most one final meal. A linked request must use the same slot, and saving dishes leaves family responses unchanged. Self-service must first be changed through **Đổi kế hoạch**. ADMIN and MEMBER have read-only access to final meals.
+
 A meal can contain multiple dishes.
 
 Example Dinner:
@@ -421,6 +423,8 @@ Example:
 "Thịt ở trong nồi chiên không dầu."
 
 If no custom message is provided, a simple default message should be sent.
+
+The implemented action is **Bữa ăn đã sẵn sàng**. Retrying it retains the first ready time and reuses each recipient's notification. Mom can edit the ready message afterward without resetting read state. Parents and inactive members do not receive meal-ready notifications.
 
 ---
 

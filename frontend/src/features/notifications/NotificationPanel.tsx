@@ -15,6 +15,12 @@ export function NotificationPanel() {
   const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
+    const refresh = () => setReloadKey((value) => value + 1)
+    window.addEventListener('family-notifications-changed', refresh)
+    return () => window.removeEventListener('family-notifications-changed', refresh)
+  }, [])
+
+  useEffect(() => {
     let active = true
     void fetchNotifications()
       .then((notifications) => {

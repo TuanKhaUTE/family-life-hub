@@ -822,6 +822,16 @@ OTHER
 
 The application does not calculate precise portion percentages.
 
+Feature 2D stores actual lunch/dinner dishes in `final_meals` and `final_meal_dishes` through session-protected APIs:
+
+- `GET /api/meals/final/:date/:type` reads a slot (`LUNCH` or `DINNER`), returning `meal: null` if none exists;
+- `PUT /api/meals/final/:date/:type` lets an active parent save or replace the ordered dish list;
+- `PUT /api/meals/final/:date/:type/ready` marks the saved meal ready or updates its optional message.
+
+Routes, controllers, services, and repositories retain their existing responsibilities. Session context supplies the actor; `ADMIN` has no parent write permissions. Restricted `SECURITY INVOKER` database functions atomically replace dishes and fan out ready notifications. Slot locking and database constraints prevent duplicate meals, mismatched request links, empty finalized meals, and contradictory self-service/cooked states. Child responses remain unchanged.
+
+The first ready action sets a UTC `ready_at` timestamp and creates one `MEAL_READY` notification per active non-parent member. Retries and message edits reuse the same notification identity, preserve `read_at`, and retain the original ready time. Browser roles cannot access these tables or RPCs directly. The UI formats time in the family timezone using Vietnamese locale.
+
 ---
 
 # 14. Rating Architecture

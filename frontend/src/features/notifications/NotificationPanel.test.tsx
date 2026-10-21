@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -29,6 +29,21 @@ afterEach(() => {
 })
 
 describe('NotificationPanel', () => {
+  it('refreshes and displays meal-ready notifications with the existing read action', async () => {
+    const user = userEvent.setup()
+    const readyNotification = { ...notification, type: 'MEAL_READY', title: 'Bữa tối đã sẵn sàng ✓', message: 'Canh ở trong nồi nhé', relatedResourceType: 'FINAL_MEAL' }
+    const fetchMock = vi.fn().mockResolvedValueOnce(json({ notifications: [] }))
+      .mockResolvedValueOnce(json({ notifications: [readyNotification] }))
+      .mockResolvedValueOnce(json({ notification: { ...readyNotification, readAt: '2099-05-01T12:00:00Z' } }))
+    vi.stubGlobal('fetch', fetchMock)
+    render(<NotificationPanel />)
+    await screen.findByText('Hiện chưa có thông báo nào.')
+    fireEvent(window, new Event('family-notifications-changed'))
+    expect(await screen.findByText('Bữa tối đã sẵn sàng ✓')).toBeTruthy()
+    expect(screen.getByText('Canh ở trong nồi nhé')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
+    expect(await screen.findByText('Đã đọc')).toBeTruthy()
+  })
   it('uses Vietnamese notification labels', async () => {
     vi.stubGlobal(
       'fetch',

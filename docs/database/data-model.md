@@ -380,11 +380,11 @@ There is at most one response per member and request. A composite foreign key en
 
 ---
 
-## meals
+## final_meals
 
-Represents the actual final meal prepared or purchased.
+Represents the actual lunch or dinner finalized by an active parent (Feature 2D).
 
-Suggested fields:
+Implemented fields:
 
 id
 
@@ -392,9 +392,9 @@ meal_date
 
 meal_type
 
-confirmed_by
+meal_request_id (optional)
 
-status
+finalized_by_member_id
 
 ready_message
 
@@ -404,35 +404,25 @@ created_at
 
 updated_at
 
-Possible statuses:
-
-PLANNED
-
-READY
-
-PURCHASED
-
-SELF_SERVICE
+One row per `(meal_date, meal_type)`. A composite foreign key ensures an optional request has the same slot. A meal may also be finalized without a request. A self-service slot must explicitly change plans first. `ready_at` is null while preparing and is set once when the parent marks the meal ready; message updates preserve that timestamp. Finalization does not change family responses.
 
 ---
 
-## meal_dishes
+## final_meal_dishes
 
 Individual dishes contained inside a final meal.
 
-Suggested fields:
+Implemented fields:
 
 id
 
-meal_id
+final_meal_id
 
-dish_id
-
-custom_name
+name
 
 category
 
-created_at
+sort_order
 
 Categories:
 
@@ -445,6 +435,8 @@ SIDE
 VEGETABLE
 
 OTHER
+
+Names must be trimmed and nonblank (up to 120 characters). Every finalized save has 1–30 dishes with explicit zero-based order. The backend replaces the entire list atomically. A deferred constraint prevents a committed final meal from having no dishes; the dish foreign key prevents orphans and cascades with a deleted meal. Both tables have RLS enabled, no browser policies, and backend `service_role` access only.
 
 ---
 

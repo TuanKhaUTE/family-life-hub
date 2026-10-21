@@ -19,6 +19,7 @@ import {
   type MealType,
 } from './meal-request-api'
 import './meals.css'
+import { FinalMealSection } from './FinalMealSection'
 
 export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
   const [requests, setRequests] = useState<MealRequest[]>([])
@@ -87,6 +88,7 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
           ))
         )}
       </div>
+      <FinalMealSection profile={profile} requests={requests} />
     </section>
   )
 }

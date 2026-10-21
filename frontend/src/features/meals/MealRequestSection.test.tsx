@@ -5,6 +5,8 @@ import type { FamilyProfile } from '../auth/auth-api'
 import { MealRequestSection } from './MealRequestSection'
 import type { MealRequest } from './meal-request-api'
 
+vi.mock('./FinalMealSection', () => ({ FinalMealSection: () => null }))
+
 const member: FamilyProfile = {
   id: '11111111-1111-4111-8111-111111111111',
   displayName: 'Synthetic Member',

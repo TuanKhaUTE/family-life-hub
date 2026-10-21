@@ -1,0 +1,103 @@
+.final-meal-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #dfd8c9;
+  border-radius: 1.25rem;
+  background: #fffdf9;
+  color: #493b32;
+}
+.final-meal-section h3 {
+  margin-top: 0;
+}
+.final-meal-content,
+.dish-editor,
+.ready-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.final-meal-section label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 650;
+  min-width: 0;
+}
+.final-meal-section input,
+.final-meal-section select,
+.final-meal-section textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem;
+  border: 1px solid #b7bca9;
+  border-radius: 0.8rem;
+  font: inherit;
+  color: inherit;
+  background: white;
+  box-sizing: border-box;
+}
+.final-meal-section textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+.dish-editor fieldset {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid #ded8c9;
+  border-radius: 1rem;
+}
+.dish-editor-row {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: #fdf2e7;
+}
+.final-dishes {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.final-dishes li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  background: #f3f6ee;
+  border-radius: 1rem;
+  overflow-wrap: anywhere;
+}
+.dish-category {
+  color: #666b59;
+  font-size: 0.85rem;
+}
+.final-ready {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #eaf1e5;
+  color: #40543e;
+  overflow-wrap: anywhere;
+}
+.final-ready p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.final-ready time {
+  font-size: 0.9rem;
+}
+.final-meal-section button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+@media (min-width: 700px) {
+  .dish-editor-row {
+    grid-template-columns: 2fr 1fr;
+  }
+  .dish-editor-row .meal-actions {
+    grid-column: 1 / -1;
+  }
+}
