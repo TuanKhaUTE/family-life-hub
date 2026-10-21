@@ -62,6 +62,33 @@ const saved: MealResponseRecord = {
 }
 
 class FakeRepository implements MealRequestRepository {
+  async configureRequest(
+    input: Parameters<MealRequestRepository['configureRequest']>[0],
+  ) {
+    if (input.status === 'CANCELLED') {
+      this.requests = this.requests.map((request) => ({
+        ...request,
+        status: 'CANCELLED',
+      }))
+      return requestId
+    }
+    if (input.mode === 'SELF_SERVICE')
+      return this.updateRequest({
+        actorMemberId: input.actorMemberId,
+        requestId: input.requestId,
+        status: 'SELF_SERVICE',
+        deadlineAt: null,
+        parentMessage: input.parentMessage,
+      })
+    return this.changeSelfServiceRequest({
+      actorMemberId: input.actorMemberId,
+      requestId: input.requestId,
+      mode: input.mode,
+      deadlineAt: input.deadlineAt!,
+      parentMessage: input.parentMessage,
+      options: input.options,
+    })
+  }
   requests = [record]
   members: MealMember[] = [parent, member]
   responses: MealResponseRecord[] = []
@@ -409,7 +436,7 @@ describe('MealRequestService', () => {
         actorMemberId: parent.id,
         requestId,
         status: 'CLOSED',
-        deadlineAt: null,
+        deadlineAt: record.deadlineAt,
         parentMessage: 'Closed',
       },
     ])
@@ -445,7 +472,11 @@ describe('MealRequestService', () => {
         options: [],
       },
     ])
-    expect(result).toMatchObject({ id: requestId, status: 'OPEN', mode: 'OPEN_CHOICE' })
+    expect(result).toMatchObject({
+      id: requestId,
+      status: 'OPEN',
+      mode: 'OPEN_CHOICE',
+    })
   })
 
   it('changes an existing self-service slot to an option poll', async () => {
@@ -471,7 +502,11 @@ describe('MealRequestService', () => {
       mode: 'OPTION_POLL',
       options: ['Rice', 'Noodles'],
     })
-    expect(result).toMatchObject({ id: requestId, status: 'OPEN', mode: 'OPTION_POLL' })
+    expect(result).toMatchObject({
+      id: requestId,
+      status: 'OPEN',
+      mode: 'OPTION_POLL',
+    })
   })
 
   it('safely retries the same self-service plan change', async () => {

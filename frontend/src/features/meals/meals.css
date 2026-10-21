@@ -226,6 +226,56 @@
 .meal-error {
   color: #9a3d31;
 }
+.meal-composer fieldset,
+.poll-options {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.add-meal-option,
+.meal-composer fieldset > button:last-child {
+  margin-top: 0.75rem;
+  justify-self: start;
+}
+.meal-actions > button {
+  min-height: 44px;
+}
+.meal-plan-controls {
+  display: grid;
+  gap: 0.8rem;
+}
+.meal-plan-controls .meal-composer {
+  margin: 0;
+}
+.meal-confirmation {
+  padding: 1rem;
+  border: 1px solid #e5c2a9;
+  border-radius: 1rem;
+  background: #fff2e8;
+}
+.meal-confirmation p {
+  margin-top: 0;
+  line-height: 1.6;
+}
+.meal-request--cancelled {
+  background: #f6f2ec;
+}
+.meal-request--cancelled .meal-status {
+  background: #eee6dd;
+  color: #695d53;
+}
+.meal-form-grid,
+.meal-option-input,
+.meal-composer label {
+  min-width: 0;
+}
+.meal-composer input,
+.meal-composer select,
+.meal-composer textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
 .meals-card button:focus-visible,
 .meals-card input:focus-visible,
 .meals-card select:focus-visible,

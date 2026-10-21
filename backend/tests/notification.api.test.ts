@@ -43,6 +43,11 @@ const notification: AppNotification = {
 }
 
 class FakeOperations implements NotificationOperations {
+  countCalls: string[] = []
+  async countUnread(id: string) {
+    this.countCalls.push(id)
+    return 1
+  }
   error?: Error
   listCalls: string[] = []
   readCalls: Array<{ memberId: string; notificationId: unknown }> = []
@@ -51,16 +56,26 @@ class FakeOperations implements NotificationOperations {
     this.listCalls.push(requestedMemberId)
     return [notification]
   }
-  async markRead(requestedMemberId: string, requestedId: unknown): Promise<AppNotification> {
+  async markRead(
+    requestedMemberId: string,
+    requestedId: unknown,
+  ): Promise<AppNotification> {
     if (this.error) throw this.error
-    this.readCalls.push({ memberId: requestedMemberId, notificationId: requestedId })
+    this.readCalls.push({
+      memberId: requestedMemberId,
+      notificationId: requestedId,
+    })
     return { ...notification, readAt: '2026-10-21T13:00:00.000Z' }
   }
 }
 
 class Sessions implements FamilySessionOperations {
-  async createSession(): Promise<CreatedFamilySession> { throw new Error('not used') }
-  async authenticate(presented: string | null): Promise<AuthenticatedFamilySession> {
+  async createSession(): Promise<CreatedFamilySession> {
+    throw new Error('not used')
+  }
+  async authenticate(
+    presented: string | null,
+  ): Promise<AuthenticatedFamilySession> {
     if (presented !== token) throw new UnauthenticatedError()
     return { sessionId: '44444444-4444-4444-8444-444444444444', profile }
   }
@@ -70,7 +85,10 @@ class Sessions implements FamilySessionOperations {
 function harness(service = new FakeOperations()) {
   const app = express()
   app.use(express.json())
-  app.use('/api/notifications', createNotificationRouter(service, new Sessions()))
+  app.use(
+    '/api/notifications',
+    createNotificationRouter(service, new Sessions()),
+  )
   app.use(errorHandler)
   return { app, service }
 }
@@ -89,7 +107,11 @@ describe('notification API', () => {
     const { app, service } = harness()
     const result = await authenticated(request(app).get('/api/notifications'))
     expect(result.status).toBe(200)
-    expect(result.body).toEqual({ notifications: [notification] })
+    expect(result.body).toEqual({
+      notifications: [notification],
+      unreadCount: 1,
+    })
+    expect(service.countCalls).toEqual([memberId])
     expect(service.listCalls).toEqual([memberId])
   })
 
@@ -111,7 +133,9 @@ describe('notification API', () => {
     const service = new FakeOperations()
     service.error = error
     const result = await authenticated(
-      request(harness(service).app).patch(`/api/notifications/${notificationId}/read`).send({}),
+      request(harness(service).app)
+        .patch(`/api/notifications/${notificationId}/read`)
+        .send({}),
     )
     expect(result.status).toBe(status)
     expect(result.body.error.code).toBe(code)
@@ -120,7 +144,9 @@ describe('notification API', () => {
   it('does not expose unexpected details', async () => {
     const service = new FakeOperations()
     service.error = new Error('secret database detail')
-    const result = await authenticated(request(harness(service).app).get('/api/notifications'))
+    const result = await authenticated(
+      request(harness(service).app).get('/api/notifications'),
+    )
     expect(result.status).toBe(500)
     expect(result.text).not.toContain('secret database detail')
   })

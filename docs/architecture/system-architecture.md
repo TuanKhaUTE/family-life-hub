@@ -787,10 +787,12 @@ The implemented Feature 2C API keeps this workflow behind the backend:
 
 - `GET /api/meals/requests/current` returns current and future lunch/dinner requests, with only the signed-in member's response unless the viewer is the parent;
 - `POST /api/meals/requests` creates one parent-owned request per date and meal type;
-- `PATCH /api/meals/requests/:id` lets the parent close a request, move an open request to self-service, reverse self-service into an open choice or option poll, and update its message;
+- `PATCH /api/meals/requests/:id` lets the parent edit the complete plan (mode, deadline, options, note) or cancel it using the same request ID;
 - `PUT /api/meals/requests/:id/response` saves only the signed-in non-parent member's response.
 
 The backend derives the actor from the session. Restricted database functions make request creation, notification fan-out, same-row plan changes, request updates, and response upserts atomic. A meal request keeps the same identity when the parent changes self-service into an interactive plan. An elapsed deadline is treated as closed even before a stored status update occurs. Browser database roles have no direct access to these tables or functions.
+
+Feature 2F uses `configure_meal_request` to serialize edits with response saves. `confirmResponseReset` is required when a committed edit would discard incompatible responses; without confirmation, the API returns `MEAL_RESPONSE_RESET_REQUIRED`. Compatible responses and unchanged poll option IDs are retained. Cancellation stores `CANCELLED`, retains history, and updates the existing request-status notification without resetting `read_at`. A cancelled slot can be reconfigured through the same row; a compatible POST retry can also reuse it. Expiry never implies cancellation.
 
 ---
 
@@ -882,7 +884,7 @@ The implemented notification API is session-protected:
 - `GET /api/notifications` lists only the signed-in member's notifications, newest first;
 - `PATCH /api/notifications/:id/read` marks a notification read only when it belongs to the signed-in member.
 
-The lightweight authenticated-shell panel consumes these endpoints. The frontend never queries notification tables directly.
+The authenticated header bell consumes these endpoints. The list response includes an exact owner-scoped `unreadCount` independently of its newest-50-item list. Notifications open in a dismissible sheet, with mark-read actions updating the badge; a zero count renders no badge. The frontend never queries notification tables directly.
 
 ---
 

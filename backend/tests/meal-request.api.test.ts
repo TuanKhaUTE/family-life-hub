@@ -9,6 +9,7 @@ import { generateSessionToken } from '../src/security/session-token.js'
 import {
   MealRequestClosedError,
   MealRequestForbiddenError,
+  MealResponseResetRequiredError,
   type MealRequestView,
 } from '../src/services/meal-request.service.js'
 import type {
@@ -149,6 +150,11 @@ describe('meal request API', () => {
     })
   })
   it.each([
+    [
+      new MealResponseResetRequiredError('Confirm response reset'),
+      409,
+      'MEAL_RESPONSE_RESET_REQUIRED',
+    ],
     [new MealRequestForbiddenError('forbidden'), 403, 'MEAL_FORBIDDEN'],
     [new MealRequestClosedError('closed'), 409, 'MEAL_CLOSED'],
   ])('returns safe domain errors', async (error, status, code) => {

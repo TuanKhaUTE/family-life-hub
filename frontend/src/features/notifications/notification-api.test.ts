@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { fetchNotifications, markNotificationRead } from './notification-api'
+import {
+  fetchNotifications,
+  fetchNotificationSummary,
+  markNotificationRead,
+} from './notification-api'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -24,8 +28,23 @@ const notification = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('notification API client', () => {
+  it('uses the authoritative unread total beyond the bounded list', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          json({ notifications: [notification], unreadCount: 73 }),
+        ),
+    )
+    await expect(fetchNotificationSummary()).resolves.toMatchObject({
+      unreadCount: 73,
+    })
+  })
   it('lists safe notifications with the session cookie', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(json({ notifications: [notification] }))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(json({ notifications: [notification] }))
     vi.stubGlobal('fetch', fetchMock)
     await expect(fetchNotifications()).resolves.toEqual([notification])
     expect(fetchMock).toHaveBeenCalledWith('/api/notifications', {
@@ -50,7 +69,10 @@ describe('notification API client', () => {
   })
 
   it('uses a safe error for malformed and failed responses', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ secret: 'detail' })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(json({ secret: 'detail' })),
+    )
     await expect(fetchNotifications()).rejects.toThrow(
       'Notifications are temporarily unavailable.',
     )

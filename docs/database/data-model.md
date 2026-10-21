@@ -324,7 +324,11 @@ CLOSED
 
 SELF_SERVICE
 
-There is one request per `(meal_date, meal_type)`. Interactive requests require a mode and deadline. Self-service requests store neither. Changing self-service back to open choice or an option poll updates the same request row and rebuilds its options atomically. RLS is enabled with no browser policies; only the backend service role has table access.
+CANCELLED
+
+There is one request per `(meal_date, meal_type)`. Interactive requests require a mode and deadline. Self-service requests store neither. Whole-plan edits atomically reuse the same row. Unchanged poll labels retain their option IDs, so compatible selections and NOT_EATING responses remain valid. Incompatible responses are removed only with explicit parent confirmation, checked inside the transaction. Changing to self-service invalidates every response.
+
+Cancellation retains the request, its mode/options/deadline and responses for history, but blocks new responses. The parent can reconfigure the same slot afterward. Expiry remains a closed read state and is not cancellation. RLS is enabled with no browser policies; only the backend service role has table access.
 
 ---
 

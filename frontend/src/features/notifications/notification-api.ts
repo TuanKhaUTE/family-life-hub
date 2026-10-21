@@ -13,18 +13,41 @@ export interface AppNotification {
 const SAFE_ERROR = 'Notifications are temporarily unavailable.'
 
 export async function fetchNotifications(): Promise<AppNotification[]> {
-  const body = await request('/api/notifications')
-  if (!isObject(body) || !Array.isArray(body.notifications)) throw new Error(SAFE_ERROR)
-  const notifications: unknown[] = body.notifications
-  if (!notifications.every(isNotification)) throw new Error(SAFE_ERROR)
-  return notifications
+  return (await fetchNotificationSummary()).notifications
 }
 
-export async function markNotificationRead(id: string): Promise<AppNotification> {
-  const body = await request(`/api/notifications/${encodeURIComponent(id)}/read`, {
-    method: 'PATCH',
-  })
-  if (!isObject(body) || !isNotification(body.notification)) throw new Error(SAFE_ERROR)
+export async function fetchNotificationSummary(): Promise<{
+  notifications: AppNotification[]
+  unreadCount: number
+}> {
+  const body = await request('/api/notifications')
+  if (!isObject(body) || !Array.isArray(body.notifications))
+    throw new Error(SAFE_ERROR)
+  const notifications: unknown[] = body.notifications
+  if (!notifications.every(isNotification)) throw new Error(SAFE_ERROR)
+  const unreadCount =
+    body.unreadCount ??
+    notifications.filter((item) => (item as AppNotification).readAt === null)
+      .length
+  if (!Number.isInteger(unreadCount) || (unreadCount as number) < 0)
+    throw new Error(SAFE_ERROR)
+  return {
+    notifications: notifications as AppNotification[],
+    unreadCount: unreadCount as number,
+  }
+}
+
+export async function markNotificationRead(
+  id: string,
+): Promise<AppNotification> {
+  const body = await request(
+    `/api/notifications/${encodeURIComponent(id)}/read`,
+    {
+      method: 'PATCH',
+    },
+  )
+  if (!isObject(body) || !isNotification(body.notification))
+    throw new Error(SAFE_ERROR)
   return body.notification
 }
 
@@ -63,7 +86,10 @@ function isNullableString(value: unknown): value is string | null {
 }
 
 function isNullableTimestamp(value: unknown): value is string | null {
-  return value === null || (typeof value === 'string' && !Number.isNaN(Date.parse(value)))
+  return (
+    value === null ||
+    (typeof value === 'string' && !Number.isNaN(Date.parse(value)))
+  )
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

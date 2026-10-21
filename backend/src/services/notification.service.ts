@@ -11,6 +11,7 @@ export interface AppNotification {
 }
 
 export interface NotificationRepository {
+  countUnread(recipientMemberId: string): Promise<number>
   listForRecipient(recipientMemberId: string): Promise<AppNotification[]>
   markRead(
     id: string,
@@ -45,6 +46,13 @@ export class NotificationUnavailableError extends Error {
 }
 
 export class NotificationService {
+  async countUnread(recipientMemberId: string): Promise<number> {
+    try {
+      return await this.repository.countUnread(recipientMemberId)
+    } catch {
+      throw new NotificationUnavailableError()
+    }
+  }
   constructor(
     private readonly repository: NotificationRepository,
     private readonly clock: Clock = () => new Date(),
@@ -62,7 +70,10 @@ export class NotificationService {
     recipientMemberId: string,
     notificationId: unknown,
   ): Promise<AppNotification> {
-    if (typeof notificationId !== 'string' || !UUID_PATTERN.test(notificationId)) {
+    if (
+      typeof notificationId !== 'string' ||
+      !UUID_PATTERN.test(notificationId)
+    ) {
       throw new NotificationValidationError()
     }
 

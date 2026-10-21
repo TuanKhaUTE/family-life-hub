@@ -10,7 +10,7 @@ import {
 
 export type MealType = 'LUNCH' | 'DINNER'
 export type MealMode = 'OPEN_CHOICE' | 'OPTION_POLL'
-export type MealRequestStatus = 'OPEN' | 'CLOSED' | 'SELF_SERVICE'
+export type MealRequestStatus = 'OPEN' | 'CLOSED' | 'SELF_SERVICE' | 'CANCELLED'
 export type MealResponseType = 'SELECTED_OPTION' | 'CUSTOM' | 'NOT_EATING'
 
 export interface MealMember {
@@ -65,6 +65,16 @@ export interface MealRequestView extends MealRequestRecord {
 }
 
 export interface MealRequestRepository {
+  configureRequest(input: {
+    actorMemberId: string
+    requestId: string
+    status: 'OPEN' | 'SELF_SERVICE' | 'CANCELLED'
+    mode: MealMode | 'SELF_SERVICE'
+    deadlineAt: string | null
+    parentMessage: string | null
+    options: string[]
+    confirmResponseReset: boolean
+  }): Promise<string>
   listCurrentRequests(fromDate: string): Promise<MealRequestRecord[]>
   listActiveMembers(): Promise<MealMember[]>
   listResponses(
@@ -115,6 +125,7 @@ export class MealRequestForbiddenError extends Error {}
 export class MealRequestNotFoundError extends Error {}
 export class MealRequestClosedError extends Error {}
 export class MealRequestConflictError extends Error {}
+export class MealResponseResetRequiredError extends MealRequestConflictError {}
 export class MealRequestUnavailableError extends Error {}
 
 export class MealRequestService {
@@ -167,24 +178,87 @@ export class MealRequestService {
     if (current === null)
       throw new MealRequestNotFoundError('Meal request was not found')
     if (
+      isObject(input) &&
+      ('mode' in input ||
+        input.status === 'CANCELLED' ||
+        input.status === 'SELF_SERVICE')
+    ) {
+      if (
+        input.confirmResponseReset !== undefined &&
+        typeof input.confirmResponseReset !== 'boolean'
+      )
+        bad()
+      let plan: Omit<
+        Parameters<MealRequestRepository['configureRequest']>[0],
+        'actorMemberId' | 'requestId'
+      >
+      if (input.status === 'CANCELLED') {
+        if (!onlyKeys(input, ['status'])) bad()
+        plan = {
+          status: 'CANCELLED',
+          mode: current.mode ?? 'SELF_SERVICE',
+          deadlineAt: current.deadlineAt,
+          parentMessage: current.parentMessage,
+          options: current.options.map((option) => option.label),
+          confirmResponseReset: false,
+        }
+      } else {
+        const mode =
+          input.mode ??
+          (input.status === 'SELF_SERVICE' ? 'SELF_SERVICE' : undefined)
+        if (
+          !onlyKeys(input, [
+            'status',
+            'mode',
+            'deadlineAt',
+            'parentMessage',
+            'options',
+            'confirmResponseReset',
+          ]) ||
+          input.status !== (mode === 'SELF_SERVICE' ? 'SELF_SERVICE' : 'OPEN')
+        )
+          bad()
+        const normalized = normalizeCreate(
+          {
+            mealDate: current.mealDate,
+            mealType: current.mealType,
+            mode,
+            deadlineAt: input.deadlineAt,
+            parentMessage: input.parentMessage,
+            options: input.options,
+          },
+          this.clock(),
+        )
+        plan = {
+          status: input.status as 'OPEN' | 'SELF_SERVICE',
+          mode: normalized.mode,
+          deadlineAt: normalized.deadlineAt,
+          parentMessage: normalized.parentMessage,
+          options: normalized.options,
+          confirmResponseReset: input.confirmResponseReset === true,
+        }
+      }
+      try {
+        await this.repository.configureRequest({
+          actorMemberId: profile.id,
+          requestId,
+          ...plan,
+        })
+        return await this.getHydrated(requestId, profile)
+      } catch (error) {
+        if (isKnown(error)) throw error
+        throw new MealRequestUnavailableError(
+          'Meal request could not be updated',
+        )
+      }
+    }
+    if (
       effectiveStatus(current, this.clock()) !== 'OPEN' &&
       current.status !== 'SELF_SERVICE'
     ) {
       throw new MealRequestClosedError('Meal request can no longer be changed')
     }
     try {
-      if (
-        (current.status === 'SELF_SERVICE' || current.status === 'OPEN') &&
-        isOpenTransition(input)
-      ) {
-        const change = normalizeSelfServiceChange(input, this.clock())
-        await this.repository.changeSelfServiceRequest({
-          actorMemberId: profile.id,
-          requestId,
-          ...change,
-        })
-        return await this.getHydrated(requestId, profile)
-      }
       const update = normalizeUpdate(input, current, this.clock())
       await this.repository.updateRequest({
         actorMemberId: profile.id,
@@ -306,43 +380,6 @@ export class MealRequestService {
   }
 }
 
-function isOpenTransition(input: unknown): input is Record<string, unknown> {
-  return isObject(input) && input.status === 'OPEN' && 'mode' in input
-}
-
-function normalizeSelfServiceChange(
-  input: Record<string, unknown>,
-  now: Date,
-): Omit<
-  Parameters<MealRequestRepository['changeSelfServiceRequest']>[0],
-  'actorMemberId' | 'requestId'
-> {
-  if (
-    !onlyKeys(input, [
-      'status',
-      'mode',
-      'deadlineAt',
-      'parentMessage',
-      'options',
-    ]) ||
-    (input.mode !== 'OPEN_CHOICE' && input.mode !== 'OPTION_POLL')
-  )
-    bad()
-  const options = normalizeOptions(input.options)
-  if (input.mode === 'OPEN_CHOICE' && options.length) bad()
-  if (
-    input.mode === 'OPTION_POLL' &&
-    (options.length < 2 || options.length > 5)
-  )
-    bad()
-  return {
-    mode: input.mode,
-    deadlineAt: futureTimestamp(input.deadlineAt, now),
-    parentMessage: textOrNull(input.parentMessage, 300),
-    options,
-  }
-}
-
 function normalizeCreate(
   input: unknown,
   now: Date,
@@ -420,7 +457,11 @@ function normalizeUpdate(
   if (current.status === 'SELF_SERVICE' && status !== 'SELF_SERVICE') bad()
   const parentMessage = textOrNull(input.parentMessage, 300)
   const deadlineAt =
-    status === 'OPEN' ? futureTimestamp(input.deadlineAt, now) : null
+    status === 'OPEN'
+      ? futureTimestamp(input.deadlineAt, now)
+      : status === 'CLOSED'
+        ? current.deadlineAt
+        : null
   return { status, deadlineAt, parentMessage }
 }
 

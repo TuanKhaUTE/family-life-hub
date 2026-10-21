@@ -153,8 +153,8 @@ function SlotMeal({
       {!meal && !editing && <p>Chưa có món cho bữa này.</p>}
       {isParent && request?.status === 'SELF_SERVICE' ? (
         <p className="parent-note">
-          Bữa này đang tự túc. Hãy chọn “Đổi kế hoạch” ở yêu cầu bữa ăn trước
-          khi lưu món.
+          Bữa này đang tự túc. Hãy chọn “Chỉnh sửa” ở yêu cầu bữa ăn trước khi
+          lưu món.
         </p>
       ) : (
         isParent && (
@@ -456,6 +456,6 @@ function ReadyControl({
 function saveError(cause: unknown) {
   return cause instanceof FinalMealApiError &&
     cause.code === 'FINAL_MEAL_SELF_SERVICE'
-    ? 'Bữa này đang tự túc. Hãy chọn “Đổi kế hoạch” ở yêu cầu bữa ăn trước khi lưu món.'
+    ? 'Bữa này đang tự túc. Hãy chọn “Chỉnh sửa” ở yêu cầu bữa ăn trước khi lưu món.'
     : 'Chưa thể lưu món ăn. Mẹ thử lại nhé.'
 }

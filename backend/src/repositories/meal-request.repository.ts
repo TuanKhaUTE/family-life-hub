@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseServerClient } from '../config/supabase.js'
 import {
   MealRequestConflictError,
+  MealResponseResetRequiredError,
   type MealMember,
   type MealRequestRecord,
   type MealRequestRepository,
@@ -23,6 +24,32 @@ const responseColumns =
 export class MealRequestDataError extends Error {}
 
 export class SupabaseMealRequestRepository implements MealRequestRepository {
+  async configureRequest(
+    input: Parameters<MealRequestRepository['configureRequest']>[0],
+  ): Promise<string> {
+    const { data, error } = await this.getClient().rpc(
+      'configure_meal_request',
+      {
+        p_actor_member_id: input.actorMemberId,
+        p_request_id: input.requestId,
+        p_status: input.status,
+        p_mode: input.mode,
+        p_deadline_at: input.deadlineAt,
+        p_parent_message: input.parentMessage,
+        p_options: input.options,
+        p_confirm_response_reset: input.confirmResponseReset,
+      },
+    )
+    if (error?.code === 'P2002')
+      throw new MealResponseResetRequiredError(
+        'Confirm removal of incompatible responses',
+      )
+    if (error?.code === 'P2001')
+      throw new MealRequestConflictError(
+        'A cooked meal already exists for this slot',
+      )
+    return rpcUuid(data, error)
+  }
   private client?: SupabaseClient
   constructor(
     private readonly factory: ClientFactory = createSupabaseServerClient,
@@ -168,6 +195,14 @@ export class SupabaseMealRequestRepository implements MealRequestRepository {
 }
 
 function rpcUuid(data: unknown, error: { code?: string } | null): string {
+  if (error?.code === 'P2002')
+    throw new MealResponseResetRequiredError(
+      'Confirm removal of incompatible responses',
+    )
+  if (error?.code === 'P2001')
+    throw new MealRequestConflictError(
+      'A cooked meal already exists for this slot',
+    )
   if (error || typeof data !== 'string' || !UUID.test(data))
     throw new MealRequestDataError()
   return data
@@ -190,7 +225,8 @@ function isRequestRow(value: unknown): value is RequestRow {
       value.mode === 'OPTION_POLL') &&
     (value.status === 'OPEN' ||
       value.status === 'CLOSED' ||
-      value.status === 'SELF_SERVICE') &&
+      value.status === 'SELF_SERVICE' ||
+      value.status === 'CANCELLED') &&
     (value.deadline_at === null || isTimestamp(value.deadline_at)) &&
     (value.parent_message === null ||
       typeof value.parent_message === 'string') &&
@@ -278,7 +314,7 @@ interface RequestRow {
   meal_date: string
   meal_type: 'LUNCH' | 'DINNER'
   mode: 'OPEN_CHOICE' | 'OPTION_POLL' | null
-  status: 'OPEN' | 'CLOSED' | 'SELF_SERVICE'
+  status: 'OPEN' | 'CLOSED' | 'SELF_SERVICE' | 'CANCELLED'
   deadline_at: string | null
   parent_message: string | null
   created_at: string

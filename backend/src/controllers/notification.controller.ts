@@ -9,6 +9,7 @@ import {
 } from '../services/notification.service.js'
 
 export interface NotificationOperations {
+  countUnread(recipientMemberId: string): Promise<number>
   list(recipientMemberId: string): Promise<AppNotification[]>
   markRead(
     recipientMemberId: string,
@@ -18,7 +19,11 @@ export interface NotificationOperations {
 
 export function createNotificationController(service: NotificationOperations) {
   return {
-    async list(request: Request, response: Response, next: NextFunction): Promise<void> {
+    async list(
+      request: Request,
+      response: Response,
+      next: NextFunction,
+    ): Promise<void> {
       if (!request.auth) {
         next(new ApiError(401, 'UNAUTHENTICATED', 'Authentication is required'))
         return
@@ -26,13 +31,18 @@ export function createNotificationController(service: NotificationOperations) {
       try {
         response.status(200).json({
           notifications: await service.list(request.auth.profile.id),
+          unreadCount: await service.countUnread(request.auth.profile.id),
         })
       } catch (error) {
         next(toApiError(error))
       }
     },
 
-    async markRead(request: Request, response: Response, next: NextFunction): Promise<void> {
+    async markRead(
+      request: Request,
+      response: Response,
+      next: NextFunction,
+    ): Promise<void> {
       if (!request.auth) {
         next(new ApiError(401, 'UNAUTHENTICATED', 'Authentication is required'))
         return

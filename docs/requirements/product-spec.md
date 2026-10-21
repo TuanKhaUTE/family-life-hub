@@ -12,6 +12,8 @@ The application should feel warm, cozy, friendly, playful, and family-oriented r
 
 The primary end-user UI language is Vietnamese.
 
+The mobile app shell uses the same five destinations for all roles: Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. Bếp contains the implemented meal workflows. Unimplemented destinations use simple placeholders. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
+
 The initial family consists of:
 
 - Kha / Tun Tun
@@ -368,7 +370,7 @@ Example:
 
 This should notify Kha and Bin.
 
-Mom may later choose **Đổi kế hoạch** and change the same meal slot from self-service to an open choice or option poll. This updates the existing request rather than creating another request for the same date and meal type.
+Mom may choose **Chỉnh sửa** on an existing request to edit its complete plan, switching directly between open choice, option poll, and self-service without a detour. Incompatible responses require a Vietnamese confirmation before removal; compatible responses are preserved. **Hủy kế hoạch** requires confirmation and retains a cancelled record for history. Cancelled slots can later be reconfigured using the same request. Deadline expiry is not cancellation.
 
 ---
 
@@ -376,7 +378,7 @@ Mom may later choose **Đổi kế hoạch** and change the same meal slot from 
 
 Mom is responsible for confirming what was actually prepared.
 
-An active PARENT can save actual lunch/dinner dishes with or without a meal request. Each date and meal type has at most one final meal. A linked request must use the same slot, and saving dishes leaves family responses unchanged. Self-service must first be changed through **Đổi kế hoạch**. ADMIN and MEMBER have read-only access to final meals.
+An active PARENT can save actual lunch/dinner dishes with or without a meal request. Each date and meal type has at most one final meal. A linked request must use the same slot, and saving dishes leaves family responses unchanged. Self-service must first be changed through **Chỉnh sửa**. ADMIN and MEMBER have read-only access to final meals.
 
 A meal can contain multiple dishes.
 

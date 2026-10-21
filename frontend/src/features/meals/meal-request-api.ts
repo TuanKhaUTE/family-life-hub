@@ -1,6 +1,6 @@
 export type MealType = 'LUNCH' | 'DINNER'
 export type MealMode = 'OPEN_CHOICE' | 'OPTION_POLL'
-export type MealStatus = 'OPEN' | 'CLOSED' | 'SELF_SERVICE'
+export type MealStatus = 'OPEN' | 'CLOSED' | 'SELF_SERVICE' | 'CANCELLED'
 export type MealResponseState =
   | 'NO_RESPONSE'
   | 'SELECTED_OPTION'
@@ -56,6 +56,7 @@ export type MealSubmission =
 const safeError = 'Meal information is temporarily unavailable.'
 export class MealClosedApiError extends Error {}
 export class MealConflictApiError extends Error {}
+export class MealResetRequiredApiError extends Error {}
 
 export async function fetchCurrentMealRequests(): Promise<MealRequest[]> {
   const body = await requestJson('/api/meals/requests/current')
@@ -87,11 +88,12 @@ export async function updateMealRequest(
         parentMessage?: string | null
       }
     | {
-        status: 'OPEN'
-        mode: MealMode
-        deadlineAt: string
+        status: 'OPEN' | 'SELF_SERVICE'
+        mode: MealMode | 'SELF_SERVICE'
+        deadlineAt: string | null
         parentMessage?: string | null
         options: string[]
+        confirmResponseReset?: boolean
       },
 ): Promise<MealRequest> {
   const body = await requestJson(
@@ -127,6 +129,13 @@ async function requestJson(path: string, init?: RequestInit): Promise<unknown> {
         response.status === 409 &&
         isObject(body) &&
         isObject(body.error) &&
+        body.error.code === 'MEAL_RESPONSE_RESET_REQUIRED'
+      )
+        throw new MealResetRequiredApiError()
+      if (
+        response.status === 409 &&
+        isObject(body) &&
+        isObject(body.error) &&
         body.error.code === 'MEAL_CLOSED'
       )
         throw new MealClosedApiError()
@@ -143,7 +152,8 @@ async function requestJson(path: string, init?: RequestInit): Promise<unknown> {
   } catch (error) {
     if (
       error instanceof MealClosedApiError ||
-      error instanceof MealConflictApiError
+      error instanceof MealConflictApiError ||
+      error instanceof MealResetRequiredApiError
     )
       throw error
     throw new Error(safeError)
@@ -166,7 +176,8 @@ function isMealRequest(value: unknown): value is MealRequest {
       value.mode === 'OPTION_POLL') &&
     (value.status === 'OPEN' ||
       value.status === 'CLOSED' ||
-      value.status === 'SELF_SERVICE') &&
+      value.status === 'SELF_SERVICE' ||
+      value.status === 'CANCELLED') &&
     (value.deadlineAt === null || isTimestamp(value.deadlineAt)) &&
     (value.parentMessage === null || typeof value.parentMessage === 'string') &&
     typeof value.createdBy.id === 'string' &&

@@ -24,12 +24,18 @@ const item: AppNotification = {
 }
 
 class FakeNotificationRepository implements NotificationRepository {
+  async countUnread() {
+    if (this.error) throw this.error
+    return this.items.filter((item) => !item.readAt).length
+  }
   items = [item]
   listCalls: string[] = []
   markCalls: Array<{ id: string; recipientMemberId: string; readAt: Date }> = []
   error?: Error
 
-  async listForRecipient(recipientMemberId: string): Promise<AppNotification[]> {
+  async listForRecipient(
+    recipientMemberId: string,
+  ): Promise<AppNotification[]> {
     if (this.error) throw this.error
     this.listCalls.push(recipientMemberId)
     return this.items
@@ -61,7 +67,9 @@ describe('NotificationService', () => {
     const now = new Date('2026-10-21T13:00:00.000Z')
     const service = new NotificationService(repository, () => now)
 
-    await expect(service.markRead(memberId, notificationId)).resolves.toMatchObject({
+    await expect(
+      service.markRead(memberId, notificationId),
+    ).resolves.toMatchObject({
       id: notificationId,
       readAt: now.toISOString(),
     })
@@ -75,18 +83,18 @@ describe('NotificationService', () => {
     repository.items = []
     const service = new NotificationService(repository)
 
-    await expect(service.markRead(memberId, notificationId)).rejects.toBeInstanceOf(
-      NotificationNotFoundError,
-    )
+    await expect(
+      service.markRead(memberId, notificationId),
+    ).rejects.toBeInstanceOf(NotificationNotFoundError)
   })
 
   it('rejects a malformed notification ID before persistence', async () => {
     const repository = new FakeNotificationRepository()
     const service = new NotificationService(repository)
 
-    await expect(service.markRead(memberId, 'not-a-uuid')).rejects.toBeInstanceOf(
-      NotificationValidationError,
-    )
+    await expect(
+      service.markRead(memberId, 'not-a-uuid'),
+    ).rejects.toBeInstanceOf(NotificationValidationError)
     expect(repository.markCalls).toEqual([])
   })
 

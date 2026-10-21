@@ -3,6 +3,7 @@ import { ApiError } from '../errors/api-error.js'
 import {
   MealRequestClosedError,
   MealRequestConflictError,
+  MealResponseResetRequiredError,
   MealRequestForbiddenError,
   MealRequestNotFoundError,
   MealRequestUnavailableError,
@@ -69,6 +70,8 @@ function handler(
 }
 
 function toApiError(error: unknown): unknown {
+  if (error instanceof MealResponseResetRequiredError)
+    return new ApiError(409, 'MEAL_RESPONSE_RESET_REQUIRED', error.message)
   if (error instanceof MealRequestValidationError)
     return new ApiError(400, 'VALIDATION_ERROR', error.message)
   if (error instanceof MealRequestForbiddenError)

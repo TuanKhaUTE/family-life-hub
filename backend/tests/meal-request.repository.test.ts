@@ -91,6 +91,32 @@ function harness() {
 }
 
 describe('SupabaseMealRequestRepository', () => {
+  it('configures the whole plan atomically with an explicit reset flag', async () => {
+    const { client, repository } = harness()
+    await repository.configureRequest({
+      actorMemberId: requestId,
+      requestId,
+      status: 'OPEN',
+      mode: 'OPTION_POLL',
+      deadlineAt: '2099-06-01T12:00:00Z',
+      parentMessage: null,
+      options: ['Cơm', 'Bún'],
+      confirmResponseReset: true,
+    })
+    expect(client.rpcCalls[0]).toEqual({
+      name: 'configure_meal_request',
+      args: {
+        p_actor_member_id: requestId,
+        p_request_id: requestId,
+        p_status: 'OPEN',
+        p_mode: 'OPTION_POLL',
+        p_deadline_at: '2099-06-01T12:00:00Z',
+        p_parent_message: null,
+        p_options: ['Cơm', 'Bún'],
+        p_confirm_response_reset: true,
+      },
+    })
+  })
   it('maps current requests and preserves ordered options', async () => {
     const { client, repository } = harness()
     client.result = { data: [row], error: null }

@@ -10,8 +10,8 @@ import {
   fetchCurrentMealRequests,
   MealClosedApiError,
   MealConflictApiError,
+  MealResetRequiredApiError,
   saveMealResponse,
-  updateMealRequest,
   type CreateMealRequest,
   type MealMode,
   type MealRequest,
@@ -20,6 +20,7 @@ import {
 } from './meal-request-api'
 import './meals.css'
 import { FinalMealSection } from './FinalMealSection'
+import { MealPlanControls } from './MealPlanControls'
 
 export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
   const [requests, setRequests] = useState<MealRequest[]>([])
@@ -177,8 +178,9 @@ function ParentComposer({
       setOptions(['', ''])
     } catch (cause) {
       setError(
-        cause instanceof MealConflictApiError
-          ? 'Bữa ăn này đã có kế hoạch. Hãy chọn “Đổi kế hoạch” trong thẻ hiện có.'
+        cause instanceof MealConflictApiError ||
+          cause instanceof MealResetRequiredApiError
+          ? 'Bữa ăn này đã có kế hoạch. Hãy chọn “Chỉnh sửa” trong thẻ hiện có.'
           : 'Chưa thể lưu kế hoạch bữa ăn. Vui lòng thử lại.',
       )
     } finally {
@@ -355,31 +357,39 @@ function MealCard({
             {formatDate(request.mealDate, request.timeZone)}
           </p>
           <h3>
-            {request.status === 'SELF_SERVICE'
-              ? 'Tự túc'
-              : request.mode === 'OPTION_POLL'
-                ? 'Chọn một món'
-                : 'Bạn muốn ăn gì?'}
+            {request.status === 'CANCELLED'
+              ? 'Kế hoạch đã hủy'
+              : request.status === 'SELF_SERVICE'
+                ? 'Tự túc'
+                : request.mode === 'OPTION_POLL'
+                  ? 'Chọn một món'
+                  : 'Bạn muốn ăn gì?'}
           </h3>
         </div>
         <span className="meal-status">
-          {request.status === 'SELF_SERVICE'
-            ? 'Tự túc'
-            : request.isOpen
-              ? 'Đang mở'
-              : 'Đã đóng'}
+          {request.status === 'CANCELLED'
+            ? 'Kế hoạch đã hủy'
+            : request.status === 'SELF_SERVICE'
+              ? 'Tự túc'
+              : request.isOpen
+                ? 'Đang mở'
+                : 'Đã đóng'}
         </span>
       </header>
       {request.parentMessage && (
         <p className="parent-note">“{request.parentMessage}”</p>
       )}
-      {request.deadlineAt && (
+      {request.deadlineAt && request.status !== 'CANCELLED' && (
         <p className="meal-deadline">
           Trả lời trước {formatDeadline(request.deadlineAt, request.timeZone)}
         </p>
       )}
       {profile.role === 'PARENT' ? (
-        <ParentRequestView request={request} onChanged={onChanged} />
+        <MealPlanControls
+          key={request.updatedAt + request.status}
+          request={request}
+          onChanged={onChanged}
+        />
       ) : (
         <MemberRequestView
           request={request}
@@ -388,296 +398,6 @@ function MealCard({
         />
       )}
     </article>
-  )
-}
-
-function ParentRequestView({
-  request,
-  onChanged,
-}: {
-  request: MealRequest
-  onChanged: (request: MealRequest) => void
-}) {
-  const [message, setMessage] = useState(request.parentMessage ?? '')
-  const [deadline, setDeadline] = useState(() =>
-    request.deadlineAt
-      ? toLocalDateTimeInput(new Date(request.deadlineAt))
-      : '',
-  )
-  const [editing, setEditing] = useState(false)
-  const [changingPlan, setChangingPlan] = useState(false)
-  const [changeMode, setChangeMode] = useState<MealMode>('OPEN_CHOICE')
-  const [changeDeadline, setChangeDeadline] = useState(() =>
-    toLocalDateTimeInput(new Date(Date.now() + 3 * 60 * 60 * 1000)),
-  )
-  const [changeOptions, setChangeOptions] = useState(['', ''])
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  async function update(status: 'OPEN' | 'CLOSED' | 'SELF_SERVICE') {
-    const deadlineAt = status === 'OPEN' ? localInputToUtc(deadline) : null
-    if (status === 'OPEN' && !deadlineAt) {
-      setError('Hãy chọn thời hạn hợp lệ.')
-      return
-    }
-    setPending(true)
-    setError(null)
-    try {
-      onChanged(
-        await updateMealRequest(request.id, {
-          status,
-          deadlineAt,
-          parentMessage: message.trim() || null,
-        }),
-      )
-      setEditing(false)
-    } catch {
-      setError('Chưa thể cập nhật kế hoạch bữa ăn. Vui lòng thử lại.')
-    } finally {
-      setPending(false)
-    }
-  }
-  async function changePlan(event: FormEvent) {
-    event.preventDefault()
-    const deadlineAt = localInputToUtc(changeDeadline)
-    const options = changeOptions.map((option) => option.trim())
-    const optionsAreValid =
-      changeMode === 'OPEN_CHOICE' ||
-      (options.length >= 2 &&
-        options.length <= 5 &&
-        options.every(Boolean) &&
-        new Set(options.map((option) => option.toLocaleLowerCase())).size ===
-          options.length)
-    if (!deadlineAt || !optionsAreValid) {
-      setError('Hãy chọn thời hạn hợp lệ và điền đủ các lựa chọn.')
-      return
-    }
-    setPending(true)
-    setError(null)
-    try {
-      onChanged(
-        await updateMealRequest(request.id, {
-          status: 'OPEN',
-          mode: changeMode,
-          deadlineAt,
-          parentMessage: message.trim() || null,
-          options: changeMode === 'OPTION_POLL' ? options : [],
-        }),
-      )
-      setChangingPlan(false)
-    } catch {
-      setError('Chưa thể đổi kế hoạch bữa ăn. Vui lòng thử lại.')
-    } finally {
-      setPending(false)
-    }
-  }
-  if (request.status === 'SELF_SERVICE')
-    return (
-      <div className="self-service">
-        <strong>Mọi người tự sắp xếp bữa ăn này nhé.</strong>
-        {editing ? (
-          <>
-            <label>
-              Lời nhắn cho cả nhà
-              <textarea
-                value={message}
-                maxLength={300}
-                onChange={(event) => setMessage(event.target.value)}
-              />
-            </label>
-            <button
-              disabled={pending}
-              onClick={() => void update('SELF_SERVICE')}
-            >
-              Lưu lời nhắn
-            </button>
-          </>
-        ) : (
-          <button className="text-button" onClick={() => setEditing(true)}>
-            Sửa lời nhắn
-          </button>
-        )}
-        {changingPlan ? (
-          <form className="meal-edit-request" onSubmit={changePlan}>
-            <label>
-              Cách cả nhà trả lời
-              <select
-                value={changeMode}
-                onChange={(event) =>
-                  setChangeMode(event.target.value as MealMode)
-                }
-              >
-                <option value="OPEN_CHOICE">Hỏi mọi người</option>
-                <option value="OPTION_POLL">Tạo lựa chọn</option>
-              </select>
-            </label>
-            <label>
-              Hạn trả lời
-              <input
-                type="datetime-local"
-                value={changeDeadline}
-                onChange={(event) => setChangeDeadline(event.target.value)}
-              />
-            </label>
-            {changeMode === 'OPTION_POLL' && (
-              <fieldset>
-                <legend>Các lựa chọn (2–5)</legend>
-                {changeOptions.map((option, index) => (
-                  <div className="meal-option-input" key={index}>
-                    <label>
-                      Lựa chọn {index + 1}
-                      <input
-                        value={option}
-                        maxLength={120}
-                        onChange={(event) =>
-                          setChangeOptions((current) =>
-                            current.map((value, itemIndex) =>
-                              itemIndex === index
-                                ? event.target.value
-                                : value,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                    {changeOptions.length > 2 && (
-                      <button
-                        type="button"
-                        className="text-button"
-                        aria-label={`Xóa lựa chọn ${index + 1}`}
-                        onClick={() =>
-                          setChangeOptions((current) =>
-                            current.filter((_, itemIndex) => itemIndex !== index),
-                          )
-                        }
-                      >
-                        Xóa
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {changeOptions.length < 5 && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() =>
-                      setChangeOptions((current) => [...current, ''])
-                    }
-                  >
-                    Thêm lựa chọn
-                  </button>
-                )}
-              </fieldset>
-            )}
-            <label>
-              Lời nhắn cho cả nhà
-              <textarea
-                value={message}
-                maxLength={300}
-                onChange={(event) => setMessage(event.target.value)}
-              />
-            </label>
-            <div className="meal-actions">
-              <button className="primary-button" disabled={pending}>
-                {pending ? 'Đang lưu…' : 'Cập nhật kế hoạch'}
-              </button>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setChangingPlan(false)}
-              >
-                Hủy
-              </button>
-            </div>
-          </form>
-        ) : (
-          <button
-            className="secondary-button"
-            onClick={() => setChangingPlan(true)}
-          >
-            Đổi kế hoạch
-          </button>
-        )}
-        {error && <p role="alert">{error}</p>}
-      </div>
-    )
-  return (
-    <>
-      <ul className="response-list">
-        {request.responses.map((response) => (
-          <li key={response.member.id}>
-            <strong>{response.member.displayName}</strong>
-            <span>{responseLabel(response)}</span>
-          </li>
-        ))}
-      </ul>
-      {request.isOpen && editing && (
-        <div className="meal-edit-request">
-          <label>
-            Hạn trả lời
-            <input
-              type="datetime-local"
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-            />
-          </label>
-          <label>
-            Lời nhắn cho cả nhà
-            <textarea
-              value={message}
-              maxLength={300}
-              onChange={(event) => setMessage(event.target.value)}
-            />
-          </label>
-          <div className="meal-actions">
-            <button
-              className="primary-button"
-              disabled={pending}
-              onClick={() => void update('OPEN')}
-            >
-              Lưu thay đổi
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => setEditing(false)}
-            >
-              Hủy chỉnh sửa
-            </button>
-          </div>
-        </div>
-      )}
-      {request.isOpen && (
-        <div className="meal-actions">
-          {!editing && (
-            <button
-              className="secondary-button"
-              disabled={pending}
-              onClick={() => setEditing(true)}
-            >
-              Chỉnh sửa yêu cầu
-            </button>
-          )}
-          <button
-            className="secondary-button"
-            disabled={pending}
-            onClick={() => void update('CLOSED')}
-          >
-            Đóng phản hồi
-          </button>
-          <button
-            className="text-button"
-            disabled={pending}
-            onClick={() => void update('SELF_SERVICE')}
-          >
-            Chuyển sang tự túc
-          </button>
-        </div>
-      )}
-      {error && (
-        <p role="alert" className="meal-error">
-          {error}
-        </p>
-      )}
-    </>
   )
 }
 
@@ -701,6 +421,12 @@ function MemberRequestView({
   )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  if (request.status === 'CANCELLED')
+    return (
+      <p className="meal-closed" role="status">
+        Kế hoạch bữa này đã hủy. Bạn không cần trả lời nữa nhé.
+      </p>
+    )
   if (request.status === 'SELF_SERVICE')
     return (
       <p className="self-service">

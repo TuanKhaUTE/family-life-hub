@@ -75,12 +75,31 @@ describe('final meal family flow', () => {
       updatedAt: meal.updatedAt,
       timeZone: 'Asia/Ho_Chi_Minh',
       isOpen: true,
-      responses: [{
-        member: { id: '22222222-2222-4222-8222-222222222222', displayName: 'Synthetic Child', avatarType: null, avatarValue: null },
-        state: 'CUSTOM', option: null, customText: 'Món con muốn ăn', updatedAt: meal.updatedAt,
-      }],
+      responses: [
+        {
+          member: {
+            id: '22222222-2222-4222-8222-222222222222',
+            displayName: 'Synthetic Child',
+            avatarType: null,
+            avatarValue: null,
+          },
+          state: 'CUSTOM',
+          option: null,
+          customText: 'Món con muốn ăn',
+          updatedAt: meal.updatedAt,
+        },
+      ],
     }
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => json(url.endsWith('/current') ? { requests: [request] } : { meal: { ...meal, mealDate: familyDate() } })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        json(
+          url.endsWith('/current')
+            ? { requests: [request] }
+            : { meal: { ...meal, mealDate: familyDate() } },
+        ),
+      ),
+    )
     render(<MealRequestSection profile={parent} />)
     expect(await screen.findByText('Món con muốn ăn')).toBeTruthy()
     expect(await screen.findByText('Cơm gà rô ti')).toBeTruthy()
@@ -215,7 +234,7 @@ describe('final meal family flow', () => {
     await user.click(screen.getByRole('button', { name: 'Lưu món sẽ nấu' }))
     expect(await screen.findByRole('alert')).toHaveProperty(
       'textContent',
-      'Bữa này đang tự túc. Hãy chọn “Đổi kế hoạch” ở yêu cầu bữa ăn trước khi lưu món.',
+      'Bữa này đang tự túc. Hãy chọn “Chỉnh sửa” ở yêu cầu bữa ăn trước khi lưu món.',
     )
     expect(screen.getByLabelText('Tên món 1')).toBeTruthy()
   })

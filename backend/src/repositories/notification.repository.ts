@@ -34,13 +34,25 @@ export class NotificationDataError extends Error {
 }
 
 export class SupabaseNotificationRepository implements NotificationRepository {
+  async countUnread(recipientMemberId: string): Promise<number> {
+    const { count, error } = await this.getClient()
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('recipient_member_id', recipientMemberId)
+      .is('read_at', null)
+    if (error || count === null || !Number.isInteger(count) || count < 0)
+      throw new NotificationDataError()
+    return count
+  }
   private client?: SupabaseClient
 
   constructor(
     private readonly clientFactory: ClientFactory = createSupabaseServerClient,
   ) {}
 
-  async listForRecipient(recipientMemberId: string): Promise<AppNotification[]> {
+  async listForRecipient(
+    recipientMemberId: string,
+  ): Promise<AppNotification[]> {
     const { data, error } = await this.getClient()
       .from('notifications')
       .select(COLUMNS)

@@ -295,24 +295,17 @@ The mobile experience remains the priority.
 
 # 9. Navigation
 
-Possible primary navigation:
+The implemented mobile shell has the same five destinations for every role:
 
-Home
+- Trang chủ
+- Bếp
+- Lịch
+- Chi tiêu
+- Cá nhân
 
-Meals
+Use a persistent bottom navigation with simple icons, Vietnamese labels, comfortable touch targets, and bottom safe-area spacing. Bếp contains the meal workflows. Lịch, Chi tiêu, and Cá nhân remain warm placeholders until their modules are implemented. Role permissions affect destination content, not the navigation labels.
 
-Schedule
-
-Activity
-
-Profile
-
-Depending on implementation, Activity may group:
-
-- study;
-- fitness;
-- wellness;
-- expenses.
+The authenticated header contains a notification bell. Show a badge only when unread count is greater than zero. The bell opens a lightweight dismissible sheet; notifications are not permanently expanded on the page.
 
 The final information architecture should avoid presenting too many bottom-navigation items.
 
