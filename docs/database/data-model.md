@@ -254,6 +254,30 @@ NO_RESPONSE is determined by absence of a response.
 
 ---
 
+## breakfast_purchases
+
+Stores the single current purchase confirmation for a breakfast date.
+
+Implemented fields:
+
+id
+
+breakfast_date
+
+confirmed_by_member_id
+
+message
+
+purchased_at
+
+created_at
+
+updated_at
+
+`breakfast_date` is unique. Reconfirming a date updates the existing record rather than creating another purchase event.
+
+---
+
 ## meal_requests
 
 Parent-created lunch or dinner request.
@@ -592,11 +616,11 @@ COMPLETED
 
 ## notifications
 
-Suggested fields:
+Implemented fields:
 
 id
 
-recipient_id
+recipient_member_id
 
 type
 
@@ -608,11 +632,15 @@ related_resource_type
 
 related_resource_id
 
-is_read
+related_date
 
 created_at
 
 read_at
+
+Notifications use an event identity across recipient, type, related resource type, and related resource ID. This prevents repeated breakfast confirmation requests from duplicating the same member's notification. A null `read_at` means unread.
+
+The implemented tables use default-deny RLS and are available only through the backend service role. The Express API enforces recipient ownership.
 
 ---
 

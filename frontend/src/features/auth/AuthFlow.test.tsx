@@ -6,6 +6,10 @@ vi.mock('../breakfast/BreakfastSection', () => ({
   BreakfastSection: () => null,
 }))
 
+vi.mock('../notifications/NotificationPanel', () => ({
+  NotificationPanel: () => null,
+}))
+
 import { AuthFlow } from './AuthFlow'
 import type { FamilyProfile } from './auth-api'
 

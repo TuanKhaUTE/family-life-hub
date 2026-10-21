@@ -4,10 +4,12 @@ import { createSupabaseServerClient } from '../config/supabase.js'
 import type {
   BreakfastCatalogItem,
   BreakfastMember,
+  BreakfastPurchaseRecord,
   BreakfastRepository,
   BreakfastSelectionRecord,
   PersistedBreakfastState,
   UpsertBreakfastSelection,
+  ConfirmBreakfastPurchase,
 } from '../services/breakfast.service.js'
 import type { FamilyMemberRole } from '../services/family-auth.service.js'
 import { isBreakfastDate } from '../time/family-calendar.js'
@@ -43,6 +45,28 @@ interface SelectionRow {
   dishes: { id: string; name: string } | null
 }
 
+interface PurchaseRow {
+  id: string
+  breakfast_date: string
+  confirmed_by_member_id: string
+  message: string | null
+  purchased_at: string
+  created_at: string
+  updated_at: string
+  family_members: { id: string; display_name: string }
+}
+
+interface PurchaseRpcRow {
+  id: string
+  breakfast_date: string
+  confirmed_by_member_id: string
+  confirmed_by_display_name: string
+  message: string | null
+  purchased_at: string
+  created_at: string
+  updated_at: string
+}
+
 type SupabaseClientFactory = () => SupabaseClient
 
 const UUID_PATTERN =
@@ -54,6 +78,8 @@ const MEMBER_COLUMNS =
   'id, display_name, role, avatar_type, avatar_value, is_active'
 const SELECTION_COLUMNS =
   'member_id, breakfast_date, selection_type, dish_id, custom_dish_name, created_at, updated_at, dishes(id, name)'
+const PURCHASE_COLUMNS =
+  'id, breakfast_date, confirmed_by_member_id, message, purchased_at, created_at, updated_at, family_members!inner(id, display_name)'
 
 export class BreakfastDataError extends Error {
   constructor() {
@@ -149,6 +175,46 @@ export class SupabaseBreakfastRepository implements BreakfastRepository {
     }
 
     return toCatalogItem(data)
+  }
+
+  async findPurchase(date: string): Promise<BreakfastPurchaseRecord | null> {
+    const { data, error } = await this.getClient()
+      .from('breakfast_purchases')
+      .select(PURCHASE_COLUMNS)
+      .eq('breakfast_date', date)
+      .maybeSingle()
+
+    if (error) throw new BreakfastDataError()
+    if (data === null) return null
+    if (!isPurchaseRow(data)) throw new BreakfastDataError()
+
+    return toPurchaseRecord(data, data.family_members.display_name)
+  }
+
+  async confirmPurchase(
+    input: ConfirmBreakfastPurchase,
+  ): Promise<BreakfastPurchaseRecord> {
+    const { data, error } = await this.getClient().rpc(
+      'confirm_breakfast_purchase',
+      {
+        p_actor_member_id: input.actorMemberId,
+        p_breakfast_date: input.breakfastDate,
+        p_message: input.message,
+      },
+    )
+    const rows: unknown = data
+
+    if (
+      error ||
+      !Array.isArray(rows) ||
+      rows.length !== 1 ||
+      !isPurchaseRpcRow(rows[0])
+    ) {
+      throw new BreakfastDataError()
+    }
+
+    const row = rows[0]
+    return toPurchaseRecord(row, row.confirmed_by_display_name)
   }
 
   async upsertSelection(
@@ -260,6 +326,44 @@ function isSelectionRow(value: unknown): value is SelectionRow {
   )
 }
 
+function hasPurchaseFields(value: Record<string, unknown>): boolean {
+  return (
+    typeof value.id === 'string' &&
+    UUID_PATTERN.test(value.id) &&
+    isBreakfastDate(value.breakfast_date) &&
+    typeof value.confirmed_by_member_id === 'string' &&
+    UUID_PATTERN.test(value.confirmed_by_member_id) &&
+    (value.message === null ||
+      (typeof value.message === 'string' &&
+        value.message === value.message.trim() &&
+        value.message.length >= 1 &&
+        value.message.length <= 300)) &&
+    isIsoTimestamp(value.purchased_at) &&
+    isIsoTimestamp(value.created_at) &&
+    isIsoTimestamp(value.updated_at)
+  )
+}
+
+function isPurchaseRow(value: unknown): value is PurchaseRow {
+  if (!isObject(value) || !hasPurchaseFields(value) || !isObject(value.family_members)) {
+    return false
+  }
+  return (
+    value.family_members.id === value.confirmed_by_member_id &&
+    typeof value.family_members.display_name === 'string' &&
+    value.family_members.display_name.trim().length > 0
+  )
+}
+
+function isPurchaseRpcRow(value: unknown): value is PurchaseRpcRow {
+  return (
+    isObject(value) &&
+    hasPurchaseFields(value) &&
+    typeof value.confirmed_by_display_name === 'string' &&
+    value.confirmed_by_display_name.trim().length > 0
+  )
+}
+
 function toCatalogItem(row: CatalogRow): BreakfastCatalogItem {
   return {
     id: row.dish_id,
@@ -288,6 +392,24 @@ function toSelectionRecord(row: SelectionRow): BreakfastSelectionRecord {
         ? null
         : { id: row.dishes.id, name: row.dishes.name },
     customText: row.custom_dish_name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function toPurchaseRecord(
+  row: PurchaseRow | PurchaseRpcRow,
+  confirmerDisplayName: string,
+): BreakfastPurchaseRecord {
+  return {
+    id: row.id,
+    breakfastDate: row.breakfast_date,
+    confirmedBy: {
+      id: row.confirmed_by_member_id,
+      displayName: confirmerDisplayName,
+    },
+    message: row.message,
+    purchasedAt: row.purchased_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

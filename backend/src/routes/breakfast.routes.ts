@@ -24,6 +24,7 @@ export function createBreakfastRouter(
   breakfastRouter.get('/catalog', controller.getCatalog)
   breakfastRouter.get('/days/:date', controller.getDay)
   breakfastRouter.put('/days/:date/response', controller.saveResponse)
+  breakfastRouter.put('/days/:date/purchase', controller.confirmPurchase)
 
   return breakfastRouter
 }

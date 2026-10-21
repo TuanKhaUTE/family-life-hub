@@ -8,6 +8,7 @@ import type {
   BreakfastCatalogItem,
   BreakfastDay,
   BreakfastDayResponse,
+  BreakfastPurchase,
 } from './breakfast-api'
 
 const member: FamilyProfile = {
@@ -60,9 +61,20 @@ function day(overrides: Partial<BreakfastDay> = {}): BreakfastDay {
     deadlineAt: '2026-10-21T17:00:00.000Z',
     timeZone: 'Asia/Ho_Chi_Minh',
     isOpen: true,
+    purchase: null,
     responses: [response()],
     ...overrides,
   }
+}
+
+const purchase: BreakfastPurchase = {
+  id: '88888888-8888-4888-8888-888888888888',
+  breakfastDate: '2026-10-22',
+  confirmedBy: { id: parent.id, displayName: parent.displayName },
+  message: 'Nước cam trong tủ lạnh nha',
+  purchasedAt: '2026-10-21T12:00:00.000Z',
+  createdAt: '2026-10-21T12:00:00.000Z',
+  updatedAt: '2026-10-21T12:00:00.000Z',
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -129,15 +141,20 @@ describe('member breakfast flow', () => {
 
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('Saved: Phở')).toBeTruthy()
+    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(screen.getByText('Phở')).toBeTruthy()
+    expect(screen.queryByRole('radio', { name: 'Phở' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Change choice' }))
     expect(
       (screen.getByRole('radio', { name: 'Phở' }) as HTMLInputElement).checked,
     ).toBe(true)
 
     await user.click(screen.getByRole('radio', { name: 'Bánh mì' }))
-    await user.click(screen.getByRole('button', { name: 'Save breakfast choice' }))
+    await user.click(screen.getByRole('button', { name: 'Update breakfast choice' }))
 
-    expect(await screen.findByText('Saved: Bánh mì')).toBeTruthy()
+    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(screen.getByText('Bánh mì')).toBeTruthy()
+    expect(screen.queryByRole('radio', { name: 'Bánh mì' })).toBeNull()
     const saveCall = fetchMock.mock.calls.find(
       ([url]) => url === '/api/breakfast/days/2026-10-22/response',
     )
@@ -158,7 +175,9 @@ describe('member breakfast flow', () => {
     await user.type(screen.getByLabelText('Your breakfast'), '  Cháo gà  ')
     await user.click(screen.getByRole('button', { name: 'Save breakfast choice' }))
 
-    expect(await screen.findByText('Saved: Cháo gà')).toBeTruthy()
+    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(screen.getByText('Cháo gà')).toBeTruthy()
+    expect(screen.queryByRole('radio', { name: 'Other / custom' })).toBeNull()
     const saveCall = fetchMock.mock.calls.find(
       ([url]) => url === '/api/breakfast/days/2026-10-22/response',
     )
@@ -178,7 +197,8 @@ describe('member breakfast flow', () => {
     await user.click(screen.getByRole('radio', { name: 'Not eating' }))
     await user.click(screen.getByRole('button', { name: 'Save breakfast choice' }))
 
-    expect(await screen.findByText('Saved: Not eating')).toBeTruthy()
+    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(screen.getByText('Not eating')).toBeTruthy()
   })
 
   it('shows a closed state without editable choices after cutoff', async () => {
@@ -188,6 +208,7 @@ describe('member breakfast flow', () => {
 
     expect(await screen.findByText('Breakfast choices are closed')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Save breakfast choice' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Change choice' })).toBeNull()
   })
 
   it('moves an open page to the closed state when the deadline passes before save', async () => {
@@ -245,7 +266,7 @@ describe('member breakfast flow', () => {
     resolveSave?.(
       jsonResponse({ response: response({ state: 'NOT_EATING' }) }),
     )
-    await screen.findByText('Saved: Not eating')
+    await screen.findByText('Breakfast saved')
   })
 
   it('shows a safe load error and can retry', async () => {
@@ -265,6 +286,14 @@ describe('member breakfast flow', () => {
     await user.click(screen.getByRole('button', { name: 'Try breakfast again' }))
 
     expect(await screen.findByRole('radio', { name: 'Phở' })).toBeTruthy()
+  })
+
+  it('shows Mom’s purchase confirmation and optional message', async () => {
+    vi.stubGlobal('fetch', successfulFetch(day({ purchase })))
+    render(<BreakfastSection profile={member} />)
+
+    expect(await screen.findByText('Mom got breakfast ✓')).toBeTruthy()
+    expect(screen.getByText('Nước cam trong tủ lạnh nha')).toBeTruthy()
   })
 })
 
@@ -298,5 +327,50 @@ describe('parent breakfast view', () => {
     expect(screen.getByText('No response yet')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Save breakfast choice' })).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets Mom confirm purchase with a message and then edit it', async () => {
+    const user = userEvent.setup()
+    const initial = day()
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/breakfast/days/next') return jsonResponse({ day: initial })
+      if (url.endsWith('/purchase') && init?.method === 'PUT') {
+        const body = JSON.parse(init.body as string) as { message: string | null }
+        return jsonResponse({ purchase: { ...purchase, message: body.message } })
+      }
+      throw new Error(`Unexpected URL: ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<BreakfastSection profile={parent} />)
+
+    const input = await screen.findByLabelText('Optional note for the family')
+    await user.type(input, '  Nước cam trong tủ lạnh nha  ')
+    await user.click(screen.getByRole('button', { name: 'Breakfast purchased' }))
+
+    expect(await screen.findByText('Breakfast purchased ✓')).toBeTruthy()
+    expect(screen.getByText('Nước cam trong tủ lạnh nha')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Edit message' }))
+    expect(screen.getByRole('button', { name: 'Update breakfast message' })).toBeTruthy()
+    expect((screen.getByLabelText('Optional note for the family') as HTMLInputElement).value).toBe(
+      'Nước cam trong tủ lạnh nha',
+    )
+  })
+
+  it('shows a safe purchase error without exposing network details', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/breakfast/days/next') return jsonResponse({ day: day() })
+      if (url.endsWith('/purchase') && init?.method === 'PUT') {
+        throw new Error('private network detail')
+      }
+      throw new Error(`Unexpected URL: ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<BreakfastSection profile={parent} />)
+
+    await screen.findByRole('button', { name: 'Breakfast purchased' })
+    await user.click(screen.getByRole('button', { name: 'Breakfast purchased' }))
+    expect(await screen.findByText('We couldn’t confirm breakfast purchase. Please try again.')).toBeTruthy()
+    expect(screen.queryByText('private network detail')).toBeNull()
   })
 })

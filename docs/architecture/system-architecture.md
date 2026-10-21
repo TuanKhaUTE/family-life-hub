@@ -754,11 +754,14 @@ The implemented breakfast API is backend-only and session-protected:
 
 - `GET /api/breakfast/catalog` returns active catalog choices;
 - `GET /api/breakfast/days/:date` returns the authorized view for a family date (or `next`);
-- `PUT /api/breakfast/days/:date/response` creates or replaces only the signed-in member's response.
+- `PUT /api/breakfast/days/:date/response` creates or replaces only the signed-in member's response;
+- `PUT /api/breakfast/days/:date/purchase` lets an active `PARENT` confirm purchase and add or update an optional message.
 
 `PARENT` profiles receive active non-parent response statuses and do not submit a breakfast response for themselves. `ADMIN` and `MEMBER` profiles receive and change only their own response. Role alone never grants write access to another member's response.
 
 Breakfast dates and the midnight deadline are interpreted centrally in `Asia/Ho_Chi_Minh`; persisted timestamps remain UTC instants. The frontend consumes these endpoints through the Express API and does not query Supabase directly.
+
+Purchase confirmation uses one restricted database operation to upsert the date-level purchase and one notification per active `ADMIN` or `MEMBER`. The purchase/date identity and notification event key make repeated requests idempotent; editing Mom's message updates the existing purchase and notification text without changing read state.
 
 ---
 
@@ -854,6 +857,13 @@ Contains:
 - related resource;
 - created time;
 - read status.
+
+The implemented notification API is session-protected:
+
+- `GET /api/notifications` lists only the signed-in member's notifications, newest first;
+- `PATCH /api/notifications/:id/read` marks a notification read only when it belongs to the signed-in member.
+
+The lightweight authenticated-shell panel consumes these endpoints. The frontend never queries notification tables directly.
 
 ---
 

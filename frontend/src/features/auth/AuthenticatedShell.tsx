@@ -1,6 +1,7 @@
 import type { FamilyProfile } from './auth-api'
 import { ProfileAvatar } from './ProfileSelector'
 import { BreakfastSection } from '../breakfast/BreakfastSection'
+import { NotificationPanel } from '../notifications/NotificationPanel'
 
 interface AuthenticatedShellProps {
   profile: FamilyProfile
@@ -50,6 +51,7 @@ export function AuthenticatedShell({
       )}
 
       <BreakfastSection profile={profile} />
+      <NotificationPanel />
     </section>
   )
 }

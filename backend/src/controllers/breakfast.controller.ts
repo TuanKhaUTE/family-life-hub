@@ -4,11 +4,13 @@ import { ApiError } from '../errors/api-error.js'
 import {
   BreakfastClosedError,
   BreakfastForbiddenError,
+  BreakfastPurchaseForbiddenError,
   BreakfastUnavailableError,
   BreakfastValidationError,
   type BreakfastCatalogItem,
   type BreakfastDay,
   type BreakfastDayResponse,
+  type BreakfastPurchaseRecord,
 } from '../services/breakfast.service.js'
 import type { SafeFamilyProfile } from '../services/family-auth.service.js'
 
@@ -23,6 +25,11 @@ export interface BreakfastOperations {
     requestedDate: unknown,
     input: unknown,
   ): Promise<BreakfastDayResponse>
+  confirmPurchase(
+    profile: SafeFamilyProfile,
+    requestedDate: unknown,
+    input: unknown,
+  ): Promise<BreakfastPurchaseRecord>
 }
 
 export function createBreakfastController(service: BreakfastOperations) {
@@ -78,6 +85,28 @@ export function createBreakfastController(service: BreakfastOperations) {
         next(toBreakfastApiError(error))
       }
     },
+
+    async confirmPurchase(
+      request: Request,
+      response: Response,
+      next: NextFunction,
+    ): Promise<void> {
+      if (!request.auth) {
+        next(new ApiError(401, 'UNAUTHENTICATED', 'Authentication is required'))
+        return
+      }
+
+      try {
+        const purchase = await service.confirmPurchase(
+          request.auth.profile,
+          request.params.date,
+          request.body,
+        )
+        response.status(200).json({ purchase })
+      } catch (error) {
+        next(toBreakfastApiError(error))
+      }
+    },
   }
 }
 
@@ -88,6 +117,10 @@ function toBreakfastApiError(error: unknown): unknown {
 
   if (error instanceof BreakfastForbiddenError) {
     return new ApiError(403, 'BREAKFAST_FORBIDDEN', error.message)
+  }
+
+  if (error instanceof BreakfastPurchaseForbiddenError) {
+    return new ApiError(403, 'BREAKFAST_PURCHASE_FORBIDDEN', error.message)
   }
 
   if (error instanceof BreakfastClosedError) {

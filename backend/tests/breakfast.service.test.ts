@@ -4,14 +4,17 @@ import type { SafeFamilyProfile } from '../src/services/family-auth.service.js'
 import {
   BreakfastClosedError,
   BreakfastForbiddenError,
+  BreakfastPurchaseForbiddenError,
   BreakfastService,
   BreakfastUnavailableError,
   BreakfastValidationError,
   type BreakfastCatalogItem,
   type BreakfastMember,
+  type BreakfastPurchaseRecord,
   type BreakfastRepository,
   type BreakfastSelectionRecord,
   type UpsertBreakfastSelection,
+  type ConfirmBreakfastPurchase,
 } from '../src/services/breakfast.service.js'
 
 const memberId = '11111111-1111-4111-8111-111111111111'
@@ -66,6 +69,8 @@ class FakeBreakfastRepository implements BreakfastRepository {
   selections: BreakfastSelectionRecord[] = []
   upsertCalls: UpsertBreakfastSelection[] = []
   selectionReadCalls: Array<{ date: string; memberIds: string[] }> = []
+  purchase: BreakfastPurchaseRecord | null = null
+  purchaseCalls: ConfirmBreakfastPurchase[] = []
   error?: Error
 
   async listActiveCatalog(): Promise<BreakfastCatalogItem[]> {
@@ -94,6 +99,28 @@ class FakeBreakfastRepository implements BreakfastRepository {
   async findActiveCatalogItem(id: string): Promise<BreakfastCatalogItem | null> {
     if (this.error) throw this.error
     return this.catalog.find((item) => item.id === id) ?? null
+  }
+
+  async findPurchase(): Promise<BreakfastPurchaseRecord | null> {
+    if (this.error) throw this.error
+    return this.purchase
+  }
+
+  async confirmPurchase(
+    input: ConfirmBreakfastPurchase,
+  ): Promise<BreakfastPurchaseRecord> {
+    if (this.error) throw this.error
+    this.purchaseCalls.push(input)
+    this.purchase = {
+      id: '55555555-5555-4555-8555-555555555555',
+      breakfastDate: input.breakfastDate,
+      confirmedBy: { id: input.actorMemberId, displayName: 'Synthetic Parent' },
+      message: input.message,
+      purchasedAt: '2026-10-21T12:00:00.000Z',
+      createdAt: '2026-10-21T12:00:00.000Z',
+      updatedAt: '2026-10-21T12:00:00.000Z',
+    }
+    return this.purchase
   }
 
   async upsertSelection(
@@ -148,6 +175,7 @@ describe('BreakfastService catalog and day views', () => {
       deadlineAt: '2026-10-21T17:00:00.000Z',
       timeZone: 'Asia/Ho_Chi_Minh',
       isOpen: true,
+      purchase: null,
       responses: [
         {
           member: {
@@ -204,6 +232,26 @@ describe('BreakfastService catalog and day views', () => {
     ])
   })
 
+  it('includes the purchase confirmation in every authorized day view', async () => {
+    const repository = new FakeBreakfastRepository()
+    repository.purchase = {
+      id: '55555555-5555-4555-8555-555555555555',
+      breakfastDate,
+      confirmedBy: { id: parentId, displayName: 'Synthetic Parent' },
+      message: 'Breakfast is on the table',
+      purchasedAt: '2026-10-21T12:00:00.000Z',
+      createdAt: '2026-10-21T12:00:00.000Z',
+      updatedAt: '2026-10-21T12:00:00.000Z',
+    }
+
+    const day = await createHarness(repository).service.getDay(
+      memberProfile,
+      breakfastDate,
+    )
+
+    expect(day.purchase).toEqual(repository.purchase)
+  })
+
   it('returns a closed historical requested date without changing its value', async () => {
     const { service } = createHarness()
 
@@ -221,6 +269,67 @@ describe('BreakfastService catalog and day views', () => {
 
     const result = service.getDay(memberProfile, 'next')
 
+    await expect(result).rejects.toBeInstanceOf(BreakfastUnavailableError)
+    await expect(result).rejects.not.toThrow('secret database detail')
+  })
+})
+
+describe('BreakfastService purchase confirmation', () => {
+  it('lets a parent confirm purchase with a trimmed optional message', async () => {
+    const { repository, service } = createHarness()
+
+    const purchase = await service.confirmPurchase(parentProfile, breakfastDate, {
+      message: '  Breakfast is ready  ',
+    })
+
+    expect(purchase.message).toBe('Breakfast is ready')
+    expect(repository.purchaseCalls).toEqual([
+      {
+        actorMemberId: parentId,
+        breakfastDate,
+        message: 'Breakfast is ready',
+      },
+    ])
+  })
+
+  it('allows an omitted, null, or blank message as no message', async () => {
+    for (const input of [{}, { message: null }, { message: '   ' }]) {
+      const { repository, service } = createHarness()
+      await service.confirmPurchase(parentProfile, breakfastDate, input)
+      expect(repository.purchaseCalls[0]?.message).toBeNull()
+    }
+  })
+
+  it.each([memberProfile, adminProfile])(
+    'rejects non-parent role $role',
+    async (profile) => {
+      const { repository, service } = createHarness()
+      await expect(
+        service.confirmPurchase(profile, breakfastDate, {}),
+      ).rejects.toBeInstanceOf(BreakfastPurchaseForbiddenError)
+      expect(repository.purchaseCalls).toEqual([])
+    },
+  )
+
+  it.each([
+    ['invalid date', '2026-02-29', {}],
+    ['unknown field', breakfastDate, { memberId }],
+    ['wrong message type', breakfastDate, { message: 42 }],
+    ['too-long message', breakfastDate, { message: 'x'.repeat(301) }],
+  ])('rejects %s before persistence', async (_label, dateValue, input) => {
+    const { repository, service } = createHarness()
+    await expect(
+      service.confirmPurchase(parentProfile, dateValue, input),
+    ).rejects.toBeInstanceOf(BreakfastValidationError)
+    expect(repository.purchaseCalls).toEqual([])
+  })
+
+  it('redacts purchase persistence failures', async () => {
+    const repository = new FakeBreakfastRepository()
+    repository.error = new Error('secret database detail')
+    const { service } = createHarness(repository)
+
+    const result = service.confirmPurchase(parentProfile, breakfastDate, {})
     await expect(result).rejects.toBeInstanceOf(BreakfastUnavailableError)
     await expect(result).rejects.not.toThrow('secret database detail')
   })

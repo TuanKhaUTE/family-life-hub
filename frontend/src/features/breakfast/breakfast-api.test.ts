@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { fetchBreakfastCatalog, fetchBreakfastDay } from './breakfast-api'
+import {
+  confirmBreakfastPurchase,
+  fetchBreakfastCatalog,
+  fetchBreakfastDay,
+} from './breakfast-api'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -61,6 +65,39 @@ describe('breakfast API client', () => {
 
     await expect(fetchBreakfastCatalog()).rejects.toThrow(
       'Breakfast information is temporarily unavailable.',
+    )
+  })
+
+  it('confirms purchase with an optional message and credentials', async () => {
+    const purchase = {
+      id: '22222222-2222-4222-8222-222222222222',
+      breakfastDate: '2026-10-22',
+      confirmedBy: {
+        id: '33333333-3333-4333-8333-333333333333',
+        displayName: 'Synthetic Parent',
+      },
+      message: 'Breakfast is ready',
+      purchasedAt: '2026-10-21T12:00:00.000Z',
+      createdAt: '2026-10-21T12:00:00.000Z',
+      updatedAt: '2026-10-21T12:00:00.000Z',
+    }
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ purchase }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      confirmBreakfastPurchase('2026-10-22', 'Breakfast is ready'),
+    ).resolves.toEqual(purchase)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/breakfast/days/2026-10-22/purchase',
+      {
+        method: 'PUT',
+        body: JSON.stringify({ message: 'Breakfast is ready' }),
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      },
     )
   })
 })

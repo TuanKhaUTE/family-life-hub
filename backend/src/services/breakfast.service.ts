@@ -51,6 +51,22 @@ export interface UpsertBreakfastSelection {
   customText: string | null
 }
 
+export interface BreakfastPurchaseRecord {
+  id: string
+  breakfastDate: string
+  confirmedBy: { id: string; displayName: string }
+  message: string | null
+  purchasedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ConfirmBreakfastPurchase {
+  actorMemberId: string
+  breakfastDate: string
+  message: string | null
+}
+
 export interface BreakfastRepository {
   listActiveCatalog(): Promise<BreakfastCatalogItem[]>
   listActiveMembers(): Promise<BreakfastMember[]>
@@ -59,6 +75,10 @@ export interface BreakfastRepository {
     memberIds: string[],
   ): Promise<BreakfastSelectionRecord[]>
   findActiveCatalogItem(id: string): Promise<BreakfastCatalogItem | null>
+  findPurchase(date: string): Promise<BreakfastPurchaseRecord | null>
+  confirmPurchase(
+    input: ConfirmBreakfastPurchase,
+  ): Promise<BreakfastPurchaseRecord>
   upsertSelection(
     input: UpsertBreakfastSelection,
   ): Promise<BreakfastSelectionRecord>
@@ -82,6 +102,7 @@ export interface BreakfastDay {
   deadlineAt: string
   timeZone: string
   isOpen: boolean
+  purchase: BreakfastPurchaseRecord | null
   responses: BreakfastDayResponse[]
 }
 
@@ -107,6 +128,13 @@ export class BreakfastForbiddenError extends Error {
   constructor() {
     super('This profile cannot submit a breakfast response')
     this.name = 'BreakfastForbiddenError'
+  }
+}
+
+export class BreakfastPurchaseForbiddenError extends Error {
+  constructor() {
+    super('Only a parent can confirm breakfast purchase')
+    this.name = 'BreakfastPurchaseForbiddenError'
   }
 }
 
@@ -164,6 +192,7 @@ export class BreakfastService {
         memberIds.length === 0
           ? []
           : await this.repository.listSelections(date, memberIds)
+      const purchase = await this.repository.findPurchase(date)
       const selectionsByMember = new Map(
         selections.map((selection) => [selection.memberId, selection]),
       )
@@ -173,6 +202,7 @@ export class BreakfastService {
         deadlineAt: timing.deadlineAt.toISOString(),
         timeZone: FAMILY_TIME_ZONE,
         isOpen: timing.isOpen,
+        purchase,
         responses: members.map((member) =>
           toDayResponse(member, selectionsByMember.get(member.id)),
         ),
@@ -227,6 +257,32 @@ export class BreakfastService {
       })
 
       return toDayResponse(toBreakfastMember(profile), saved)
+    } catch {
+      throw new BreakfastUnavailableError()
+    }
+  }
+
+  async confirmPurchase(
+    profile: SafeFamilyProfile,
+    requestedDate: unknown,
+    input: unknown,
+  ): Promise<BreakfastPurchaseRecord> {
+    if (profile.role !== 'PARENT') {
+      throw new BreakfastPurchaseForbiddenError()
+    }
+
+    if (!isBreakfastDate(requestedDate)) {
+      throw new BreakfastValidationError('Breakfast date must use YYYY-MM-DD')
+    }
+
+    const message = normalizePurchaseMessage(input)
+
+    try {
+      return await this.repository.confirmPurchase({
+        actorMemberId: profile.id,
+        breakfastDate: requestedDate,
+        message,
+      })
     } catch {
       throw new BreakfastUnavailableError()
     }
@@ -291,6 +347,27 @@ function normalizeResponse(input: unknown): NormalizedResponse {
   }
 
   throw new BreakfastValidationError()
+}
+
+function normalizePurchaseMessage(input: unknown): string | null {
+  if (!isObject(input) || !hasOnlyKeys(input, ['message'])) {
+    throw new BreakfastValidationError()
+  }
+
+  if (!Object.hasOwn(input, 'message') || input.message === null) {
+    return null
+  }
+
+  if (typeof input.message !== 'string') {
+    throw new BreakfastValidationError()
+  }
+
+  const message = input.message.trim()
+  if (message.length > 300) {
+    throw new BreakfastValidationError()
+  }
+
+  return message.length === 0 ? null : message
 }
 
 function toBreakfastMember(profile: SafeFamilyProfile): BreakfastMember {

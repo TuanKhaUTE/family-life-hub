@@ -10,11 +10,13 @@ import { generateSessionToken } from '../src/security/session-token.js'
 import {
   BreakfastClosedError,
   BreakfastForbiddenError,
+  BreakfastPurchaseForbiddenError,
   BreakfastUnavailableError,
   BreakfastValidationError,
   type BreakfastCatalogItem,
   type BreakfastDay,
   type BreakfastDayResponse,
+  type BreakfastPurchaseRecord,
 } from '../src/services/breakfast.service.js'
 import type {
   AuthenticatedFamilySession,
@@ -54,7 +56,20 @@ const day: BreakfastDay = {
   deadlineAt: '2026-10-21T17:00:00.000Z',
   timeZone: 'Asia/Ho_Chi_Minh',
   isOpen: true,
+  purchase: null,
   responses: [response],
+}
+const purchase: BreakfastPurchaseRecord = {
+  id: '55555555-5555-4555-8555-555555555555',
+  breakfastDate: date,
+  confirmedBy: {
+    id: '33333333-3333-4333-8333-333333333333',
+    displayName: 'Synthetic Parent',
+  },
+  message: 'Breakfast is ready',
+  purchasedAt: '2026-10-21T12:00:00.000Z',
+  createdAt: '2026-10-21T12:00:00.000Z',
+  updatedAt: '2026-10-21T12:00:00.000Z',
 }
 
 class FakeBreakfastService implements BreakfastOperations {
@@ -65,9 +80,15 @@ class FakeBreakfastService implements BreakfastOperations {
     state: 'NOT_EATING',
     updatedAt: '2026-10-21T12:00:00.000Z',
   }
+  purchaseResult = purchase
   error?: Error
   dayCalls: Array<{ profile: typeof profile; date: unknown }> = []
   saveCalls: Array<{
+    profile: typeof profile
+    date: unknown
+    body: unknown
+  }> = []
+  purchaseCalls: Array<{
     profile: typeof profile
     date: unknown
     body: unknown
@@ -99,6 +120,20 @@ class FakeBreakfastService implements BreakfastOperations {
       body,
     })
     return this.saveResult
+  }
+
+  async confirmPurchase(
+    requestedProfile: typeof profile,
+    requestedDate: unknown,
+    body: unknown,
+  ): Promise<BreakfastPurchaseRecord> {
+    if (this.error) throw this.error
+    this.purchaseCalls.push({
+      profile: requestedProfile,
+      date: requestedDate,
+      body,
+    })
+    return this.purchaseResult
   }
 }
 
@@ -241,5 +276,54 @@ describe('PUT /api/breakfast/days/:date/response', () => {
     expect(result.status).toBe(500)
     expect(result.body.error.code).toBe('INTERNAL_ERROR')
     expect(result.text).not.toContain('secret database detail')
+  })
+})
+
+describe('PUT /api/breakfast/days/:date/purchase', () => {
+  it('confirms purchase with authenticated profile context', async () => {
+    const { app, service } = createApp()
+    const body = { message: 'Breakfast is ready' }
+
+    const result = await authenticated(
+      request(app).put(`/api/breakfast/days/${date}/purchase`).send(body),
+    )
+
+    expect(result.status).toBe(200)
+    expect(result.body).toEqual({ purchase })
+    expect(service.purchaseCalls).toEqual([{ profile, date, body }])
+  })
+
+  it.each([
+    {
+      error: new BreakfastValidationError(),
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Invalid breakfast request',
+    },
+    {
+      error: new BreakfastPurchaseForbiddenError(),
+      status: 403,
+      code: 'BREAKFAST_PURCHASE_FORBIDDEN',
+      message: 'Only a parent can confirm breakfast purchase',
+    },
+    {
+      error: new BreakfastUnavailableError(),
+      status: 503,
+      code: 'BREAKFAST_UNAVAILABLE',
+      message: 'Breakfast information is temporarily unavailable',
+    },
+  ])('maps $code to a safe HTTP response', async (expected) => {
+    const service = new FakeBreakfastService()
+    service.error = expected.error
+    const { app } = createApp(service)
+
+    const result = await authenticated(
+      request(app).put(`/api/breakfast/days/${date}/purchase`).send({}),
+    )
+
+    expect(result.status).toBe(expected.status)
+    expect(result.body).toEqual({
+      error: { code: expected.code, message: expected.message },
+    })
   })
 })

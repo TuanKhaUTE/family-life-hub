@@ -65,7 +65,9 @@ class FakeQueryBuilder {
 
 class FakeSupabaseClient {
   readonly queries: Array<{ table: string; builder: FakeQueryBuilder }> = []
+  readonly rpcCalls: Array<{ name: string; arguments: Record<string, unknown> }> = []
   queryResults = new Map<string, SupabaseResult>()
+  rpcResults = new Map<string, SupabaseResult>()
 
   from(table: string): FakeQueryBuilder {
     const builder = new FakeQueryBuilder(
@@ -73,6 +75,13 @@ class FakeSupabaseClient {
     )
     this.queries.push({ table, builder })
     return builder
+  }
+
+  rpc(name: string, args: Record<string, unknown>): Promise<SupabaseResult> {
+    this.rpcCalls.push({ name, arguments: args })
+    return Promise.resolve(
+      this.rpcResults.get(name) ?? { data: null, error: null },
+    )
   }
 }
 
@@ -106,6 +115,16 @@ const selectedRow = {
   created_at: '2026-10-21T10:00:00.000Z',
   updated_at: '2026-10-21T11:00:00.000Z',
   dishes: { id: dishId, name: 'Synthetic Dish' },
+}
+const purchaseRow = {
+  id: '55555555-5555-4555-8555-555555555555',
+  breakfast_date: date,
+  confirmed_by_member_id: '33333333-3333-4333-8333-333333333333',
+  confirmed_by_display_name: 'Synthetic Parent',
+  message: 'Breakfast is ready',
+  purchased_at: '2026-10-21T12:00:00.000Z',
+  created_at: '2026-10-21T12:00:00.000Z',
+  updated_at: '2026-10-21T12:00:00.000Z',
 }
 
 function createHarness(client = new FakeSupabaseClient()) {
@@ -294,6 +313,85 @@ describe('SupabaseBreakfastRepository selections', () => {
 
     const result = repository.listSelections(date, [memberId])
 
+    await expect(result).rejects.toBeInstanceOf(BreakfastDataError)
+    await expect(result).rejects.not.toThrow('secret upstream detail')
+  })
+})
+
+describe('SupabaseBreakfastRepository purchases', () => {
+  it('finds and safely maps the purchase for a breakfast date', async () => {
+    const { client, repository } = createHarness()
+    client.queryResults.set('breakfast_purchases', {
+      data: {
+        ...purchaseRow,
+        family_members: { id: purchaseRow.confirmed_by_member_id, display_name: 'Synthetic Parent' },
+      },
+      error: null,
+    })
+
+    await expect(repository.findPurchase(date)).resolves.toMatchObject({
+      id: purchaseRow.id,
+      breakfastDate: date,
+      confirmedBy: {
+        id: purchaseRow.confirmed_by_member_id,
+        displayName: 'Synthetic Parent',
+      },
+      message: 'Breakfast is ready',
+    })
+    expect(client.queries[0]!.builder.operations).toContainEqual({
+      method: 'eq',
+      arguments: ['breakfast_date', date],
+    })
+    expect(client.queries[0]!.builder.operations.at(-1)).toEqual({
+      method: 'maybeSingle',
+      arguments: [],
+    })
+  })
+
+  it('returns null when no purchase exists', async () => {
+    const { client, repository } = createHarness()
+    client.queryResults.set('breakfast_purchases', { data: null, error: null })
+    await expect(repository.findPurchase(date)).resolves.toBeNull()
+  })
+
+  it('confirms through the atomic RPC and maps its single row', async () => {
+    const { client, repository } = createHarness()
+    client.rpcResults.set('confirm_breakfast_purchase', {
+      data: [purchaseRow],
+      error: null,
+    })
+
+    await expect(
+      repository.confirmPurchase({
+        actorMemberId: '33333333-3333-4333-8333-333333333333',
+        breakfastDate: date,
+        message: 'Breakfast is ready',
+      }),
+    ).resolves.toMatchObject({ id: purchaseRow.id, breakfastDate: date })
+    expect(client.rpcCalls).toEqual([
+      {
+        name: 'confirm_breakfast_purchase',
+        arguments: {
+          p_actor_member_id: '33333333-3333-4333-8333-333333333333',
+          p_breakfast_date: date,
+          p_message: 'Breakfast is ready',
+        },
+      },
+    ])
+  })
+
+  it('rejects malformed or failed purchase results with a safe error', async () => {
+    const { client, repository } = createHarness()
+    client.rpcResults.set('confirm_breakfast_purchase', {
+      data: [{ ...purchaseRow, id: 'not-a-uuid' }],
+      error: { message: 'secret upstream detail' },
+    })
+
+    const result = repository.confirmPurchase({
+      actorMemberId: memberId,
+      breakfastDate: date,
+      message: null,
+    })
     await expect(result).rejects.toBeInstanceOf(BreakfastDataError)
     await expect(result).rejects.not.toThrow('secret upstream detail')
   })

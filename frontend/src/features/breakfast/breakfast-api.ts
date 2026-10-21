@@ -28,7 +28,18 @@ export interface BreakfastDay {
   deadlineAt: string
   timeZone: string
   isOpen: boolean
+  purchase: BreakfastPurchase | null
   responses: BreakfastDayResponse[]
+}
+
+export interface BreakfastPurchase {
+  id: string
+  breakfastDate: string
+  confirmedBy: { id: string; displayName: string }
+  message: string | null
+  purchasedAt: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type BreakfastSubmission =
@@ -79,6 +90,23 @@ export async function saveBreakfastResponse(
   return body.response
 }
 
+export async function confirmBreakfastPurchase(
+  date: string,
+  message: string | null,
+): Promise<BreakfastPurchase> {
+  const body = await requestJson(
+    `/api/breakfast/days/${encodeURIComponent(date)}/purchase`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ message }),
+    },
+  )
+  if (!isObject(body) || !isBreakfastPurchase(body.purchase)) {
+    throw new Error(SAFE_ERROR)
+  }
+  return body.purchase
+}
+
 async function requestJson(path: string, init?: RequestInit): Promise<unknown> {
   try {
     const response = await fetch(path, {
@@ -118,7 +146,23 @@ function isBreakfastDay(value: unknown): value is BreakfastDay {
     !Number.isNaN(Date.parse(value.deadlineAt)) &&
     typeof value.timeZone === 'string' &&
     typeof value.isOpen === 'boolean' &&
+    (value.purchase === null || isBreakfastPurchase(value.purchase)) &&
     value.responses.every(isDayResponse)
+  )
+}
+
+function isBreakfastPurchase(value: unknown): value is BreakfastPurchase {
+  return (
+    isObject(value) &&
+    typeof value.id === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(value.breakfastDate)) &&
+    isObject(value.confirmedBy) &&
+    typeof value.confirmedBy.id === 'string' &&
+    typeof value.confirmedBy.displayName === 'string' &&
+    isNullableString(value.message) &&
+    isTimestamp(value.purchasedAt) &&
+    isTimestamp(value.createdAt) &&
+    isTimestamp(value.updatedAt)
   )
 }
 
@@ -165,6 +209,10 @@ function isSelectedItem(value: unknown): boolean {
 
 function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === 'string'
+}
+
+function isTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && !Number.isNaN(Date.parse(value))
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

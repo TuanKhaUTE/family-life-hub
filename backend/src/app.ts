@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/error-handler.js'
 import authRouter from './routes/auth.routes.js'
 import breakfastRouter from './routes/breakfast.routes.js'
 import healthRouter from './routes/health.routes.js'
+import notificationRouter from './routes/notification.routes.js'
 
 const app = express()
 
@@ -17,6 +18,7 @@ app.use(express.json())
 app.use('/api', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/breakfast', breakfastRouter)
+app.use('/api/notifications', notificationRouter)
 app.use(errorHandler)
 
 export default app
