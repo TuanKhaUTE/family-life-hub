@@ -9,10 +9,10 @@ import {
   type FamilyProfile,
 } from './auth-api'
 
-const INVALID_LOGIN_MESSAGE = 'Couldn’t verify that profile and PIN.'
+const INVALID_LOGIN_MESSAGE = 'Không thể xác minh hồ sơ hoặc mã PIN.'
 const UNAVAILABLE_LOGIN_MESSAGE =
-  'We couldn’t check that PIN right now. Please try again.'
-const LOGOUT_ERROR_MESSAGE = 'We couldn’t confirm logout. Please try again.'
+  'Hiện chưa thể kiểm tra mã PIN. Vui lòng thử lại.'
+const LOGOUT_ERROR_MESSAGE = 'Không thể xác nhận đăng xuất. Vui lòng thử lại.'
 
 export type AuthFlowState =
   | { view: 'checking-session' }

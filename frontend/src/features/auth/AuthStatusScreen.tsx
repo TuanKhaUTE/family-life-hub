@@ -6,7 +6,7 @@ interface AuthStatusScreenProps {
 
 export function AuthStatusScreen({
   kind,
-  message = 'Opening your family home…',
+  message = 'Đang mở không gian gia đình…',
   onRetry,
 }: AuthStatusScreenProps) {
   if (kind === 'error') {
@@ -20,13 +20,12 @@ export function AuthStatusScreen({
           <span>⌂</span>
         </div>
         <p className="eyebrow">Family Life Hub</p>
-        <h1 id="auth-error-title">We couldn’t open the door</h1>
+        <h1 id="auth-error-title">Chưa thể mở cửa</h1>
         <p className="auth-copy">
-          Something interrupted the connection. Your family space is still
-          safe.
+          Kết nối đang bị gián đoạn. Không gian gia đình của bạn vẫn an toàn.
         </p>
         <button className="primary-button" type="button" onClick={onRetry}>
-          Try again
+          Thử lại
         </button>
       </section>
     )
@@ -43,7 +42,7 @@ export function AuthStatusScreen({
         <span>⌂</span>
       </div>
       <p className="eyebrow">Family Life Hub</p>
-      <h1>A little place for everyone</h1>
+      <h1>Góc nhỏ của cả nhà</h1>
       <p className="auth-copy">{message}</p>
       <span className="loading-dots" aria-hidden="true">
         <i />

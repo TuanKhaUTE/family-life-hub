@@ -25,6 +25,8 @@ The application should not look like:
 
 The visual identity should feel modern but emotionally warm.
 
+The primary end-user UI language is Vietnamese.
+
 Primary design keywords:
 
 Cozy

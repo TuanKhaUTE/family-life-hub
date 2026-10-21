@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   FAMILY_TIME_ZONE,
+  getFamilyDate,
   getBreakfastTiming,
   getNextBreakfastDate,
   isBreakfastDate,
@@ -10,6 +11,15 @@ import {
 describe('family breakfast calendar', () => {
   it('uses the configured Vietnam family timezone', () => {
     expect(FAMILY_TIME_ZONE).toBe('Asia/Ho_Chi_Minh')
+  })
+
+  it('returns the current family date across the UTC boundary', () => {
+    expect(getFamilyDate(new Date('2026-10-21T16:59:59.000Z'))).toBe(
+      '2026-10-21',
+    )
+    expect(getFamilyDate(new Date('2026-10-21T17:00:00.000Z'))).toBe(
+      '2026-10-22',
+    )
   })
 
   it('returns the next local date and its UTC midnight deadline', () => {

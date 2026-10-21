@@ -41,6 +41,13 @@ export function isBreakfastDate(value: unknown): value is string {
   )
 }
 
+export const isFamilyDate = isBreakfastDate
+
+export function getFamilyDate(now: Date): string {
+  const local = getZonedParts(now)
+  return formatDate(local.year, local.month, local.day)
+}
+
 export function getNextBreakfastDate(now: Date): string {
   const local = getZonedParts(now)
   const next = new Date(Date.UTC(local.year, local.month - 1, local.day + 1))

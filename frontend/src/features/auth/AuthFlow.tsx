@@ -19,7 +19,7 @@ export function AuthFlow() {
     case 'checking-session':
       return <AuthStatusScreen kind="loading" />
     case 'loading-profiles':
-      return <AuthStatusScreen kind="loading" message="Gathering the family…" />
+      return <AuthStatusScreen kind="loading" message="Đang gọi cả nhà…" />
     case 'choosing-profile':
       return (
         <ProfileSelector

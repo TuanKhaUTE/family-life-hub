@@ -6,6 +6,7 @@ import authRouter from './routes/auth.routes.js'
 import breakfastRouter from './routes/breakfast.routes.js'
 import healthRouter from './routes/health.routes.js'
 import notificationRouter from './routes/notification.routes.js'
+import mealRequestRouter from './routes/meal-request.routes.js'
 
 const app = express()
 
@@ -19,6 +20,7 @@ app.use('/api', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/breakfast', breakfastRouter)
 app.use('/api/notifications', notificationRouter)
+app.use('/api/meals/requests', mealRequestRouter)
 app.use(errorHandler)
 
 export default app

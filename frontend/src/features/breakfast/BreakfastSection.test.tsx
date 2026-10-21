@@ -125,6 +125,18 @@ afterEach(() => {
 })
 
 describe('member breakfast flow', () => {
+  it('uses Vietnamese for the primary breakfast actions', async () => {
+    vi.stubGlobal('fetch', successfulFetch())
+    render(<BreakfastSection profile={member} />)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Bữa sáng' }),
+    ).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Không ăn' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }),
+    ).toBeTruthy()
+  })
   it('restores a saved choice and lets the member change it before deadline', async () => {
     const user = userEvent.setup()
     const initialDay = day({
@@ -141,18 +153,18 @@ describe('member breakfast flow', () => {
 
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
     expect(screen.getByText('Phở')).toBeTruthy()
     expect(screen.queryByRole('radio', { name: 'Phở' })).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Change choice' }))
+    await user.click(screen.getByRole('button', { name: 'Đổi lựa chọn' }))
     expect(
       (screen.getByRole('radio', { name: 'Phở' }) as HTMLInputElement).checked,
     ).toBe(true)
 
     await user.click(screen.getByRole('radio', { name: 'Bánh mì' }))
-    await user.click(screen.getByRole('button', { name: 'Update breakfast choice' }))
+    await user.click(screen.getByRole('button', { name: 'Cập nhật lựa chọn bữa sáng' }))
 
-    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
     expect(screen.getByText('Bánh mì')).toBeTruthy()
     expect(screen.queryByRole('radio', { name: 'Bánh mì' })).toBeNull()
     const saveCall = fetchMock.mock.calls.find(
@@ -170,14 +182,14 @@ describe('member breakfast flow', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<BreakfastSection profile={member} />)
 
-    await screen.findByRole('radio', { name: 'Other / custom' })
-    await user.click(screen.getByRole('radio', { name: 'Other / custom' }))
-    await user.type(screen.getByLabelText('Your breakfast'), '  Cháo gà  ')
-    await user.click(screen.getByRole('button', { name: 'Save breakfast choice' }))
+    await screen.findByRole('radio', { name: 'Món khác / tự nhập' })
+    await user.click(screen.getByRole('radio', { name: 'Món khác / tự nhập' }))
+    await user.type(screen.getByLabelText('Món ăn sáng của bạn'), '  Cháo gà  ')
+    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }))
 
-    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
+    expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
     expect(screen.getByText('Cháo gà')).toBeTruthy()
-    expect(screen.queryByRole('radio', { name: 'Other / custom' })).toBeNull()
+    expect(screen.queryByRole('radio', { name: 'Món khác / tự nhập' })).toBeNull()
     const saveCall = fetchMock.mock.calls.find(
       ([url]) => url === '/api/breakfast/days/2026-10-22/response',
     )
@@ -193,12 +205,12 @@ describe('member breakfast flow', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<BreakfastSection profile={member} />)
 
-    await screen.findByRole('radio', { name: 'Not eating' })
-    await user.click(screen.getByRole('radio', { name: 'Not eating' }))
-    await user.click(screen.getByRole('button', { name: 'Save breakfast choice' }))
+    await screen.findByRole('radio', { name: 'Không ăn' })
+    await user.click(screen.getByRole('radio', { name: 'Không ăn' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }))
 
-    expect(await screen.findByText('Breakfast saved')).toBeTruthy()
-    expect(screen.getByText('Not eating')).toBeTruthy()
+    expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
+    expect(screen.getByText('Không ăn')).toBeTruthy()
   })
 
   it('shows a closed state without editable choices after cutoff', async () => {
@@ -206,9 +218,9 @@ describe('member breakfast flow', () => {
 
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('Breakfast choices are closed')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Save breakfast choice' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Change choice' })).toBeNull()
+    expect(await screen.findByText('Đã hết giờ chọn bữa sáng')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Lưu lựa chọn bữa sáng' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Đổi lựa chọn' })).toBeNull()
   })
 
   it('moves an open page to the closed state when the deadline passes before save', async () => {
@@ -232,11 +244,11 @@ describe('member breakfast flow', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<BreakfastSection profile={member} />)
 
-    await screen.findByRole('radio', { name: 'Not eating' })
-    await user.click(screen.getByRole('radio', { name: 'Not eating' }))
-    await user.click(screen.getByRole('button', { name: 'Save breakfast choice' }))
+    await screen.findByRole('radio', { name: 'Không ăn' })
+    await user.click(screen.getByRole('radio', { name: 'Không ăn' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }))
 
-    expect(await screen.findByText('Breakfast choices are closed')).toBeTruthy()
+    expect(await screen.findByText('Đã hết giờ chọn bữa sáng')).toBeTruthy()
     expect(screen.queryByText('internal deadline wording')).toBeNull()
   })
 
@@ -254,9 +266,9 @@ describe('member breakfast flow', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<BreakfastSection profile={member} />)
 
-    await screen.findByRole('radio', { name: 'Not eating' })
-    fireEvent.click(screen.getByRole('radio', { name: 'Not eating' }))
-    const form = screen.getByRole('button', { name: 'Save breakfast choice' }).closest('form')!
+    await screen.findByRole('radio', { name: 'Không ăn' })
+    fireEvent.click(screen.getByRole('radio', { name: 'Không ăn' }))
+    const form = screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }).closest('form')!
     fireEvent.submit(form)
     fireEvent.submit(form)
 
@@ -266,7 +278,7 @@ describe('member breakfast flow', () => {
     resolveSave?.(
       jsonResponse({ response: response({ state: 'NOT_EATING' }) }),
     )
-    await screen.findByText('Breakfast saved')
+    await screen.findByText('Đã lưu bữa sáng')
   })
 
   it('shows a safe load error and can retry', async () => {
@@ -281,9 +293,9 @@ describe('member breakfast flow', () => {
 
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('We couldn’t load breakfast right now.')).toBeTruthy()
+    expect(await screen.findByText('Hiện chưa thể tải thông tin bữa sáng.')).toBeTruthy()
     expect(screen.queryByText('private network detail')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Try breakfast again' }))
+    await user.click(screen.getByRole('button', { name: 'Thử tải lại bữa sáng' }))
 
     expect(await screen.findByRole('radio', { name: 'Phở' })).toBeTruthy()
   })
@@ -292,7 +304,7 @@ describe('member breakfast flow', () => {
     vi.stubGlobal('fetch', successfulFetch(day({ purchase })))
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('Mom got breakfast ✓')).toBeTruthy()
+    expect(await screen.findByText('Mẹ đã mua bữa sáng ✓')).toBeTruthy()
     expect(screen.getByText('Nước cam trong tủ lạnh nha')).toBeTruthy()
   })
 })
@@ -321,11 +333,11 @@ describe('parent breakfast view', () => {
 
     render(<BreakfastSection profile={parent} />)
 
-    expect(await screen.findByText('Selected · Phở')).toBeTruthy()
-    expect(screen.getByText('Custom · Cháo gà')).toBeTruthy()
-    expect(screen.getByText('Not eating')).toBeTruthy()
-    expect(screen.getByText('No response yet')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Save breakfast choice' })).toBeNull()
+    expect(await screen.findByText('Đã chọn · Phở')).toBeTruthy()
+    expect(screen.getByText('Món tự chọn · Cháo gà')).toBeTruthy()
+    expect(screen.getByText('Không ăn')).toBeTruthy()
+    expect(screen.getByText('Chưa trả lời')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Lưu lựa chọn bữa sáng' })).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -343,15 +355,15 @@ describe('parent breakfast view', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<BreakfastSection profile={parent} />)
 
-    const input = await screen.findByLabelText('Optional note for the family')
+    const input = await screen.findByLabelText('Lời nhắn cho cả nhà')
     await user.type(input, '  Nước cam trong tủ lạnh nha  ')
-    await user.click(screen.getByRole('button', { name: 'Breakfast purchased' }))
+    await user.click(screen.getByRole('button', { name: 'Xác nhận đã mua' }))
 
-    expect(await screen.findByText('Breakfast purchased ✓')).toBeTruthy()
+    expect(await screen.findByText('Đã mua bữa sáng ✓')).toBeTruthy()
     expect(screen.getByText('Nước cam trong tủ lạnh nha')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Edit message' }))
-    expect(screen.getByRole('button', { name: 'Update breakfast message' })).toBeTruthy()
-    expect((screen.getByLabelText('Optional note for the family') as HTMLInputElement).value).toBe(
+    await user.click(screen.getByRole('button', { name: 'Sửa lời nhắn' }))
+    expect(screen.getByRole('button', { name: 'Cập nhật lời nhắn' })).toBeTruthy()
+    expect((screen.getByLabelText('Lời nhắn cho cả nhà') as HTMLInputElement).value).toBe(
       'Nước cam trong tủ lạnh nha',
     )
   })
@@ -368,9 +380,9 @@ describe('parent breakfast view', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<BreakfastSection profile={parent} />)
 
-    await screen.findByRole('button', { name: 'Breakfast purchased' })
-    await user.click(screen.getByRole('button', { name: 'Breakfast purchased' }))
-    expect(await screen.findByText('We couldn’t confirm breakfast purchase. Please try again.')).toBeTruthy()
+    await screen.findByRole('button', { name: 'Xác nhận đã mua' })
+    await user.click(screen.getByRole('button', { name: 'Xác nhận đã mua' }))
+    expect(await screen.findByText('Chưa thể xác nhận mua bữa sáng. Vui lòng thử lại.')).toBeTruthy()
     expect(screen.queryByText('private network detail')).toBeNull()
   })
 })

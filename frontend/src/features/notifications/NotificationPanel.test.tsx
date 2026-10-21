@@ -29,11 +29,25 @@ afterEach(() => {
 })
 
 describe('NotificationPanel', () => {
+  it('uses Vietnamese notification labels', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(json({ notifications: [notification] })),
+    )
+    render(<NotificationPanel />)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Thông báo' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Đánh dấu đã đọc' }),
+    ).toBeTruthy()
+  })
   it('shows a calm loading state while notifications are pending', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => undefined)))
     render(<NotificationPanel />)
     expect(screen.getByRole('status').textContent).toContain(
-      'Gathering family notes',
+      'Đang tải thông báo',
     )
   })
 
@@ -49,10 +63,10 @@ describe('NotificationPanel', () => {
     render(<NotificationPanel />)
 
     expect(await screen.findByText('Breakfast is ready')).toBeTruthy()
-    expect(screen.getByText('New')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Mark as read' }))
-    expect(await screen.findByText('Read')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Mark as read' })).toBeNull()
+    expect(screen.getByText('Mới')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
+    expect(await screen.findByText('Đã đọc')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Đánh dấu đã đọc' })).toBeNull()
   })
 
   it('shows a safe error and retries', async () => {
@@ -64,10 +78,10 @@ describe('NotificationPanel', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(<NotificationPanel />)
 
-    expect(await screen.findByText('We couldn’t load notifications.')).toBeTruthy()
+    expect(await screen.findByText('Hiện chưa thể tải thông báo.')).toBeTruthy()
     expect(screen.queryByText('private detail')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Try notifications again' }))
-    expect(await screen.findByText('No new family notes right now.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Thử tải lại' }))
+    expect(await screen.findByText('Hiện chưa có thông báo nào.')).toBeTruthy()
   })
 
   it('keeps a failed mark-read action retryable', async () => {
@@ -80,8 +94,8 @@ describe('NotificationPanel', () => {
     render(<NotificationPanel />)
 
     await screen.findByText('Breakfast is ready')
-    await user.click(screen.getByRole('button', { name: 'Mark as read' }))
-    expect(await screen.findByText('Couldn’t mark that note as read.')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Mark as read' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
+    expect(await screen.findByText('Chưa thể đánh dấu thông báo đã đọc.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Đánh dấu đã đọc' })).toBeTruthy()
   })
 })

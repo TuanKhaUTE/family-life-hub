@@ -45,20 +45,20 @@ export function PinLoginForm({
         type="button"
         disabled={isSubmitting}
         onClick={onBack}
-        aria-label="Choose another profile"
+        aria-label="Chọn hồ sơ khác"
       >
-        <span aria-hidden="true">←</span> Back
+        <span aria-hidden="true">←</span> Quay lại
       </button>
 
       <div className="selected-profile">
         <ProfileAvatar profile={profile} />
-        <p className="eyebrow">Welcome back</p>
-        <h1 id="pin-title">Hi, {profile.displayName}</h1>
-        <p className="auth-copy">Enter your 6-digit PIN to continue.</p>
+        <p className="eyebrow">Chào mừng trở lại</p>
+        <h1 id="pin-title">Chào {profile.displayName}</h1>
+        <p className="auth-copy">Nhập mã PIN 6 số để tiếp tục.</p>
       </div>
 
       <form className="pin-form" onSubmit={handleSubmit}>
-        <label htmlFor="family-pin">6-digit PIN</label>
+        <label htmlFor="family-pin">Mã PIN 6 số</label>
         <input
           id="family-pin"
           name="family-pin"
@@ -77,7 +77,7 @@ export function PinLoginForm({
           aria-invalid={error ? true : undefined}
         />
         <p id="pin-help" className="field-help">
-          Six numbers, just like usual.
+          6 chữ số quen thuộc của bạn.
         </p>
         {error && (
           <p id="pin-error" className="form-error" role="alert">
@@ -89,7 +89,7 @@ export function PinLoginForm({
           type="submit"
           disabled={!isComplete || isSubmitting}
         >
-          {isSubmitting ? 'Checking…' : 'Enter Family Life Hub'}
+          {isSubmitting ? 'Đang kiểm tra…' : 'Vào Family Life Hub'}
         </button>
       </form>
     </section>

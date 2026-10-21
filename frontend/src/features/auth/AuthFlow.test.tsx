@@ -10,6 +10,10 @@ vi.mock('../notifications/NotificationPanel', () => ({
   NotificationPanel: () => null,
 }))
 
+vi.mock('../meals/MealRequestSection', () => ({
+  MealRequestSection: () => null,
+}))
+
 import { AuthFlow } from './AuthFlow'
 import type { FamilyProfile } from './auth-api'
 
@@ -38,11 +42,11 @@ function signedOutFetch(): ReturnType<typeof vi.fn> {
 }
 
 async function openPinForm(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole('heading', { name: 'Who’s home today?' })
+  await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' })
   await user.click(
-    screen.getByRole('button', { name: `Continue as ${profile.displayName}` }),
+    screen.getByRole('button', { name: `Tiếp tục với ${profile.displayName}` }),
   )
-  return screen.getByLabelText('6-digit PIN') as HTMLInputElement
+  return screen.getByLabelText('Mã PIN 6 số') as HTMLInputElement
 }
 
 afterEach(() => {
@@ -51,6 +55,19 @@ afterEach(() => {
 })
 
 describe('AuthFlow', () => {
+  it('uses Vietnamese for the primary profile-selection flow', async () => {
+    vi.stubGlobal('fetch', signedOutFetch())
+    render(<AuthFlow />)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: `Tiếp tục với ${profile.displayName}`,
+      }),
+    ).toBeTruthy()
+  })
   it('restores an authenticated session on app load', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ profile }))
     vi.stubGlobal('fetch', fetchMock)
@@ -58,11 +75,11 @@ describe('AuthFlow', () => {
     render(<AuthFlow />)
 
     expect(screen.getByRole('status').textContent).toContain(
-      'Opening your family home',
+      'Đang mở không gian gia đình',
     )
     expect(
       await screen.findByRole('heading', {
-        name: `Welcome home, ${profile.displayName}`,
+        name: `Chào ${profile.displayName} về nhà`,
       }),
     ).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -76,7 +93,7 @@ describe('AuthFlow', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: `Continue as ${profile.displayName}`,
+        name: `Tiếp tục với ${profile.displayName}`,
       }),
     ).toBeTruthy()
     expect(screen.queryByText(profile.id)).toBeNull()
@@ -93,12 +110,12 @@ describe('AuthFlow', () => {
 
     const input = await openPinForm(user)
     expect(input.type).toBe('password')
-    expect(screen.getByText(`Hi, ${profile.displayName}`)).toBeTruthy()
+    expect(screen.getByText(`Chào ${profile.displayName}`)).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Choose another profile' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn hồ sơ khác' }))
 
     expect(
-      screen.getByRole('heading', { name: 'Who’s home today?' }),
+      screen.getByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
     ).toBeTruthy()
   })
 
@@ -107,7 +124,7 @@ describe('AuthFlow', () => {
     vi.stubGlobal('fetch', signedOutFetch())
     render(<AuthFlow />)
     const input = await openPinForm(user)
-    const submit = screen.getByRole('button', { name: 'Enter Family Life Hub' })
+    const submit = screen.getByRole('button', { name: 'Vào Family Life Hub' })
 
     await user.type(input, '12a34-5')
     expect(input.value).toBe('12345')
@@ -129,11 +146,11 @@ describe('AuthFlow', () => {
     const input = await openPinForm(user)
 
     await user.type(input, '123456')
-    await user.click(screen.getByRole('button', { name: 'Enter Family Life Hub' }))
+    await user.click(screen.getByRole('button', { name: 'Vào Family Life Hub' }))
 
     expect(
       await screen.findByRole('heading', {
-        name: `Welcome home, ${profile.displayName}`,
+        name: `Chào ${profile.displayName} về nhà`,
       }),
     ).toBeTruthy()
     const loginCall = fetchMock.mock.calls[2]
@@ -163,10 +180,10 @@ describe('AuthFlow', () => {
     const input = await openPinForm(user)
 
     await user.type(input, '123456')
-    await user.click(screen.getByRole('button', { name: 'Enter Family Life Hub' }))
+    await user.click(screen.getByRole('button', { name: 'Vào Family Life Hub' }))
 
     expect(
-      await screen.findByText('Couldn’t verify that profile and PIN.'),
+      await screen.findByText('Không thể xác minh hồ sơ hoặc mã PIN.'),
     ).toBeTruthy()
     expect(input.value).toBe('')
     expect(screen.queryByText('sensitive lockout detail')).toBeNull()
@@ -184,7 +201,7 @@ describe('AuthFlow', () => {
     const input = await openPinForm(user)
 
     await user.type(input, '123456')
-    const form = screen.getByLabelText('6-digit PIN').closest('form')!
+    const form = screen.getByLabelText('Mã PIN 6 số').closest('form')!
     fireEvent.submit(form)
     fireEvent.submit(form)
 
@@ -195,7 +212,7 @@ describe('AuthFlow', () => {
     resolveLogin?.(jsonResponse({ profile }))
     expect(
       await screen.findByRole('heading', {
-        name: `Welcome home, ${profile.displayName}`,
+        name: `Chào ${profile.displayName} về nhà`,
       }),
     ).toBeTruthy()
   })
@@ -211,12 +228,12 @@ describe('AuthFlow', () => {
     render(<AuthFlow />)
 
     await screen.findByRole('heading', {
-      name: `Welcome home, ${profile.displayName}`,
+      name: `Chào ${profile.displayName} về nhà`,
     })
-    await user.click(screen.getByRole('button', { name: 'Log out' }))
+    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Who’s home today?' }),
+      await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
     ).toBeTruthy()
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       '/api/auth/me',
@@ -238,14 +255,14 @@ describe('AuthFlow', () => {
     render(<AuthFlow />)
 
     expect(
-      await screen.findByRole('heading', { name: 'We couldn’t open the door' }),
+      await screen.findByRole('heading', { name: 'Chưa thể mở cửa' }),
     ).toBeTruthy()
     expect(screen.queryByText('network detail')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    await user.click(screen.getByRole('button', { name: 'Thử lại' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Who’s home today?' }),
+      await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
     ).toBeTruthy()
   })
 
@@ -261,18 +278,18 @@ describe('AuthFlow', () => {
     render(<AuthFlow />)
 
     await screen.findByRole('heading', {
-      name: `Welcome home, ${profile.displayName}`,
+      name: `Chào ${profile.displayName} về nhà`,
     })
-    await user.click(screen.getByRole('button', { name: 'Log out' }))
+    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
     expect(
-      await screen.findByText('We couldn’t confirm logout. Please try again.'),
+      await screen.findByText('Không thể xác nhận đăng xuất. Vui lòng thử lại.'),
     ).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Log out' }))
+    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { name: 'Who’s home today?' }),
+        screen.getByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
       ).toBeTruthy()
     })
   })

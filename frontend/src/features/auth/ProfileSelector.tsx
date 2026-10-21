@@ -17,24 +17,24 @@ export function ProfileSelector({
     <section className="auth-card profile-selector" aria-labelledby="profile-title">
       <header className="auth-heading">
         <p className="eyebrow">Family Life Hub</p>
-        <h1 id="profile-title">Who’s home today?</h1>
-        <p className="auth-copy">Choose your profile to step inside.</p>
+        <h1 id="profile-title">Hôm nay ai đang dùng?</h1>
+        <p className="auth-copy">Chọn hồ sơ của bạn để vào nhà nhé.</p>
       </header>
 
       {profiles.length > 0 ? (
-        <ul className="profile-grid" aria-label="Family profiles">
+        <ul className="profile-grid" aria-label="Hồ sơ gia đình">
           {profiles.map((profile) => (
             <li key={profile.id}>
               <button
                 className="profile-card"
                 type="button"
-                aria-label={`Continue as ${profile.displayName}`}
+                aria-label={`Tiếp tục với ${profile.displayName}`}
                 onClick={() => onSelect(profile)}
               >
                 <ProfileAvatar profile={profile} />
                 <span className="profile-name">{profile.displayName}</span>
                 <span className="profile-action" aria-hidden="true">
-                  Come in <span>→</span>
+                  Vào nhà <span>→</span>
                 </span>
               </button>
             </li>
@@ -42,9 +42,9 @@ export function ProfileSelector({
         </ul>
       ) : (
         <div className="empty-profiles">
-          <p>No family profiles are available right now.</p>
+          <p>Hiện chưa có hồ sơ gia đình nào.</p>
           <button className="secondary-button" type="button" onClick={onRefresh}>
-            Check again
+            Kiểm tra lại
           </button>
         </div>
       )}

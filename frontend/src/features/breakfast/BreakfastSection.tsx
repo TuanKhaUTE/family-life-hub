@@ -72,7 +72,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
       <section className="breakfast-card" aria-labelledby="breakfast-title">
         <BreakfastHeader />
         <p className="breakfast-message" role="status">
-          Setting the breakfast table…
+          Đang dọn bàn ăn sáng…
         </p>
       </section>
     )
@@ -83,7 +83,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
       <section className="breakfast-card" aria-labelledby="breakfast-title">
         <BreakfastHeader />
         <div className="breakfast-message breakfast-message--error">
-          <p>We couldn’t load breakfast right now.</p>
+          <p>Hiện chưa thể tải thông tin bữa sáng.</p>
           <button
             className="secondary-button"
             type="button"
@@ -93,7 +93,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
               setReloadKey((value) => value + 1)
             }}
           >
-            Try breakfast again
+            Thử tải lại bữa sáng
           </button>
         </div>
       </section>
@@ -145,7 +145,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
           current === null ? current : { ...current, isOpen: false },
         )
       } else {
-        setSaveError('We couldn’t save your breakfast choice. Please try again.')
+        setSaveError('Chưa thể lưu lựa chọn bữa sáng. Vui lòng thử lại.')
       }
     } finally {
       submittingRef.current = false
@@ -162,8 +162,8 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
         <>
           <SavedChoiceCard response={ownResponse} />
           <div className="breakfast-closed" role="status">
-            <strong>Breakfast choices are closed</strong>
-            <span>The midnight deadline has passed for this morning.</span>
+            <strong>Đã hết giờ chọn bữa sáng</strong>
+            <span>Thời hạn 00:00 cho sáng nay đã qua.</span>
           </div>
         </>
       ) : ownResponse?.state !== 'NO_RESPONSE' && !isEditing ? (
@@ -174,7 +174,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
       ) : (
         <form className="breakfast-form" onSubmit={handleSubmit}>
           <fieldset>
-            <legend>What would you like?</legend>
+            <legend>Bạn muốn ăn gì?</legend>
             <div className="breakfast-options">
               {catalog.map((item) => (
                 <ChoiceCard
@@ -190,7 +190,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
                 />
               ))}
               <ChoiceCard
-                label="Other / custom"
+                label="Món khác / tự nhập"
                 checked={draft.state === 'CUSTOM'}
                 tone="peach"
                 onSelect={() =>
@@ -202,7 +202,7 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
                 }
               />
               <ChoiceCard
-                label="Not eating"
+                label="Không ăn"
                 checked={draft.state === 'NOT_EATING'}
                 tone="quiet"
                 onSelect={() => setDraft({ state: 'NOT_EATING' })}
@@ -212,12 +212,12 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
 
           {draft.state === 'CUSTOM' && (
             <label className="custom-choice">
-              <span>Your breakfast</span>
+              <span>Món ăn sáng của bạn</span>
               <input
                 value={draft.customText}
                 maxLength={120}
                 autoComplete="off"
-                placeholder="e.g. Cháo gà"
+                placeholder="Ví dụ: Cháo gà"
                 onChange={(event) =>
                   setDraft({ state: 'CUSTOM', customText: event.target.value })
                 }
@@ -237,10 +237,10 @@ export function BreakfastSection({ profile }: BreakfastSectionProps) {
             disabled={!canSubmit(draft) || isSaving}
           >
             {isSaving
-              ? 'Saving…'
+              ? 'Đang lưu…'
               : ownResponse?.state === 'NO_RESPONSE' || ownResponse === null
-                ? 'Save breakfast choice'
-                : 'Update breakfast choice'}
+                ? 'Lưu lựa chọn bữa sáng'
+                : 'Cập nhật lựa chọn bữa sáng'}
           </button>
         </form>
       )}
@@ -252,11 +252,11 @@ function BreakfastHeader({ day }: { day?: BreakfastDay }) {
   return (
     <header className="breakfast-heading">
       <div>
-        <p className="eyebrow">Next breakfast</p>
-        <h2 id="breakfast-title">Breakfast</h2>
+        <p className="eyebrow">Bữa sáng tiếp theo</p>
+        <h2 id="breakfast-title">Bữa sáng</h2>
       </div>
       <span className="breakfast-date">
-        {day ? formatFamilyDate(day.date, day.timeZone) : 'Next family day'}
+        {day ? formatFamilyDate(day.date, day.timeZone) : 'Ngày tiếp theo'}
       </span>
     </header>
   )
@@ -300,12 +300,12 @@ function SavedChoiceCard({
   return (
     <div className={`saved-choice${hasResponse ? ' is-saved' : ''}`} aria-live="polite">
       <div>
-        <strong>{hasResponse ? 'Breakfast saved' : 'No response'}</strong>
-        <span>{hasResponse ? describeResponse(response) : 'No breakfast choice was saved.'}</span>
+        <strong>{hasResponse ? 'Đã lưu bữa sáng' : 'Chưa trả lời'}</strong>
+        <span>{hasResponse ? describeResponse(response) : 'Chưa lưu lựa chọn bữa sáng.'}</span>
       </div>
       {hasResponse && onChange && (
         <button className="secondary-button saved-choice-change" type="button" onClick={onChange}>
-          Change choice
+          Đổi lựa chọn
         </button>
       )}
     </div>
@@ -314,8 +314,8 @@ function SavedChoiceCard({
 
 function MemberPurchaseBanner({ purchase }: { purchase: BreakfastPurchase }) {
   return (
-    <aside className="breakfast-purchased-banner" aria-label="Breakfast purchase confirmed">
-      <strong>Mom got breakfast ✓</strong>
+    <aside className="breakfast-purchased-banner" aria-label="Đã xác nhận mua bữa sáng">
+      <strong>Mẹ đã mua bữa sáng ✓</strong>
       {purchase.message && <p>{purchase.message}</p>}
     </aside>
   )
@@ -347,7 +347,7 @@ function ParentBreakfastView({
       setMessage(purchase.message ?? '')
       setIsEditingMessage(false)
     } catch {
-      setError('We couldn’t confirm breakfast purchase. Please try again.')
+      setError('Chưa thể xác nhận mua bữa sáng. Vui lòng thử lại.')
     } finally {
       setIsSaving(false)
     }
@@ -357,9 +357,9 @@ function ParentBreakfastView({
     <section className="breakfast-card" aria-labelledby="breakfast-title">
       <BreakfastHeader day={day} />
       <p className="breakfast-parent-copy">
-        Here’s what the family has chosen for breakfast.
+        Cả nhà đã chọn bữa sáng như sau.
       </p>
-      <ul className="breakfast-status-list" aria-label="Family breakfast responses">
+      <ul className="breakfast-status-list" aria-label="Lựa chọn bữa sáng của cả nhà">
         {day.responses.map((response) => (
           <li key={response.member.id}>
             <ProfileAvatar profile={response.member} />
@@ -375,32 +375,32 @@ function ParentBreakfastView({
       <div className="breakfast-purchase-section">
         {day.purchase && !isEditingMessage ? (
           <div className="breakfast-purchase-success" aria-live="polite">
-            <strong>Breakfast purchased ✓</strong>
+            <strong>Đã mua bữa sáng ✓</strong>
             <span>{formatPurchaseTime(day.purchase.purchasedAt, day.timeZone)}</span>
             {day.purchase.message && <p>{day.purchase.message}</p>}
             <button className="secondary-button" type="button" onClick={() => setIsEditingMessage(true)}>
-              Edit message
+              Sửa lời nhắn
             </button>
           </div>
         ) : (
           <form className="breakfast-purchase-form" onSubmit={handlePurchase}>
             <label>
-              <span>Optional note for the family</span>
+              <span>Lời nhắn cho cả nhà</span>
               <textarea
                 value={message}
                 maxLength={300}
                 rows={3}
-                placeholder="e.g. Nước cam trong tủ lạnh nha"
+                placeholder="Ví dụ: Nước cam trong tủ lạnh nha"
                 onChange={(event) => setMessage(event.target.value)}
               />
             </label>
             {error && <p className="breakfast-save-error" role="alert">{error}</p>}
             <button className="primary-button" type="submit" disabled={isSaving}>
               {isSaving
-                ? 'Saving…'
+                ? 'Đang lưu…'
                 : day.purchase
-                  ? 'Update breakfast message'
-                  : 'Breakfast purchased'}
+                  ? 'Cập nhật lời nhắn'
+                  : 'Xác nhận đã mua'}
             </button>
           </form>
         )}
@@ -439,22 +439,22 @@ function canSubmit(draft: Draft): boolean {
 }
 
 function describeResponse(response: BreakfastDayResponse): string {
-  if (response.state === 'SELECTED') return response.catalogItem?.name ?? 'Selected dish'
-  if (response.state === 'CUSTOM') return response.customText ?? 'Custom dish'
-  if (response.state === 'NOT_EATING') return 'Not eating'
-  return 'No response yet'
+  if (response.state === 'SELECTED') return response.catalogItem?.name ?? 'Món đã chọn'
+  if (response.state === 'CUSTOM') return response.customText ?? 'Món tự chọn'
+  if (response.state === 'NOT_EATING') return 'Không ăn'
+  return 'Chưa trả lời'
 }
 
 function describeParentResponse(response: BreakfastDayResponse): string {
-  if (response.state === 'SELECTED') return `Selected · ${describeResponse(response)}`
-  if (response.state === 'CUSTOM') return `Custom · ${describeResponse(response)}`
-  if (response.state === 'NOT_EATING') return 'Not eating'
-  return 'No response yet'
+  if (response.state === 'SELECTED') return `Đã chọn · ${describeResponse(response)}`
+  if (response.state === 'CUSTOM') return `Món tự chọn · ${describeResponse(response)}`
+  if (response.state === 'NOT_EATING') return 'Không ăn'
+  return 'Chưa trả lời'
 }
 
 function formatFamilyDate(date: string, timeZone: string): string {
   const instant = new Date(`${date}T12:00:00Z`)
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat('vi-VN', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -463,7 +463,7 @@ function formatFamilyDate(date: string, timeZone: string): string {
 }
 
 function formatPurchaseTime(value: string, timeZone: string): string {
-  return `Confirmed ${new Intl.DateTimeFormat('en', {
+  return `Đã xác nhận lúc ${new Intl.DateTimeFormat('vi-VN', {
     hour: 'numeric',
     minute: '2-digit',
     timeZone,

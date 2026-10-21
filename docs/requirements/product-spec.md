@@ -10,6 +10,8 @@ The goal of Family Life Hub is to reduce repeated family messages by providing o
 
 The application should feel warm, cozy, friendly, playful, and family-oriented rather than like a corporate dashboard.
 
+The primary end-user UI language is Vietnamese.
+
 The initial family consists of:
 
 - Kha / Tun Tun
@@ -365,6 +367,8 @@ Example:
 "Mom is going out today. Tun can order food for you two."
 
 This should notify Kha and Bin.
+
+Mom may later choose **Đổi kế hoạch** and change the same meal slot from self-service to an open choice or option poll. This updates the existing request rather than creating another request for the same date and meal type.
 
 ---
 

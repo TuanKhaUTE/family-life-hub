@@ -783,6 +783,15 @@ OPTION_POLL allows Mom to define available choices.
 
 Mom later confirms the actual final meal.
 
+The implemented Feature 2C API keeps this workflow behind the backend:
+
+- `GET /api/meals/requests/current` returns current and future lunch/dinner requests, with only the signed-in member's response unless the viewer is the parent;
+- `POST /api/meals/requests` creates one parent-owned request per date and meal type;
+- `PATCH /api/meals/requests/:id` lets the parent close a request, move an open request to self-service, reverse self-service into an open choice or option poll, and update its message;
+- `PUT /api/meals/requests/:id/response` saves only the signed-in non-parent member's response.
+
+The backend derives the actor from the session. Restricted database functions make request creation, notification fan-out, same-row plan changes, request updates, and response upserts atomic. A meal request keeps the same identity when the parent changes self-service into an interactive plan. An elapsed deadline is treated as closed even before a stored status update occurs. Browser database roles have no direct access to these tables or functions.
+
 ---
 
 ## 13.3 Final Meal
@@ -883,11 +892,9 @@ Possible events include:
 
 BREAKFAST_PURCHASED
 
-MEAL_REQUEST_CREATED
+MEAL_REQUEST_STATUS
 
 MEAL_READY
-
-MEAL_SELF_SERVICE
 
 MEAL_DEADLINE_REMINDER
 

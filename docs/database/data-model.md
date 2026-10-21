@@ -282,19 +282,19 @@ updated_at
 
 Parent-created lunch or dinner request.
 
-Suggested fields:
+Implemented fields:
 
 id
 
-created_by
+created_by_member_id
 
 meal_date
 
 meal_type
 
-request_type
+mode
 
-message
+parent_message
 
 deadline_at
 
@@ -322,9 +322,9 @@ OPEN
 
 CLOSED
 
-FINALIZED
-
 SELF_SERVICE
+
+There is one request per `(meal_date, meal_type)`. Interactive requests require a mode and deadline. Self-service requests store neither. Changing self-service back to open choice or an option poll updates the same request row and rebuilds its options atomically. RLS is enabled with no browser policies; only the backend service role has table access.
 
 ---
 
@@ -332,15 +332,15 @@ SELF_SERVICE
 
 Used for OPTION_POLL.
 
-Suggested fields:
+Implemented fields:
 
 id
 
 meal_request_id
 
-dish_name
+label
 
-display_order
+sort_order
 
 created_at
 
@@ -350,7 +350,7 @@ created_at
 
 Stores Kha or Bin's response.
 
-Suggested fields:
+Implemented fields:
 
 id
 
@@ -362,19 +362,21 @@ response_type
 
 option_id
 
-custom_dish_name
+custom_text
 
-submitted_at
+created_at
 
 updated_at
 
 Possible response types:
 
-OPTION
+SELECTED_OPTION
 
 CUSTOM
 
 NOT_EATING
+
+There is at most one response per member and request. A composite foreign key ensures a selected option belongs to the same request. `NO_RESPONSE` is represented by the absence of a row and is never converted to `NOT_EATING`.
 
 ---
 
@@ -638,7 +640,7 @@ created_at
 
 read_at
 
-Notifications use an event identity across recipient, type, related resource type, and related resource ID. This prevents repeated breakfast confirmation requests from duplicating the same member's notification. A null `read_at` means unread.
+Notifications use an event identity across recipient, type, related resource type, and related resource ID. Breakfast purchase retries reuse their event identity. Lunch and dinner request states use the stable `MEAL_REQUEST_STATUS` type, so mode and status changes update one current notification per recipient and request while preserving `read_at`. A null `read_at` means unread.
 
 The implemented tables use default-deny RLS and are available only through the backend service role. The Express API enforces recipient ownership.
 

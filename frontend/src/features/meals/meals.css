@@ -1,0 +1,243 @@
+.meals-card {
+  margin-top: 1.25rem;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border, #ded8c9);
+  border-radius: 1.5rem;
+  background: #fffaf0;
+  box-shadow: 0 8px 24px rgb(91 79 56 / 0.08);
+  color: #3f473d;
+}
+.meals-heading,
+.meal-request > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.meals-heading h2,
+.meal-request h3 {
+  margin: 0.15rem 0;
+}
+.meals-heading > span {
+  font-size: 1.8rem;
+}
+.meal-create-button {
+  width: 100%;
+  margin: 1rem 0;
+}
+.meal-composer {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5ddca;
+}
+.meal-composer label,
+.meal-response-form > label,
+.self-service label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 650;
+}
+.meal-composer input,
+.meal-composer select,
+.meal-composer textarea,
+.meal-response-form input,
+.self-service textarea {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #b7bca9;
+  border-radius: 0.8rem;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+}
+.meal-composer textarea,
+.self-service textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+.meal-form-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+.meal-option-input,
+.meal-edit-request {
+  display: grid;
+  gap: 0.65rem;
+}
+.meal-option-input {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+.meal-edit-request {
+  margin: 0.8rem 0;
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: #fff8ed;
+}
+.meal-edit-request label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 650;
+}
+.meal-edit-request input,
+.meal-edit-request textarea {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #b7bca9;
+  border-radius: 0.8rem;
+  background: #fff;
+  font: inherit;
+}
+.meal-composer fieldset,
+.meal-response-form fieldset {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid #d9dfd0;
+  border-radius: 1rem;
+}
+.deadline-presets,
+.meal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.deadline-presets button,
+.text-button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: #edf2e6;
+  color: #40543e;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.meal-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.meal-request {
+  padding: 1rem;
+  border: 1px solid #e0dacb;
+  border-radius: 1.25rem;
+  background: #fff;
+}
+.meal-request--self_service {
+  background: #f1f5ea;
+}
+.meal-status {
+  flex: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: #eef3e8;
+  color: #466043;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+.meal-request--closed .meal-status {
+  background: #eeeae2;
+  color: #736b5f;
+}
+.parent-note {
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  background: #fff1e8;
+  color: #714d3b;
+}
+.meal-deadline,
+.meal-empty {
+  color: #6e7168;
+}
+.response-list {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.response-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem;
+  border-radius: 0.8rem;
+  background: #f7f3e9;
+}
+.response-list span {
+  text-align: right;
+  color: #5f685b;
+}
+.meal-response-form {
+  display: grid;
+  gap: 0.8rem;
+}
+.meal-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d8ddce;
+  border-radius: 0.9rem;
+  cursor: pointer;
+}
+.meal-choice input {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.meal-choice span {
+  flex: 1;
+}
+.meal-choice i {
+  font-style: normal;
+}
+.meal-choice.is-selected {
+  border-color: #748a65;
+  background: #edf3e7;
+}
+.saved-meal,
+.meal-closed,
+.self-service {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: #f1f5ea;
+}
+.saved-meal > div {
+  display: grid;
+  gap: 0.2rem;
+}
+.saved-meal span {
+  color: #5e6959;
+}
+.meal-closed {
+  display: block;
+}
+.meal-error {
+  color: #9a3d31;
+}
+.meals-card button:focus-visible,
+.meals-card input:focus-visible,
+.meals-card select:focus-visible,
+.meals-card textarea:focus-visible {
+  outline: 3px solid #c78564;
+  outline-offset: 2px;
+}
+@media (min-width: 700px) {
+  .meals-card {
+    padding: 1.4rem;
+  }
+  .meal-form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
