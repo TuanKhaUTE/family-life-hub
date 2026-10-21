@@ -10,6 +10,7 @@ export const DISH_CATEGORIES = [
   'OTHER',
 ] as const
 export interface FinalMealDish {
+  id?: string
   name: string
   category: (typeof DISH_CATEGORIES)[number]
   sortOrder: number
@@ -24,7 +25,7 @@ export interface FinalMeal {
   readyMessage: string | null
   createdAt: string
   updatedAt: string
-  dishes: FinalMealDish[]
+  dishes: (FinalMealDish & { id: string })[]
 }
 export interface FinalMealRepository {
   get(date: string, type: MealType): Promise<FinalMeal | null>
@@ -87,7 +88,9 @@ export class FinalMealService {
     const dishes = input.dishes.map((dish, index): FinalMealDish => {
       if (
         !object(dish) ||
-        !keys(dish, ['name', 'category', 'sortOrder']) ||
+        !keys(dish, ['id', 'name', 'category', 'sortOrder']) ||
+        ('id' in dish &&
+          (typeof dish.id !== 'string' || !UUID.test(dish.id))) ||
         typeof dish.name !== 'string' ||
         !dish.name.trim() ||
         dish.name.trim().length > 120 ||
@@ -96,11 +99,14 @@ export class FinalMealService {
       )
         invalid()
       return {
+        ...(typeof dish.id === 'string' ? { id: dish.id.toLowerCase() } : {}),
         name: dish.name.trim(),
         category: dish.category as FinalMealDish['category'],
         sortOrder: index,
       }
     })
+    const ids = dishes.flatMap((dish) => (dish.id ? [dish.id] : []))
+    if (new Set(ids).size !== ids.length) invalid()
     return this.run(() =>
       this.repository.save({
         ...slot,

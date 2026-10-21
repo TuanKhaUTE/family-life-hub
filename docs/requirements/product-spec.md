@@ -457,6 +457,10 @@ Example:
 
 Mom can read all ratings and comments for dishes she prepared.
 
+Feature 2E allows active ADMIN/MEMBER profiles to rate individual dish instances only after the final meal is ready. Each dish is optional: one integer 1–5 score and an optional trimmed comment up to 300 characters, editable by its author. Members see only their own feedback; PARENT sees named feedback grouped by dish and has no rating controls. Saved forms collapse into stars/comment with **Chỉnh sửa đánh giá**; unrated dishes offer **Đánh giá món**. Ratings do not apply to generic catalog dish names.
+
+Editing a finalized meal preserves the identity and ratings of retained dishes, including renaming, changing categories, reordering, and adding other dishes. Explicitly removing a dish deletes only that dish's feedback. Technical dish IDs are carried internally and never displayed in the UI.
+
 ---
 
 # 13. Meal Analytics and Gamification

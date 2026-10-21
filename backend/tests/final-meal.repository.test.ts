@@ -14,8 +14,13 @@ const row = {
   created_at: '2099-05-01T10:00:00Z',
   updated_at: '2099-05-01T10:00:00Z',
   final_meal_dishes: [
-    { name: 'Canh', category: 'SOUP', sort_order: 1 },
-    { name: 'Cơm', category: 'MAIN', sort_order: 0 },
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'Canh',
+      category: 'SOUP',
+      sort_order: 1,
+    },
+    { id, name: 'Cơm', category: 'MAIN', sort_order: 0 },
   ],
 }
 function setup(data: unknown = row, error: { code?: string } | null = null) {
@@ -37,6 +42,21 @@ function setup(data: unknown = row, error: { code?: string } | null = null) {
   }
 }
 describe('final meal repository', () => {
+  it('returns saved dish IDs and sends identities to the atomic save', async () => {
+    const { repository, client } = setup()
+    const meal = await repository.get('2099-05-01', 'DINNER')
+    expect(meal?.dishes[0]).toMatchObject({ id, name: 'Cơm' })
+    await repository.save({
+      actorMemberId: id,
+      mealDate: '2099-05-01',
+      mealType: 'DINNER',
+      mealRequestId: null,
+      dishes: [{ id, name: 'Cơm mới', category: 'MAIN', sortOrder: 0 }],
+    })
+    expect(client.rpc.mock.calls[0]?.[1].p_dishes).toEqual([
+      { id, name: 'Cơm mới', category: 'MAIN', sort_order: 0 },
+    ])
+  })
   it('reads a scoped slot and returns ordered dishes', async () => {
     const { repository, builder } = setup()
     const meal = await repository.get('2099-05-01', 'DINNER')

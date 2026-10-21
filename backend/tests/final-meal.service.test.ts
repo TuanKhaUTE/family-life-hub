@@ -26,6 +26,35 @@ function setup() {
   return { repository, service: new FinalMealService(repository) }
 }
 describe('final meal service', () => {
+  it('carries existing identities while allowing new dishes without IDs', async () => {
+    const { repository, service } = setup()
+    await service.save(parent, ...slot, {
+      dishes: [{ ...dishes[0], id: parent.id }, dishes[1]],
+    })
+    expect(repository.save.mock.calls[0]?.[0].dishes).toEqual([
+      { ...dishes[0], id: parent.id, name: 'Cơm gà rô ti' },
+      dishes[1],
+    ])
+  })
+  it.each(['invalid', null, 42])(
+    'rejects invalid dish identity %s',
+    async (id) => {
+      await expect(
+        setup().service.save(parent, ...slot, {
+          dishes: [{ ...dishes[0], id }],
+        }),
+      ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' })
+    },
+  )
+  it('rejects duplicate dish identities before saving', async () => {
+    const { service, repository } = setup()
+    await expect(
+      service.save(parent, ...slot, {
+        dishes: dishes.map((dish) => ({ ...dish, id: parent.id })),
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' })
+    expect(repository.save).not.toHaveBeenCalled()
+  })
   it.each(['ADMIN', 'MEMBER'] as const)(
     'denies %s finalization and ready',
     async (role) => {

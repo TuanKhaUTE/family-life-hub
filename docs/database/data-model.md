@@ -440,35 +440,19 @@ VEGETABLE
 
 OTHER
 
-Names must be trimmed and nonblank (up to 120 characters). Every finalized save has 1–30 dishes with explicit zero-based order. The backend replaces the entire list atomically. A deferred constraint prevents a committed final meal from having no dishes; the dish foreign key prevents orphans and cascades with a deleted meal. Both tables have RLS enabled, no browser policies, and backend `service_role` access only.
+Names must be trimmed and nonblank (up to 120 characters). Every finalized save has 1–30 dishes with explicit zero-based order. API reads include each saved dish's UUID. The atomic save updates retained IDs in place (including renames, category changes and reordering), inserts entries without IDs, and deletes only omitted dishes. Supplied IDs must be distinct and belong to that same final meal. The order uniqueness constraint is deferred during the save to allow swaps and checked before returning. A deferred constraint prevents a committed final meal from having no dishes; the dish foreign key prevents orphans and cascades with a deleted meal. Both tables have RLS enabled, no browser policies, and backend `service_role` access only.
 
 ---
 
-## dish_ratings
+## final_meal_dish_ratings
 
 Rating for a specific meal dish.
 
-Suggested fields:
+Implemented fields: `id`, `final_meal_dish_id`, `member_id`, `rating`, optional `comment`, `created_at`, `updated_at`.
 
-id
+The score is an integer from 1–5. Comments are trimmed, nonblank when stored, and at most 300 characters; blank input becomes null. A unique `(final_meal_dish_id, member_id)` constraint makes saves update the same rating. Dish and member foreign keys cascade on deletion; deleting a final meal cascades through its dishes. Retained dish identities preserve their ratings through meal edits, renames, reordering and additions. Explicitly removing a dish removes only its own ratings; recreating that dish later creates a new identity without the old ratings.
 
-meal_dish_id
-
-author_id
-
-rating
-
-comment
-
-created_at
-
-updated_at
-
-Rating range:
-
-1–5
-
-One member should normally submit at most one active rating per meal dish.
+Only active ADMIN/MEMBER actors may rate a ready meal. A database guard checks active role and readiness, and prohibits moving a rating to another member or dish. Service-only `SECURITY INVOKER` RPCs use a fixed empty search path. RLS is enabled with no browser policies; PUBLIC, anon, and authenticated have no table or function access. Backend sessions supply the actor. Members read only their own feedback; an active PARENT reads named feedback grouped by dish, but cannot rate.
 
 ---
 

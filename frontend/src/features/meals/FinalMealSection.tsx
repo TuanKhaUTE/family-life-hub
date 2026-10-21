@@ -12,6 +12,7 @@ import {
   type FinalMeal,
 } from './final-meal-api'
 import './final-meal.css'
+import { MealDishRatings } from './MealDishRatings'
 
 export function FinalMealSection({
   profile,
@@ -115,7 +116,7 @@ function SlotMeal({
     <div className="final-meal-content">
       {meal && (
         <>
-          {!editing && (
+          {!editing && !meal.readyAt && (
             <ul className="final-dishes">
               {meal.dishes.map((dish, index) => (
                 <li key={index}>
@@ -126,6 +127,14 @@ function SlotMeal({
                 </li>
               ))}
             </ul>
+          )}
+          {!editing && meal.readyAt && (
+            <MealDishRatings
+              key={`${meal.id}:${meal.updatedAt}`}
+              mealId={meal.id}
+              profile={profile}
+              initialDishes={meal.dishes}
+            />
           )}
           {meal.readyAt ? (
             <div className="final-ready" role="status">

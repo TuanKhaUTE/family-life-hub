@@ -830,7 +830,7 @@ Feature 2D stores actual lunch/dinner dishes in `final_meals` and `final_meal_di
 - `PUT /api/meals/final/:date/:type` lets an active parent save or replace the ordered dish list;
 - `PUT /api/meals/final/:date/:type/ready` marks the saved meal ready or updates its optional message.
 
-Routes, controllers, services, and repositories retain their existing responsibilities. Session context supplies the actor; `ADMIN` has no parent write permissions. Restricted `SECURITY INVOKER` database functions atomically replace dishes and fan out ready notifications. Slot locking and database constraints prevent duplicate meals, mismatched request links, empty finalized meals, and contradictory self-service/cooked states. Child responses remain unchanged.
+Routes, controllers, services, and repositories retain their existing responsibilities. Session context supplies the actor; `ADMIN` has no parent write permissions. Restricted `SECURITY INVOKER` database functions atomically reconcile dishes and fan out ready notifications. Reads return dish IDs; saves carry retained IDs, update their rows, create ID-less entries, and delete only omitted dishes. Same-meal ownership and distinct IDs are checked inside the transaction, and deferrable order uniqueness allows swaps without replacing dishes. Existing ratings therefore survive edits to retained dishes. Slot locking and database constraints prevent duplicate meals, mismatched request links, empty finalized meals, and contradictory self-service/cooked states. Child responses remain unchanged.
 
 The first ready action sets a UTC `ready_at` timestamp and creates one `MEAL_READY` notification per active non-parent member. Retries and message edits reuse the same notification identity, preserve `read_at`, and retain the original ready time. Browser roles cannot access these tables or RPCs directly. The UI formats time in the family timezone using Vietnamese locale.
 
@@ -859,6 +859,8 @@ A rating contains:
 - timestamp.
 
 Historical ratings may later be aggregated by dish.
+
+Feature 2E exposes session-protected `GET /api/meals/final/:mealId/ratings` and `PUT /api/meals/dishes/:dishId/rating` through route/controller/service/repository boundaries. The write accepts only `rating` and optional `comment`; the session supplies ownership, never a body member ID. Restricted database RPCs enforce active-member/ready-meal rules and atomically upsert the unique member/dish rating. Reads return only the member's feedback, or named per-dish feedback for PARENT. The frontend uses only REST, and calculates a small per-dish average/count for the parent's view; no global statistics or new notifications are introduced.
 
 ---
 

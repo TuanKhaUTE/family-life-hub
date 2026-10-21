@@ -21,7 +21,7 @@ export class SupabaseFinalMealRepository implements FinalMealRepository {
     const { data, error } = await this.getClient()
       .from('final_meals')
       .select(
-        'id,meal_date,meal_type,meal_request_id,finalized_by_member_id,ready_at,ready_message,created_at,updated_at,final_meal_dishes(name,category,sort_order)',
+        'id,meal_date,meal_type,meal_request_id,finalized_by_member_id,ready_at,ready_message,created_at,updated_at,final_meal_dishes(id,name,category,sort_order)',
       )
       .eq('meal_date', date)
       .eq('meal_type', type)
@@ -36,6 +36,7 @@ export class SupabaseFinalMealRepository implements FinalMealRepository {
       p_meal_type: input.mealType,
       p_meal_request_id: input.mealRequestId,
       p_dishes: input.dishes.map((dish) => ({
+        ...(dish.id ? { id: dish.id } : {}),
         name: dish.name,
         category: dish.category,
         sort_order: dish.sortOrder,
@@ -106,6 +107,7 @@ export function decodeFinalMeal(value: unknown): FinalMeal {
     .map((dish) => {
       if (
         !object(dish) ||
+        !uuid(dish.id) ||
         typeof dish.name !== 'string' ||
         !dish.name.trim() ||
         !DISH_CATEGORIES.includes(dish.category as never) ||
@@ -113,6 +115,7 @@ export function decodeFinalMeal(value: unknown): FinalMeal {
       )
         throw new Error('Invalid final meal dish')
       return {
+        id: dish.id as string,
         name: dish.name,
         category: dish.category as FinalMeal['dishes'][number]['category'],
         sortOrder: dish.sort_order as number,

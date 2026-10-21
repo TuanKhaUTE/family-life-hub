@@ -7,6 +7,7 @@ export const categoryLabels = {
   OTHER: 'Món khác',
 }
 export interface FinalDish {
+  id?: string
   name: string
   category: keyof typeof categoryLabels
   sortOrder: number
@@ -21,7 +22,7 @@ export interface FinalMeal {
   readyMessage: string | null
   createdAt: string
   updatedAt: string
-  dishes: FinalDish[]
+  dishes: (FinalDish & { id: string })[]
 }
 export class FinalMealApiError extends Error {
   readonly code: string
@@ -108,6 +109,10 @@ function validMeal(value: unknown): value is FinalMeal {
     value.dishes.every(
       (dish, index) =>
         object(dish) &&
+        typeof dish.id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          dish.id,
+        ) &&
         typeof dish.name === 'string' &&
         !!dish.name.trim() &&
         typeof dish.category === 'string' &&

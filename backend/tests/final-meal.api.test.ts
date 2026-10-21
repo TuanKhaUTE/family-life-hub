@@ -32,7 +32,14 @@ const meal = {
   readyMessage: null,
   createdAt: '2099-05-01T00:00:00Z',
   updatedAt: '2099-05-01T00:00:00Z',
-  dishes: [{ name: 'Cơm', category: 'MAIN' as const, sortOrder: 0 }],
+  dishes: [
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'Cơm',
+      category: 'MAIN' as const,
+      sortOrder: 0,
+    },
+  ],
 }
 function setup(role: 'PARENT' | 'ADMIN' | 'MEMBER' = 'PARENT', fail = false) {
   const calls: unknown[] = []

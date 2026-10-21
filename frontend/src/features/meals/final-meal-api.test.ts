@@ -11,7 +11,14 @@ const meal = {
   readyMessage: null,
   createdAt: '2099-05-01T00:00:00Z',
   updatedAt: '2099-05-01T00:00:00Z',
-  dishes: [{ name: 'Canh cải', category: 'SOUP' as const, sortOrder: 0 }],
+  dishes: [
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'Canh cải',
+      category: 'SOUP' as const,
+      sortOrder: 0,
+    },
+  ],
 }
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -21,6 +28,24 @@ function json(body: unknown, status = 200) {
 }
 afterEach(() => vi.unstubAllGlobals())
 describe('final meal API client', () => {
+  it('rejects a saved dish without its identity instead of silently replacing it on edit', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          json({
+            meal: {
+              ...meal,
+              dishes: [{ name: 'Canh cải', category: 'SOUP', sortOrder: 0 }],
+            },
+          }),
+        ),
+    )
+    await expect(fetchFinalMeal('2099-05-01', 'LUNCH')).rejects.toThrow(
+      'Chưa thể',
+    )
+  })
   it('fetches an authenticated slot and allows a null meal', async () => {
     const fetchMock = vi.fn().mockResolvedValue(json({ meal: null }))
     vi.stubGlobal('fetch', fetchMock)
@@ -69,19 +94,17 @@ describe('final meal API client', () => {
   it('preserves a safe self-service conflict code without exposing server detail', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          json(
-            {
-              error: {
-                code: 'FINAL_MEAL_SELF_SERVICE',
-                message: 'private detail',
-              },
+      vi.fn().mockResolvedValue(
+        json(
+          {
+            error: {
+              code: 'FINAL_MEAL_SELF_SERVICE',
+              message: 'private detail',
             },
-            409,
-          ),
+          },
+          409,
         ),
+      ),
     )
     await expect(
       saveFinalMeal('2099-05-01', 'LUNCH', meal.dishes, null),

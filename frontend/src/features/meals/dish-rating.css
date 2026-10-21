@@ -1,0 +1,77 @@
+.dish-feedback,
+.dish-feedback-card,
+.dish-rating-form,
+.member-dish-summary,
+.parent-dish-feedback,
+.dish-feedback-entry {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.dish-feedback p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dish-rating-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.dish-rating-form legend {
+  margin-bottom: 0.5rem;
+}
+.star-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
+}
+.final-meal-section .star-picker label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 48px;
+  border-radius: 0.75rem;
+  background: #fff9f3;
+  color: #82746b;
+  cursor: pointer;
+}
+.star-picker span {
+  font-size: 1.8rem;
+}
+.final-meal-section .star-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.star-picker label:has(:focus-visible) {
+  outline: 3px solid #66896b;
+  outline-offset: 2px;
+}
+.final-meal-section .star-picker .star-selected {
+  color: #825018;
+  background: #fae7c0;
+}
+.rating-stars {
+  color: #825018;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+}
+.dish-feedback-entry {
+  padding: 0.75rem;
+  border-radius: 0.9rem;
+  background: #fff9f3;
+}
+.member-dish-summary button {
+  justify-self: start;
+}
+.dish-rating-form button {
+  min-height: 44px;
+}

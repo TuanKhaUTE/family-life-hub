@@ -499,6 +499,8 @@ Mom's feedback view should focus on useful comments rather than numerical scorin
 
 Avoid designs that make low ratings feel hostile.
 
+Ready-meal dish cards start with **Đánh giá món**, not permanently open forms. Use native keyboard-accessible star radio inputs with at least 44px touch targets and visible focus. Saving collapses to stars, optional comment, and **Chỉnh sửa đánh giá**; reopening restores the values. PARENT sees warm, named feedback grouped by dish, with no inputs. All new feedback states and actions use natural Vietnamese.
+
 ---
 
 # 18. Timetable Design

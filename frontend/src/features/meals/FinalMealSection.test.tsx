@@ -29,7 +29,14 @@ const meal: FinalMeal = {
   readyMessage: null,
   createdAt: '2099-05-01T10:00:00Z',
   updatedAt: '2099-05-01T10:00:00Z',
-  dishes: [{ name: 'Cơm gà rô ti', category: 'MAIN', sortOrder: 0 }],
+  dishes: [
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'Cơm gà rô ti',
+      category: 'MAIN',
+      sortOrder: 0,
+    },
+  ],
 }
 function json(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -48,7 +55,13 @@ function setup(initial: FinalMeal | null = null) {
             readyAt: saved?.readyAt ?? '2099-05-01T11:00:00Z',
             readyMessage: body.readyMessage,
           }
-        : { ...meal, dishes: body.dishes }
+        : {
+            ...meal,
+            dishes: body.dishes.map((dish: object, index: number) => ({
+              id: `22222222-2222-4222-8222-${String(index + 1).padStart(12, '0')}`,
+              ...dish,
+            })),
+          }
     }
     return json({ meal: saved })
   })
@@ -60,6 +73,57 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('final meal family flow', () => {
+  it('carries dish identities through rename, reorder, addition, and explicit removal without displaying IDs', async () => {
+    const user = userEvent.setup()
+    const soupId = '33333333-3333-4333-8333-333333333333'
+    const fetchMock = setup({
+      ...meal,
+      dishes: [
+        ...meal.dishes,
+        { id: soupId, name: 'Canh cải', category: 'SOUP', sortOrder: 1 },
+      ],
+    })
+    render(<FinalMealSection profile={parent} requests={[]} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Chỉnh sửa món' }),
+    )
+    await user.clear(screen.getByLabelText('Tên món 1'))
+    await user.type(screen.getByLabelText('Tên món 1'), 'Cơm gà mới')
+    await user.click(screen.getByRole('button', { name: 'Đưa món 2 lên' }))
+    await user.click(screen.getByRole('button', { name: 'Thêm món' }))
+    await user.type(screen.getByLabelText('Tên món 3'), 'Rau luộc')
+    await user.click(screen.getByRole('button', { name: 'Lưu món sẽ nấu' }))
+    await screen.findByRole('button', { name: 'Chỉnh sửa món' })
+    const firstSave = fetchMock.mock.calls.find(
+      ([, init]) => init?.method === 'PUT',
+    )!
+    expect(JSON.parse(firstSave[1]!.body as string).dishes).toEqual([
+      { id: soupId, name: 'Canh cải', category: 'SOUP', sortOrder: 0 },
+      {
+        id: meal.dishes[0]!.id,
+        name: 'Cơm gà mới',
+        category: 'MAIN',
+        sortOrder: 1,
+      },
+      { name: 'Rau luộc', category: 'MAIN', sortOrder: 2 },
+    ])
+    expect(screen.queryByText(soupId)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Chỉnh sửa món' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa món 1' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu món sẽ nấu' }))
+    await screen.findByRole('button', { name: 'Chỉnh sửa món' })
+    const saves = fetchMock.mock.calls.filter(
+      ([, init]) => init?.method === 'PUT',
+    )
+    expect(
+      JSON.parse(saves[1]![1]!.body as string).dishes.map(
+        (dish: { id?: string }) => dish.id,
+      ),
+    ).not.toContain(soupId)
+    expect(JSON.parse(saves[1]![1]!.body as string).dishes[0].id).toBe(
+      meal.dishes[0]!.id,
+    )
+  })
   it('keeps family responses visible alongside the actual meal', async () => {
     const request = {
       id: parent.id,
