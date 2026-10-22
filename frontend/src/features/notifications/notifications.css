@@ -2,9 +2,9 @@
   margin-top: 18px;
   padding: 20px;
   border: 1px solid #eadfd4;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 16px 38px rgba(91, 70, 56, 0.06);
+  box-shadow: var(--shadow-card);
 }
 .notification-bell {
   position: relative;
@@ -13,7 +13,7 @@
   width: 46px;
   height: 46px;
   border: 1px solid #e8dccf;
-  border-radius: 1rem;
+  border-radius: var(--radius-md);
   background: #fffaf3;
   font-size: 1.35rem;
   cursor: pointer;
