@@ -20,6 +20,8 @@ import { CalendarService } from '../services/calendar.service.js'
 import { SupabaseCalendarRepository } from '../repositories/calendar.repository.js'
 import { ChoreService } from '../services/chore.service.js'
 import { SupabaseChoreRepository } from '../repositories/chore.repository.js'
+import { StudyService } from '../services/study.service.js'
+import { SupabaseStudyRepository } from '../repositories/study.repository.js'
 
 export function createHomeRouter(
   service: HomeService,
@@ -38,6 +40,7 @@ export default createHomeRouter(
     recent: new SupabaseHomeRepository(),
     calendar: new CalendarService(new SupabaseCalendarRepository()),
     chores: new ChoreService(new SupabaseChoreRepository()),
+    study: new StudyService(new SupabaseStudyRepository()),
   }),
   new FamilySessionService(new SupabaseAuthSessionRepository()),
 )

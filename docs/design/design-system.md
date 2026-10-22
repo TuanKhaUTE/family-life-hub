@@ -303,7 +303,7 @@ The implemented mobile shell uses role-aware destinations. PARENT:
 - Chi tiêu
 - Cá nhân
 
-ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Personal spending will live under Cá nhân later. Học & Luyện has two warm placeholder sections, Học tập and Rèn luyện, marked “Sắp có” without fake numbers or charts.
+ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Personal spending will live under Cá nhân later. Feature 4A replaces the Học tập placeholder with a private functional workspace; Rèn luyện remains a warm “Sắp có” section without fake numbers or charts.
 
 Use a persistent bottom navigation with simple icons, short Vietnamese labels, comfortable touch targets, and bottom safe-area spacing. Bếp contains the meal workflows. Unimplemented modules remain warm placeholders. Navigation is not a substitute for backend authorization.
 
@@ -592,6 +592,10 @@ Avoid encouraging unhealthy daily workout streaks.
 ---
 
 # 22. Study Design
+
+Feature 4A uses “Học tập & Rèn luyện”, with peach/orange study cards on cream, books/target/clock icons, rounded surfaces, simple labelled progress bars, and natural Vietnamese. Show real totals or “Chưa có buổi học nào trong tuần này”; never sample courses or invented progress. “Ghi buổi học”, “Thêm mục tiêu”, and “Quản lý môn học” open compact feature-owned forms that close after successful saves. Explicit confirmation precedes deletion; linked-record errors explain how to unlink first.
+
+Keep controls at least 44px and forms comfortable at 320px/390px. Course, semester, and goal names must wrap safely. Study is personal, not family-readable: no member switcher, family comparison, or parent overview. Home shows only the signed-in ADMIN/MEMBER's own weekly summary; PARENT receives no Study card. Rèn luyện remains polished “Sắp có”; no grades or fitness charts in this foundation.
 
 Study tracking should make progress easy to understand.
 

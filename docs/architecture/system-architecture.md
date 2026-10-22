@@ -688,6 +688,12 @@ Future exercise details
 
 ## Study
 
+Feature 4A follows Route → Controller → StudyService → SupabaseStudyRepository → restricted SECURITY INVOKER RPCs. `GET /api/study` returns the actor's own semesters, courses, goals, latest 50 sessions, and current-week summary. `POST /api/study/:kind`, `PUT /api/study/:kind/:id`, and `DELETE /api/study/:kind/:id` support `semesters`, `courses`, `goals`, and `sessions`. Full update bodies contain only editable fields; no actor/owner field is accepted. Goal completion is a normal update to COMPLETED. Queries cannot select another member's workspace.
+
+Existing session middleware rejects inactive/expired sessions. StudyService rejects PARENT; RPCs independently require active ADMIN/MEMBER, scope every read/mutation to the authenticated actor, and return the same not-found response for foreign/missing IDs. Composite owner/entity foreign keys prohibit cross-owner semester/course links. Per-owner advisory locks make active-semester switching atomic. Restricted table grants and default-deny RLS prevent browser access; no sharing policies exist.
+
+Session `studied_at` is a family-local date, not an automatic calendar event. Created/updated timestamps are UTC. The backend supplies today's date from centralized family time; weekly totals run Monday–Sunday and do not depend on the bounded recent-session list. Goal time progress uses current-week minutes, course-filtered when linked. Home calls StudyService only for ADMIN/MEMBER and explicitly projects own totals/active goals, omitting Study entirely for PARENT. There is no Study notification, background job, chart dependency, or calendar write.
+
 Academic semesters
 
 Subjects

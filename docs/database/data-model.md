@@ -768,73 +768,26 @@ Do not implement those details in Version 1 unless needed.
 
 # 10. Study Domain
 
-## study_courses
+## Implemented private Study (Feature 4A)
 
-Suggested fields:
+All four tables have UUID primary keys, `owner_member_id` referencing family_members, and UTC `created_at`/`updated_at` timestamps. Owners must be active ADMIN/MEMBER and cannot be changed.
 
-id
+- `study_semesters`: trimmed `name` (1–120), `start_date`, `end_date >= start_date`, `is_active`. Dates are 2000–2199; a partial unique index permits at most one active semester per owner.
+- `study_courses`: `semester_id`, trimmed `name` (1–120), nullable trimmed `code` (1–40). Composite `(owner_member_id, semester_id)` FK references an owned semester. No visual metadata is required for this foundation.
+- `study_goals`: nullable `course_id`, trimmed `title` (1–160), nullable `target_minutes` (1–10080), nullable `target_date`, `status` ACTIVE/COMPLETED. The composite course FK guarantees same-owner links.
+- `study_sessions`: nullable same-owner `course_id`, family-local DATE `studied_at` (not future), `duration_minutes` (1–1440), nullable trimmed `note` (1–1000). A study log is not a calendar event.
 
-owner_id
+Foreign-key deletion is RESTRICT: deleting a semester/course never cascades learning history. Owners explicitly unlink or delete dependents first. Indexes support owner/date reads and semester relationships.
 
-semester_id
+`study_read(actor, today)` returns only that active actor's own data and a Monday–Sunday summary: all weekly minutes/session count, per-course minutes (including unlinked self-study), and current-week course-filtered/all-course minutes for ACTIVE goals. Its latest-session list is limited to 50, but aggregates are not. `study_mutate` performs owner-scoped CRUD and atomically switches the active semester under a per-owner transaction lock. Foreign/missing record IDs return the same not-found error. Both RPCs are service_role-only SECURITY INVOKER with fixed empty search paths.
 
-name
-
-code
-
-created_at
-
-updated_at
-
----
-
-## study_goals
-
-Suggested fields:
-
-id
-
-owner_id
-
-course_id
-
-target_minutes_per_week
-
-start_date
-
-end_date
-
-created_at
-
-updated_at
-
----
-
-## study_sessions
-
-Suggested fields:
-
-id
-
-owner_id
-
-course_id
-
-study_date
-
-duration_minutes
-
-notes
-
-created_at
-
-updated_at
+All four tables enable RLS without browser policies; PUBLIC/anon/authenticated table/function privileges are revoked. Only server service_role has CRUD/RPC privileges. PARENT has no workspace or member Study access; ADMIN has no ownership bypass. No sharing tables, grades, assessments, notifications, or calendar sync are added. Home returns only own weekly totals/active goals for ADMIN/MEMBER and omits Study for PARENT.
 
 ---
 
 ## assessments
 
-Suggested fields:
+Future conceptual fields (not implemented in Feature 4A):
 
 id
 

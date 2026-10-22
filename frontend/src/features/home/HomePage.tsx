@@ -6,6 +6,8 @@ import { fetchHome, type HomeSummary } from './home-api'
 import { greeting } from './home-time'
 import { HomeCalendarSummary } from './HomeCalendarSummary'
 import { HomeChoresSummary } from './HomeChoresSummary'
+import { StudyProgress } from '../study/StudyProgress'
+import '../study/study.css'
 import './home.css'
 
 export type HomeDestination =
@@ -70,14 +72,7 @@ export function HomePage({
           destination: 'Chi tiêu' as const,
         },
       ]
-    : [
-        {
-          title: 'Học & Luyện',
-          icon: '🌿',
-          destination: 'Học & Luyện' as const,
-        },
-        { title: 'Cá nhân', icon: '☀', destination: 'Cá nhân' as const },
-      ]
+    : [{ title: 'Cá nhân', icon: '☀', destination: 'Cá nhân' as const }]
   return (
     <div className="family-home">
       <section className="home-hero" aria-labelledby="home-title">
@@ -150,6 +145,21 @@ export function HomePage({
             parent={parent}
             onOpen={() => onNavigate('Lịch')}
           />
+          {!parent && data.study && (
+            <section
+              className="home-card home-study"
+              aria-label="Học tập tuần này"
+            >
+              <h2>📚 Học tập tuần này</h2>
+              <StudyProgress summary={data.study} compact />
+              <button
+                className="home-link"
+                onClick={() => onNavigate('Học & Luyện')}
+              >
+                Xem Học &amp; Luyện
+              </button>
+            </section>
+          )}
           <section aria-labelledby="home-meals-title">
             <div className="home-section-title">
               <h2 id="home-meals-title">Bữa ăn hôm nay</h2>

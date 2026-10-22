@@ -7,6 +7,7 @@ import type { FinalMealService } from './final-meal.service.js'
 import type { DishRatingService } from './dish-rating.service.js'
 import type { CalendarService } from './calendar.service.js'
 import type { ChoreService } from './chore.service.js'
+import type { StudyService } from './study.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -31,6 +32,7 @@ interface HomeDependencies {
   recent: HomeRepository
   calendar: Pick<CalendarService, 'list'>
   chores: Pick<ChoreService, 'list'>
+  study: Pick<StudyService, 'summary'>
 }
 
 export class HomeService {
@@ -52,16 +54,25 @@ export class HomeService {
         recent,
         calendar,
         chores,
+        study,
       } = this.dependencies
-      const [breakfast, plans, meal, recentDishes, calendarView, choreView] =
-        await Promise.all([
-          breakfastService.getDay(profile, 'next'),
-          requests.listCurrent(profile),
-          meals.get(date, 'DINNER'),
-          recent.listRecent(profile.id, parent, date),
-          calendar.list(profile, date, date, parent ? undefined : profile.id),
-          chores.list(profile, date, date, parent ? undefined : profile.id),
-        ])
+      const [
+        breakfast,
+        plans,
+        meal,
+        recentDishes,
+        calendarView,
+        choreView,
+        studySummary,
+      ] = await Promise.all([
+        breakfastService.getDay(profile, 'next'),
+        requests.listCurrent(profile),
+        meals.get(date, 'DINNER'),
+        recent.listRecent(profile.id, parent, date),
+        calendar.list(profile, date, date, parent ? undefined : profile.id),
+        chores.list(profile, date, date, parent ? undefined : profile.id),
+        parent ? Promise.resolve(null) : study.summary(profile),
+      ])
       const plan = plans.find(
         (p) =>
           p.mealDate === date &&
@@ -157,6 +168,23 @@ export class HomeService {
             : null,
         },
         recentDishes,
+        ...(!parent && studySummary
+          ? {
+              study: {
+                weekStart: studySummary.weekStart,
+                weekEnd: studySummary.weekEnd,
+                totalMinutes: studySummary.totalMinutes,
+                sessionCount: studySummary.sessionCount,
+                goals: studySummary.goals.map((g) => ({
+                  id: g.id,
+                  title: g.title,
+                  targetMinutes: g.targetMinutes,
+                  minutes: g.minutes,
+                  targetDate: g.targetDate,
+                })),
+              },
+            }
+          : {}),
         chores: choreView.chores
           .filter(
             (c) =>

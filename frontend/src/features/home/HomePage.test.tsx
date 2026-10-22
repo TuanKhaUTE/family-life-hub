@@ -36,6 +36,13 @@ function summary(): HomeSummary {
     recentDishes: [],
     calendar: { events: [] },
     chores: [],
+    study: {
+      weekStart: '2099-04-27',
+      weekEnd: '2099-05-03',
+      totalMinutes: 90,
+      sessionCount: 1,
+      goals: [],
+    },
   }
 }
 function network(home = summary()) {
@@ -45,7 +52,17 @@ function network(home = summary()) {
         JSON.stringify(
           url === '/api/home'
             ? { home }
-            : { notifications: [], unreadCount: 0 },
+            : url === '/api/study'
+              ? {
+                  study: {
+                    semesters: [],
+                    courses: [],
+                    goals: [],
+                    sessions: [],
+                    summary: { ...home.study, courses: [] },
+                  },
+                }
+              : { notifications: [], unreadCount: 0 },
         ),
       ),
   )
@@ -58,6 +75,47 @@ afterEach(() => {
 })
 
 describe('warm role-aware Home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'shows own Study summary only for eligible %s',
+    async (role) => {
+      const home = summary()
+      home.study = {
+        weekStart: '2099-04-27',
+        weekEnd: '2099-05-03',
+        totalMinutes: 90,
+        sessionCount: 1,
+        goals: [
+          {
+            id: 'synthetic-goal',
+            title: 'Mục tiêu riêng thử nghiệm',
+            targetMinutes: 300,
+            minutes: 90,
+            targetDate: null,
+          },
+        ],
+      }
+      network(home)
+      const navigate = vi.fn()
+      render(<HomePage profile={{ ...profile, role }} onNavigate={navigate} />)
+      await screen.findByText('Món sáng thử nghiệm')
+      if (role === 'PARENT') {
+        expect(
+          screen.queryByRole('region', { name: 'Học tập tuần này' }),
+        ).toBeNull()
+        expect(screen.queryByText('Mục tiêu riêng thử nghiệm')).toBeNull()
+      } else {
+        const region = screen.getByRole('region', { name: 'Học tập tuần này' })
+        expect(within(region).getByText('1 giờ 30 phút')).toBeTruthy()
+        expect(
+          within(region).getByRole('progressbar').getAttribute('value'),
+        ).toBe('90')
+        await userEvent.click(
+          within(region).getByRole('button', { name: 'Xem Học & Luyện' }),
+        )
+        expect(navigate).toHaveBeenCalledWith('Học & Luyện')
+      }
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'shows real %s chores without Home management or completion forms',
     async (role) => {
@@ -234,9 +292,7 @@ describe('warm role-aware Home', () => {
       expect(
         screen.getByText(role === 'PARENT' ? 'Chi tiêu gia đình' : 'Cá nhân'),
       ).toBeTruthy()
-      expect(screen.getAllByText('Sắp có')).toHaveLength(
-        role === 'PARENT' ? 1 : 2,
-      )
+      expect(screen.getAllByText('Sắp có')).toHaveLength(1)
     },
   )
   it('shows action and recent aggregate without exposing technical identifiers', async () => {
@@ -422,19 +478,11 @@ describe('warm role-aware Home', () => {
         expect(
           screen.getByRole('heading', { name: 'Học tập & Rèn luyện' }),
         ).toBeTruthy()
-        for (const label of [
-          'Mục tiêu học',
-          'Môn học',
-          'Buổi học',
-          'Điểm / bài kiểm tra',
-          'Thống kê tuần',
-          'Lịch tập',
-          'Buổi tập',
-          'Mục tiêu tuần',
-          'Cân nặng / tiến độ',
-        ])
-          expect(screen.getByText(label)).toBeTruthy()
-        expect(screen.getAllByText('Sắp có')).toHaveLength(9)
+        expect(
+          await screen.findByRole('button', { name: 'Ghi buổi học' }),
+        ).toBeTruthy()
+        expect(screen.getByRole('heading', { name: 'Rèn luyện' })).toBeTruthy()
+        expect(screen.getAllByText('Sắp có')).toHaveLength(1)
         expect(
           within(nav)
             .getByRole('button', { name: 'Học & Luyện' })

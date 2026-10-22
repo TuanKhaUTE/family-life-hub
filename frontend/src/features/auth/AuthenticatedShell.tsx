@@ -5,7 +5,7 @@ import { BreakfastSection } from '../breakfast/BreakfastSection'
 import { NotificationPanel } from '../notifications/NotificationPanel'
 import { MealRequestSection } from '../meals/MealRequestSection'
 import { HomePage, type HomeDestination } from '../home/HomePage'
-import { StudyPracticePlaceholder } from '../home/StudyPracticePlaceholder'
+import { StudyPage } from '../study/StudyPage'
 import { CalendarPage } from '../calendar/CalendarPage'
 import './shell.css'
 
@@ -69,7 +69,7 @@ export function AuthenticatedShell({
           <HomePage profile={profile} onNavigate={setDestination} />
         )}
         {destination === 'Học & Luyện' && profile.role !== 'PARENT' && (
-          <StudyPracticePlaceholder />
+          <StudyPage profile={profile} />
         )}
         {destination === 'Bếp' && (
           <>

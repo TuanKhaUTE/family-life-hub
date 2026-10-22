@@ -1,4 +1,5 @@
 import { CHORE_CATEGORIES } from '../chores/chore-api'
+import { validSummary, type StudySummary } from '../study/study-api'
 interface ResponseSummary {
   memberId: string
   displayName: string
@@ -11,6 +12,7 @@ interface ResponseSummary {
   choice: string | null
 }
 export interface HomeSummary {
+  study?: Omit<StudySummary, 'courses'>
   date: string
   timeZone: string
   actions: { id: string; label: string }[]
@@ -127,6 +129,11 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (
+    value.study !== undefined &&
+    (!object(value.study) || !validSummary({ ...value.study, courses: [] }))
+  )
+    return false
   if (
     !Array.isArray(value.chores) ||
     value.chores.length > 3 ||

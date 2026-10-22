@@ -93,6 +93,30 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
       })),
     },
     recent: { listRecent: vi.fn(async () => []) },
+    study: {
+      summary: vi.fn(async () => ({
+        weekStart: '2099-04-27',
+        weekEnd: '2099-05-03',
+        totalMinutes: 90,
+        sessionCount: 1,
+        goals: [
+          {
+            id: member.id,
+            title: 'Synthetic private goal',
+            targetMinutes: 300,
+            minutes: 90,
+            targetDate: null,
+          },
+        ],
+        courses: [
+          {
+            courseId: member.id,
+            name: 'Synthetic private course',
+            minutes: 90,
+          },
+        ],
+      })),
+    },
     chores: {
       list: vi.fn(
         async (): Promise<{
@@ -142,6 +166,28 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'keeps %s Study Home composition private',
+    async (role) => {
+      const s = setup(role)
+      const result = await s.service.get(s.profile)
+      if (role === 'PARENT') {
+        expect(result).not.toHaveProperty('study')
+        expect(s.dependencies.study.summary).not.toHaveBeenCalled()
+        expect(JSON.stringify(result)).not.toContain('Synthetic private')
+      } else {
+        expect(result).toHaveProperty('study')
+        expect(
+          (result as unknown as { study: { totalMinutes: number } }).study
+            .totalMinutes,
+        ).toBe(90)
+        expect(s.dependencies.study.summary).toHaveBeenCalledWith(s.profile)
+        expect(
+          JSON.stringify((result as unknown as { study: unknown }).study),
+        ).not.toContain('Synthetic private course')
+      }
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'projects %s Home chores safely with own filtering and pending priority',
     async (role) => {
@@ -294,7 +340,7 @@ describe('role-aware home', () => {
       expect(result.breakfast.responses).toHaveLength(1)
       expect(result.dinner.request?.responses).toHaveLength(1)
       expect(JSON.stringify(result)).not.toMatch(
-        /Other private|session|pin_hash|finalizedBy/,
+        /Other private|"session"|"sessionId"|pin_hash|finalizedBy/,
       )
       expect(result.date).toBe('2099-05-01')
     },

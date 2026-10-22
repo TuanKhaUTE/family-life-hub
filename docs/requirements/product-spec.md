@@ -12,7 +12,7 @@ The application should feel warm, cozy, friendly, playful, and family-oriented r
 
 The primary end-user UI language is Vietnamese.
 
-The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; future personal spending belongs under Cá nhân. Bếp contains the implemented meal workflows. Unimplemented destinations remain placeholders. Học & Luyện contains study and fitness sections marked “Sắp có”, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
+The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; future personal spending belongs under Cá nhân. Bếp contains the implemented meal workflows. Feature 4A makes Học tập functional and private; Rèn luyện remains “Sắp có”, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
 
 Trang chủ is a compact “Hôm nay nhà mình có gì?” overview, not a second meal editor. Greeting and date use family time. PARENT sees family meal attention items; ADMIN/MEMBER sees only their own outstanding actions. It summarizes the next breakfast and today's dinner, with links to Bếp. Recent dishes show at most three ready dinner dish instances ordered by served date (then dish order); PARENT sees rated dishes with family average/count, while ADMIN/MEMBER also sees unrated dishes and their own score. Individual feedback from other members is not exposed here. Future-module cards contain no fake schedules, money, goals, or private-module data.
 
@@ -694,6 +694,20 @@ The database should be designed so that this expansion remains possible later.
 ---
 
 # 20. Study Tracking
+
+## Implemented foundation (Feature 4A)
+
+Active ADMIN/MEMBER each manage only their own semesters, courses, goals, and study sessions. ADMIN never bypasses ownership. PARENT has no Study workspace or access to member Study data in this feature. Sharing is not implemented.
+
+Semesters have inclusive start/end dates and at most one active semester per owner. Courses belong to one semester of the same owner. Goals and sessions may optionally reference a course of the same owner; a course is not required to record self-study. Deletion of a referenced semester/course is refused rather than silently deleting learning history; unlink or delete dependent records explicitly first.
+
+Sessions record a family-local study date, 1–1440 minutes, and an optional note. Future sessions cannot be logged. “Ghi buổi học” closes after a successful save, then refreshes totals and recent sessions. Goals support text, optional course, optional target minutes/date, and explicit ACTIVE/COMPLETED state. There is no automatic goal completion, negative scoring, or gamification.
+
+The current week is Monday–Sunday in the family timezone. Weekly totals and course breakdown include all sessions in that week, independently of the recent-list limit of 50. An ACTIVE goal's time progress uses this week's minutes for its course, or all courses when unlinked; text-only goals are completed manually. Targets remain active until the owner changes their status; target dates are informational, not automatic expiry.
+
+Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms; Rèn luyện remains “Sắp có”. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Grades, assessments, fitness, sharing, and cross-week analytics remain future work.
+
+The following examples describe the longer-term Study direction, not additional Feature 4A capabilities.
 
 Each member can independently track their own study activity.
 
