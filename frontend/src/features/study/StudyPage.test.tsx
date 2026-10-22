@@ -11,6 +11,28 @@ import { AuthenticatedShell } from '../auth/AuthenticatedShell'
 import { StudyPage } from './StudyPage'
 import type { StudyWorkspace, StudyKind } from './study-api'
 import { familyDate } from '../meals/family-time'
+vi.mock('../fitness/fitness-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../fitness/fitness-api')>()
+  return {
+    ...actual,
+    fetchFitness: async () => ({
+      plans: [],
+      days: [],
+      goals: [],
+      sessions: [],
+      summary: {
+        weekStart: '2026-10-19',
+        weekEnd: '2026-10-25',
+        sessionsThisWeek: 0,
+        weeklyTarget: null,
+        completionPercent: null,
+        totalMinutes: 0,
+        unrecordedDurationCount: 0,
+        nextWorkout: null,
+      },
+    }),
+  }
+})
 const id = '11111111-1111-4111-8111-111111111111'
 const today = familyDate(),
   profile = {
@@ -142,7 +164,7 @@ afterEach(() => {
 })
 describe('private Study destination', () => {
   it.each(['ADMIN', 'MEMBER'] as const)(
-    '%s has a functional Study destination and fitness remains coming soon',
+    '%s has functional Study and Fitness destinations',
     async (role) => {
       vi.stubGlobal(
         'fetch',
@@ -194,7 +216,10 @@ describe('private Study destination', () => {
         await screen.findByText('Chưa có buổi học nào trong tuần này'),
       ).toBeTruthy()
       expect(screen.getByRole('heading', { name: 'Rèn luyện' })).toBeTruthy()
-      expect(screen.getByText('Sắp có')).toBeTruthy()
+      expect(
+        await screen.findByRole('button', { name: 'Ghi buổi tập' }),
+      ).toBeTruthy()
+      expect(screen.queryByText('Sắp có')).toBeNull()
     },
   )
   it('creates a semester and course, logs a session, then creates and completes a goal', async () => {
@@ -324,7 +349,11 @@ describe('private Study destination', () => {
   it('offers loading, safe network error, and retry', async () => {
     network(workspace(), true)
     render(<StudyPage profile={profile} />)
-    expect(screen.getByRole('status').textContent).toContain('Đang mở')
+    expect(
+      within(screen.getByRole('region', { name: 'Học tập' })).getByRole(
+        'status',
+      ).textContent,
+    ).toContain('Đang mở')
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.queryByText('private network detail')).toBeNull()
     network()

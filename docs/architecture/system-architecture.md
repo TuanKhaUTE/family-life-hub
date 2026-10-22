@@ -676,13 +676,13 @@ Visibility settings
 
 ## Fitness
 
-Workout plans
+Feature 4C follows Route → Controller → FitnessService → SupabaseFitnessRepository → restricted SECURITY INVOKER RPCs. Existing session middleware protects all routes. `GET /api/fitness` returns only the actor's plans, plan days, goals, latest 20 completed sessions, and weekly summary. `POST /api/fitness/:kind`, `PUT /api/fitness/:kind/:id`, and `DELETE /api/fitness/:kind/:id` support `plans`, `days`, `goals`, and `sessions`. Full update bodies accept editable fields only, never owner identity. Active plan/goal switching is a normal update.
 
-Workout sessions
+The service and RPCs independently require active ADMIN/MEMBER. PARENT is denied; ADMIN has no ownership bypass. Reads and mutations are actor-scoped; foreign/missing IDs share the same not-found response. Composite owner/entity foreign keys prevent cross-owner links. Per-owner advisory locks make mutations and active-plan/goal switching atomic. Tables use default-deny RLS and service_role-only grants; browser roles cannot access the tables or RPCs. Referenced plans/days require explicit unlinking/deletion of dependencies, rather than cascading private workout history away.
 
-Weekly fitness goals
+The backend supplies the family-local current date using centralized family time. `performed_at` is a completed family-local date; created/updated timestamps are UTC. Monday–Sunday totals include all weekly sessions independently of the recent-list cap. Durations may be unknown; summaries include known minutes and an unknown-duration count. Next workout scans the active weekly schedule from today, skipping a plan day already completed on the matching date. No calendar synchronization or background job is introduced.
 
-Future exercise details
+Home calls FitnessService only for ADMIN/MEMBER and projects weekly counts, target, percentage, known minutes, and unknown-duration count. It excludes plan names, next-workout details, notes, and history; PARENT receives no Fitness property or database read. The feature-oriented frontend uses Express only, preserves Study/grades, and adds compact sibling Home cards without chart dependencies. There are no Fitness notifications, sharing, exercise details, or wellness metrics.
 
 ---
 

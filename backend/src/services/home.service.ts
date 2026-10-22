@@ -8,6 +8,7 @@ import type { DishRatingService } from './dish-rating.service.js'
 import type { CalendarService } from './calendar.service.js'
 import type { ChoreService } from './chore.service.js'
 import type { StudyService } from './study.service.js'
+import type { FitnessService } from './fitness.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -33,6 +34,7 @@ interface HomeDependencies {
   calendar: Pick<CalendarService, 'list'>
   chores: Pick<ChoreService, 'list'>
   study: Pick<StudyService, 'summary'>
+  fitness: Pick<FitnessService, 'summary'>
 }
 
 export class HomeService {
@@ -55,6 +57,7 @@ export class HomeService {
         calendar,
         chores,
         study,
+        fitness,
       } = this.dependencies
       const [
         breakfast,
@@ -64,6 +67,7 @@ export class HomeService {
         calendarView,
         choreView,
         studySummary,
+        fitnessSummary,
       ] = await Promise.all([
         breakfastService.getDay(profile, 'next'),
         requests.listCurrent(profile),
@@ -72,6 +76,7 @@ export class HomeService {
         calendar.list(profile, date, date, parent ? undefined : profile.id),
         chores.list(profile, date, date, parent ? undefined : profile.id),
         parent ? Promise.resolve(null) : study.summary(profile),
+        parent ? Promise.resolve(null) : fitness.summary(profile),
       ])
       const plan = plans.find(
         (p) =>
@@ -168,6 +173,19 @@ export class HomeService {
             : null,
         },
         recentDishes,
+        ...(!parent && fitnessSummary
+          ? {
+              fitness: {
+                weekStart: fitnessSummary.weekStart,
+                weekEnd: fitnessSummary.weekEnd,
+                sessionsThisWeek: fitnessSummary.sessionsThisWeek,
+                weeklyTarget: fitnessSummary.weeklyTarget,
+                completionPercent: fitnessSummary.completionPercent,
+                totalMinutes: fitnessSummary.totalMinutes,
+                unrecordedDurationCount: fitnessSummary.unrecordedDurationCount,
+              },
+            }
+          : {}),
         ...(!parent && studySummary
           ? {
               study: {

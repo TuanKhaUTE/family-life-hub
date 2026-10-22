@@ -303,7 +303,7 @@ The implemented mobile shell uses role-aware destinations. PARENT:
 - Chi tiêu
 - Cá nhân
 
-ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Personal spending will live under Cá nhân later. Feature 4A replaces the Học tập placeholder with a private functional workspace; Rèn luyện remains a warm “Sắp có” section without fake numbers or charts.
+ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Personal spending will live under Cá nhân later. Features 4A–4C replace Học tập and Rèn luyện placeholders with private functional workspaces and grades, without fake numbers or charts.
 
 Use a persistent bottom navigation with simple icons, short Vietnamese labels, comfortable touch targets, and bottom safe-area spacing. Bếp contains the meal workflows. Unimplemented modules remain warm placeholders. Navigation is not a substitute for backend authorization.
 
@@ -577,6 +577,12 @@ Use neutral informational language.
 
 # 21. Fitness Design
 
+Feature 4C uses cream surfaces with sage, lavender, and soft blue accents, activity/target icons, rounded cards, and Vietnamese labels. Rèn luyện is a distinct sibling of Học tập, not an administration dashboard. Show real weekly counts, optional goal progress, known minutes, and the next workout. Missing duration is “Chưa ghi thời lượng”, not a zero-minute workout; empty weeks say “Chưa có buổi tập nào trong tuần này”.
+
+“Ghi buổi tập”, “Lịch tập”, and “Mục tiêu tuần” open compact owner-only forms. Successful saves close the form and refresh the summary. Deletions require confirmation and explain linked-record conflicts. Keep labelled controls and touch targets comfortable at 320px/390px; long titles and notes wrap. Use a lightweight accessible progress bar and a calm positive target-completed state, with no streaks or penalties.
+
+Home uses two compact sibling Study/Fitness cards, each linking to Học & Luyện. Fitness shows only the signed-in member's weekly counts, target progress, and known minutes, never workout history, notes, or plan names. PARENT sees neither private card and no member switcher. Planned workouts do not appear in the family calendar.
+
 Fitness should emphasize consistency.
 
 Preferred visualizations:
@@ -595,7 +601,7 @@ Avoid encouraging unhealthy daily workout streaks.
 
 Feature 4A uses “Học tập & Rèn luyện”, with peach/orange study cards on cream, books/target/clock icons, rounded surfaces, simple labelled progress bars, and natural Vietnamese. Show real totals or “Chưa có buổi học nào trong tuần này”; never sample courses or invented progress. “Ghi buổi học”, “Thêm mục tiêu”, and “Quản lý môn học” open compact feature-owned forms that close after successful saves. Explicit confirmation precedes deletion; linked-record errors explain how to unlink first.
 
-Keep controls at least 44px and forms comfortable at 320px/390px. Course, semester, and goal names must wrap safely. Study is personal, not family-readable: no member switcher, family comparison, or parent overview. Home shows only the signed-in ADMIN/MEMBER's own weekly summary; PARENT receives no Study card. Rèn luyện remains polished “Sắp có”; no grades or fitness charts in this foundation.
+Keep controls at least 44px and forms comfortable at 320px/390px. Course, semester, and goal names must wrap safely. Study is personal, not family-readable: no member switcher, family comparison, or parent overview. Home shows only the signed-in ADMIN/MEMBER's own weekly summary; PARENT receives no Study card. Feature 4B adds grades below, and Feature 4C provides the separate private Rèn luyện section described above.
 
 Feature 4B adds a separate “Điểm & bài kiểm tra” entry with “Xem điểm”, opening a focused peach/lavender view. Use a course selector and rounded cards rather than a gradebook table. “Thêm điểm” and “Chỉnh sửa” forms collapse after saving; “Xóa” requires confirmation. Show numeric scores, derived percentages, optional letter/weight/date, and real course summaries with honest weighted coverage. Empty states say “Chưa có điểm nào” and explain that results appear when added. Keep low results neutral: no red alarms, judgmental labels, comparisons, or ranks. Home may show only the signed-in member's latest result subtly; Mom sees no grade data. No GPA or final-grade claim.
 

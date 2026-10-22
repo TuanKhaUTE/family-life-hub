@@ -93,6 +93,23 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
       })),
     },
     recent: { listRecent: vi.fn(async () => []) },
+    fitness: {
+      summary: vi.fn(async () => ({
+        weekStart: '2099-04-27',
+        weekEnd: '2099-05-03',
+        sessionsThisWeek: 1,
+        weeklyTarget: 3,
+        completionPercent: 33,
+        totalMinutes: 60,
+        unrecordedDurationCount: 0,
+        nextWorkout: {
+          planDayId: member.id,
+          title: 'Synthetic private workout plan',
+          date: '2099-05-01',
+          weekday: 5,
+        },
+      })),
+    },
     study: {
       summary: vi.fn(async () => ({
         weekStart: '2099-04-27',
@@ -183,6 +200,27 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'keeps %s Fitness Home summary private and compact',
+    async (role) => {
+      const s = setup(role)
+      const result = await s.service.get(s.profile)
+      if (role === 'PARENT') {
+        expect(result).not.toHaveProperty('fitness')
+        expect(s.dependencies.fitness.summary).not.toHaveBeenCalled()
+      } else {
+        expect(result).toHaveProperty('fitness')
+        expect(
+          (result as unknown as { fitness: { sessionsThisWeek: number } })
+            .fitness.sessionsThisWeek,
+        ).toBe(1)
+        expect(s.dependencies.fitness.summary).toHaveBeenCalledWith(s.profile)
+      }
+      expect(JSON.stringify(result)).not.toContain(
+        'Synthetic private workout plan',
+      )
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'keeps %s Study Home composition private',
     async (role) => {

@@ -8,6 +8,8 @@ import { HomeCalendarSummary } from './HomeCalendarSummary'
 import { HomeChoresSummary } from './HomeChoresSummary'
 import { StudyProgress } from '../study/StudyProgress'
 import { gradeScore } from '../study/grade-display'
+import { FitnessSummary } from '../fitness/FitnessSummary'
+import '../fitness/fitness.css'
 import '../study/study.css'
 import './home.css'
 
@@ -160,6 +162,21 @@ export function HomePage({
                   {gradeScore(data.study.latestAssessment)}
                 </p>
               )}
+              <button
+                className="home-link"
+                onClick={() => onNavigate('Học & Luyện')}
+              >
+                Xem Học &amp; Luyện
+              </button>
+            </section>
+          )}
+          {!parent && data.fitness && (
+            <section
+              className="home-card home-fitness"
+              aria-label="Rèn luyện tuần này"
+            >
+              <h2>🌿 Rèn luyện tuần này</h2>
+              <FitnessSummary summary={data.fitness} compact />
               <button
                 className="home-link"
                 onClick={() => onNavigate('Học & Luyện')}

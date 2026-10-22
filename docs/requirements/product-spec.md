@@ -12,7 +12,7 @@ The application should feel warm, cozy, friendly, playful, and family-oriented r
 
 The primary end-user UI language is Vietnamese.
 
-The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; future personal spending belongs under Cá nhân. Bếp contains the implemented meal workflows. Feature 4A makes Học tập functional and private; Rèn luyện remains “Sắp có”, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
+The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; future personal spending belongs under Cá nhân. Bếp contains the implemented meal workflows. Features 4A–4C make Học tập, grades, and Rèn luyện functional and private, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
 
 Trang chủ is a compact “Hôm nay nhà mình có gì?” overview, not a second meal editor. Greeting and date use family time. PARENT sees family meal attention items; ADMIN/MEMBER sees only their own outstanding actions. It summarizes the next breakfast and today's dinner, with links to Bếp. Recent dishes show at most three ready dinner dish instances ordered by served date (then dish order); PARENT sees rated dishes with family average/count, while ADMIN/MEMBER also sees unrated dishes and their own score. Individual feedback from other members is not exposed here. Future-module cards contain no fake schedules, money, goals, or private-module data.
 
@@ -661,7 +661,19 @@ Bin is currently an adult and may use this feature.
 
 # 19. Fitness Tracking
 
-Fitness tracking should initially remain simple.
+## Implemented private foundation (Feature 4C)
+
+Fitness is private to each active ADMIN/MEMBER. PARENT has no Fitness workspace or API access; ADMIN cannot read or change another member's records. Sharing is not implemented.
+
+Each owner manages workout plans, weekly plan days, completed sessions, and a weekly session goal. At most one plan and one goal are active per owner. A plan has at most one workout per ISO weekday (Monday–Sunday). A session may optionally reference an owned plan day; its title and note remain independent snapshots. Sessions use a family-local completed date, optional 1–1440 minute duration, and optional note. Future completed dates are rejected. Referenced plans/days cannot be deleted silently: unlink or delete dependent records first.
+
+Weekly progress counts all completed sessions in the current family-local Monday–Sunday week. The active target is 1–21 sessions; no goal means no invented target or percentage. Percentages are rounded and capped at 100%, with a calm completed state and no penalties. Total minutes include only recorded durations; unknown durations are explicitly identified, not presented as zero-length workouts. Recent history is capped at 20 sessions, initially showing five, independently of weekly totals.
+
+The next workout comes from the active weekly plan, beginning today; a plan day already linked to a completed session on that date is skipped. Free workouts do not automatically complete a scheduled day. Workout days do not create family-visible calendar events. There are no Fitness notifications, exercise programming, wellness metrics, or sharing.
+
+Học & Luyện keeps Study and grades functional and replaces the Rèn luyện placeholder with warm private plan, goal, and session forms. Forms collapse after saving and refresh real summaries. ADMIN/MEMBER Home shows compact sibling Study and Fitness cards; Fitness contains only own weekly counts, goal progress, and known minutes, not plan names, session history, or notes. PARENT Home neither queries nor returns Fitness data.
+
+Fitness tracking should remain simple.
 
 Version 1 may support:
 
@@ -705,7 +717,7 @@ Sessions record a family-local study date, 1–1440 minutes, and an optional not
 
 The current week is Monday–Sunday in the family timezone. Weekly totals and course breakdown include all sessions in that week, independently of the recent-list limit of 50. An ACTIVE goal's time progress uses this week's minutes for its course, or all courses when unlinked; text-only goals are completed manually. Targets remain active until the owner changes their status; target dates are informational, not automatic expiry.
 
-Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms; Rèn luyện remains “Sắp có”. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Feature 4B adds private assessments below; fitness, sharing, and cross-week analytics remain future work.
+Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms, beside the private Rèn luyện foundation from Feature 4C. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Feature 4B adds private assessments below; sharing and cross-week analytics remain future work.
 
 The following examples describe the longer-term Study direction, not additional Feature 4A capabilities.
 

@@ -674,95 +674,22 @@ One user may have multiple historical entries.
 
 # 9. Fitness Domain
 
-## fitness_goals
+## Implemented private foundation (Feature 4C)
 
-Suggested fields:
+Migration: `20261022110000_create_private_fitness.sql`.
 
-id
+All four tables have UUID primary keys, `owner_member_id` referencing `family_members` with RESTRICT, and UTC `created_at`/`updated_at` timestamps. Triggers require an active ADMIN/MEMBER owner, prevent owner/identity changes, and maintain update timestamps. PARENT has no workspace. No role bypasses ownership.
 
-owner_id
+- `fitness_plans`: trimmed `name` (1–120 characters), optional trimmed `note` (1–1000), `is_active`. A partial unique index permits at most one active plan per owner.
+- `fitness_plan_days`: `plan_id`, ISO `weekday` (1–7), trimmed `title` (1–120), optional note. Unique `(plan_id, weekday)` keeps one workout per weekday. Composite `(owner_member_id, plan_id)` FK prevents cross-owner links.
+- `fitness_goals`: integer `weekly_session_target` (1–21), `is_active`. A partial unique index permits at most one active goal per owner. No goal means no default target.
+- `fitness_sessions`: optional `plan_day_id`, family-local `performed_at` date (2000–2199, not future), trimmed title, optional integer `duration_minutes` (1–1440), optional note. Every row represents a completed workout; no redundant completed flag. Composite `(owner_member_id, plan_day_id)` FK prevents cross-owner links. Title/note are session snapshots, not live plan-day titles.
 
-weekly_session_target
+Plan/day FKs use RESTRICT: explicitly unlink or delete dependent records before deleting a referenced plan/day. There is no cascading loss of workout history. Owner/date indexes support recent sessions; unique owner/entity keys support composite FKs.
 
-start_date
+All tables enable default-deny RLS without browser policies. PUBLIC/anon/authenticated privileges are revoked on tables and Fitness functions; only backend service_role receives CRUD/execute grants. `fitness_read(actor, today)` and `fitness_mutate(actor, kind, id, input, remove)` are SECURITY INVOKER with fixed empty search paths and qualified relations. They independently check active role and ownership; missing and foreign IDs have identical failures. Per-owner transaction advisory locks serialize mutations and atomically switch active plans/goals.
 
-end_date
-
-created_at
-
-updated_at
-
----
-
-## workout_plans
-
-Suggested fields:
-
-id
-
-owner_id
-
-name
-
-is_active
-
-created_at
-
-updated_at
-
----
-
-## workout_plan_days
-
-Suggested fields:
-
-id
-
-workout_plan_id
-
-day_of_week
-
-title
-
-notes
-
-created_at
-
----
-
-## workout_sessions
-
-Suggested fields:
-
-id
-
-owner_id
-
-workout_plan_day_id
-
-session_date
-
-duration_minutes
-
-notes
-
-completed
-
-created_at
-
-updated_at
-
-Future tables may support:
-
-exercises
-
-sets
-
-repetitions
-
-weight used
-
-Do not implement those details in Version 1 unless needed.
+`fitness_read` returns owner-only plans, days, goals, latest 20 sessions, and current-week summary. Monday–Sunday totals include all weekly sessions independently of that cap. Progress uses the active target, rounds and caps at 100%; without a target the percentage is null. Minutes sum known durations only and include a separate unknown-duration count. The next planned workout scans today through the following seven days and skips a matching plan day already completed on the candidate date. There is no stored derived progress, calendar event, notification, sharing rule, or exercise/set/rep/weight schema.
 
 ---
 

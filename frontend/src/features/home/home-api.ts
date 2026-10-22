@@ -1,5 +1,9 @@
 import { CHORE_CATEGORIES } from '../chores/chore-api'
 import { validSummary, type StudySummary } from '../study/study-api'
+import {
+  validFitnessSummary,
+  type FitnessHomeSummary,
+} from '../fitness/fitness-api'
 interface ResponseSummary {
   memberId: string
   displayName: string
@@ -12,6 +16,7 @@ interface ResponseSummary {
   choice: string | null
 }
 export interface HomeSummary {
+  fitness?: FitnessHomeSummary
   study?: Omit<StudySummary, 'courses'> & {
     latestAssessment?: {
       courseName: string
@@ -137,6 +142,8 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (value.fitness !== undefined && !validFitnessSummary(value.fitness))
+    return false
   if (object(value.study) && value.study.latestAssessment !== undefined) {
     const a = value.study.latestAssessment
     if (

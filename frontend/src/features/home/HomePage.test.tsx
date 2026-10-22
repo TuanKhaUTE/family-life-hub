@@ -52,17 +52,36 @@ function network(home = summary()) {
         JSON.stringify(
           url === '/api/home'
             ? { home }
-            : url === '/api/study'
+            : url === '/api/fitness'
               ? {
-                  study: {
-                    semesters: [],
-                    courses: [],
+                  fitness: {
+                    plans: [],
+                    days: [],
                     goals: [],
                     sessions: [],
-                    summary: { ...home.study, courses: [] },
+                    summary: {
+                      weekStart: '2099-04-27',
+                      weekEnd: '2099-05-03',
+                      sessionsThisWeek: 0,
+                      weeklyTarget: null,
+                      completionPercent: null,
+                      totalMinutes: 0,
+                      unrecordedDurationCount: 0,
+                      nextWorkout: null,
+                    },
                   },
                 }
-              : { notifications: [], unreadCount: 0 },
+              : url === '/api/study'
+                ? {
+                    study: {
+                      semesters: [],
+                      courses: [],
+                      goals: [],
+                      sessions: [],
+                      summary: { ...home.study, courses: [] },
+                    },
+                  }
+                : { notifications: [], unreadCount: 0 },
         ),
       ),
   )
@@ -75,6 +94,44 @@ afterEach(() => {
 })
 
 describe('warm role-aware Home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'keeps %s Fitness Home data own-only and concise',
+    async (role) => {
+      const home = summary()
+      home.fitness = {
+        weekStart: '2099-04-27',
+        weekEnd: '2099-05-03',
+        sessionsThisWeek: 1,
+        weeklyTarget: 3,
+        completionPercent: 33,
+        totalMinutes: 60,
+        unrecordedDurationCount: 0,
+      }
+      network(home)
+      const navigate = vi.fn()
+      render(<HomePage profile={{ ...profile, role }} onNavigate={navigate} />)
+      await screen.findByText('Món sáng thử nghiệm')
+      if (role === 'PARENT') {
+        expect(
+          screen.queryByRole('region', { name: 'Rèn luyện tuần này' }),
+        ).toBeNull()
+        expect(screen.queryByText('1 / 3 buổi hoàn thành')).toBeNull()
+      } else {
+        const region = screen.getByRole('region', {
+          name: 'Rèn luyện tuần này',
+        })
+        expect(within(region).getByText('1 / 3 buổi hoàn thành')).toBeTruthy()
+        expect(within(region).getByText('1 giờ')).toBeTruthy()
+        expect(
+          within(region).queryByRole('button', { name: 'Ghi buổi tập' }),
+        ).toBeNull()
+        await userEvent.click(
+          within(region).getByRole('button', { name: 'Xem Học & Luyện' }),
+        )
+        expect(navigate).toHaveBeenCalledWith('Học & Luyện')
+      }
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'shows own Study summary only for eligible %s',
     async (role) => {
@@ -495,7 +552,10 @@ describe('warm role-aware Home', () => {
           await screen.findByRole('button', { name: 'Ghi buổi học' }),
         ).toBeTruthy()
         expect(screen.getByRole('heading', { name: 'Rèn luyện' })).toBeTruthy()
-        expect(screen.getAllByText('Sắp có')).toHaveLength(1)
+        expect(
+          await screen.findByRole('button', { name: 'Ghi buổi tập' }),
+        ).toBeTruthy()
+        expect(screen.queryByText('Sắp có')).toBeNull()
         expect(
           within(nav)
             .getByRole('button', { name: 'Học & Luyện' })

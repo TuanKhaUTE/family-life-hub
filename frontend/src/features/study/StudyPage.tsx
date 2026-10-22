@@ -13,6 +13,7 @@ import { StudyForm } from './StudyForm'
 import { StudyProgress, studyDuration } from './StudyProgress'
 import { StudyRecords, recordName } from './StudyRecords'
 import { StudyGrades } from './StudyGrades'
+import { FitnessSection } from '../fitness/FitnessSection'
 import './study.css'
 export function StudyPage({ profile }: { profile: FamilyProfile }) {
   return profile.role === 'PARENT' ? (
@@ -291,12 +292,7 @@ function MemberStudyPage() {
           </>
         )}
       </section>
-      <section className="study-fitness">
-        <span aria-hidden="true">🌿</span>
-        <h2>Rèn luyện</h2>
-        <span className="coming-soon">Sắp có</span>
-        <p>Một góc nhỏ để chăm sóc bản thân, sẽ có sau nhé.</p>
-      </section>
+      <FitnessSection />
     </div>
   )
 }
