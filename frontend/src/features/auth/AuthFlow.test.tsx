@@ -38,6 +38,7 @@ vi.mock('../home/home-api', () => ({
     dinner: { request: null, meal: null },
     recentDishes: [],
     calendar: { events: [] },
+    chores: [],
   }),
 }))
 

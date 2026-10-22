@@ -35,6 +35,7 @@ function summary(): HomeSummary {
     dinner: { request: null, meal: null },
     recentDishes: [],
     calendar: { events: [] },
+    chores: [],
   }
 }
 function network(home = summary()) {
@@ -57,6 +58,44 @@ afterEach(() => {
 })
 
 describe('warm role-aware Home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'shows real %s chores without Home management or completion forms',
+    async (role) => {
+      const home = summary()
+      home.chores = [
+        {
+          scheduleId: 'synthetic',
+          title: 'Việc nhà từ API',
+          category: 'DISHES',
+          scheduledTime: null,
+          date: home.date,
+          status: 'PENDING',
+          assignee: {
+            id: profile.id,
+            displayName: profile.displayName,
+            avatarType: null,
+            avatarValue: null,
+          },
+        },
+      ]
+      network(home)
+      const navigate = vi.fn()
+      render(<HomePage profile={{ ...profile, role }} onNavigate={navigate} />)
+      const region = await screen.findByRole('region', {
+        name: role === 'PARENT' ? 'Việc nhà hôm nay' : 'Việc nhà của bạn',
+      })
+      expect(within(region).getByText('Việc nhà từ API')).toBeTruthy()
+      expect(within(region).getByText(/Sau bữa tối/)).toBeTruthy()
+      expect(
+        within(region).queryByRole('button', { name: 'Đã làm xong' }),
+      ).toBeNull()
+      expect(screen.queryByText('Hôm nay mọi việc đang ổn 💚')).toBeNull()
+      await userEvent.click(
+        within(region).getByRole('button', { name: 'Xem lịch' }),
+      )
+      expect(navigate).toHaveBeenCalledWith('Lịch')
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'replaces %s calendar placeholder with real upcoming summary and navigation',
     async (role) => {
@@ -87,7 +126,16 @@ describe('warm role-aware Home', () => {
         }),
       ).toBeTruthy()
       expect(screen.getByText('Hoạt động thật từ API')).toBeTruthy()
-      await userEvent.click(screen.getByRole('button', { name: 'Xem lịch' }))
+      await userEvent.click(
+        within(
+          screen.getByRole('region', {
+            name:
+              role === 'PARENT'
+                ? 'Lịch gia đình hôm nay'
+                : 'Lịch của bạn hôm nay',
+          }),
+        ).getByRole('button', { name: 'Xem lịch' }),
+      )
       expect(navigate).toHaveBeenCalledWith('Lịch')
     },
   )

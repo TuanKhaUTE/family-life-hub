@@ -6,6 +6,7 @@ import type { MealRequestService } from './meal-request.service.js'
 import type { FinalMealService } from './final-meal.service.js'
 import type { DishRatingService } from './dish-rating.service.js'
 import type { CalendarService } from './calendar.service.js'
+import type { ChoreService } from './chore.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -29,6 +30,7 @@ interface HomeDependencies {
   ratings: Pick<DishRatingService, 'get'>
   recent: HomeRepository
   calendar: Pick<CalendarService, 'list'>
+  chores: Pick<ChoreService, 'list'>
 }
 
 export class HomeService {
@@ -49,14 +51,16 @@ export class HomeService {
         ratings,
         recent,
         calendar,
+        chores,
       } = this.dependencies
-      const [breakfast, plans, meal, recentDishes, calendarView] =
+      const [breakfast, plans, meal, recentDishes, calendarView, choreView] =
         await Promise.all([
           breakfastService.getDay(profile, 'next'),
           requests.listCurrent(profile),
           meals.get(date, 'DINNER'),
           recent.listRecent(profile.id, parent, date),
           calendar.list(profile, date, date, parent ? undefined : profile.id),
+          chores.list(profile, date, date, parent ? undefined : profile.id),
         ])
       const plan = plans.find(
         (p) =>
@@ -153,6 +157,35 @@ export class HomeService {
             : null,
         },
         recentDishes,
+        chores: choreView.chores
+          .filter(
+            (c) =>
+              c.status !== 'CANCELLED' &&
+              (parent || c.assignee.id === profile.id),
+          )
+          .sort(
+            (a, b) =>
+              Number(a.status === 'COMPLETED') -
+                Number(b.status === 'COMPLETED') ||
+              (a.schedule.scheduledTime ?? '99:99').localeCompare(
+                b.schedule.scheduledTime ?? '99:99',
+              ),
+          )
+          .slice(0, 3)
+          .map((c) => ({
+            scheduleId: c.schedule.id,
+            title: c.schedule.title,
+            category: c.schedule.category,
+            scheduledTime: c.schedule.scheduledTime,
+            date: c.date,
+            status: c.status,
+            assignee: {
+              id: c.assignee.id,
+              displayName: c.assignee.displayName,
+              avatarType: c.assignee.avatarType,
+              avatarValue: c.assignee.avatarValue,
+            },
+          })),
         calendar: {
           events: calendarView.occurrences
             .filter(

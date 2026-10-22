@@ -633,11 +633,20 @@ Schedule exceptions
 
 ## Chores
 
-Dishwashing schedules
+Feature 3C uses Route → Controller → ChoreService → SupabaseChoreRepository → restricted database RPCs. Session middleware supplies the actor; client role/member fields never authorize a write. PARENT manages, every active member reads, and only the assignee completes their own dated occurrence. No parent override or ADMIN management bypass exists.
 
-Assignments
+REST endpoints:
 
-Possible completion records
+- `GET /api/chores?from=YYYY-MM-DD&to=YYYY-MM-DD&memberId=UUID` (optional member filter; maximum inclusive 31 days).
+- `POST /api/chores/schedules` creates a one-time or weekly schedule with a stable client UUID `requestId` retry key.
+- `PUT /api/chores/schedules/:id` edits/reassigns the existing schedule atomically.
+- `DELETE /api/chores/schedules/:id` soft-cancels the schedule, retaining completion history.
+- `POST /api/chores/schedules/:id/occurrences/:date/complete` records self-completion with an empty JSON body.
+- `POST /api/chores/schedules/:id/occurrences/:date/cancel` cancels one pending occurrence (PARENT only).
+
+Weekly rules are explicit ISO weekday/member mappings with optional end date, expanded on reads using the existing family-time convention. Separate per-date snapshots preserve completion/cancellation and assignee history. Atomic service_role-only, SECURITY INVOKER RPCs validate actor/assignee rules, serialize mutation retries, and update assignment notifications without resetting `read_at`. Browser database roles have no grants/policies. No schedulers, realtime, or push are introduced.
+
+Lịch mounts a feature-owned ChoresSection below the normal timeline. Home composes ChoreService data into at most three safe non-cancelled summaries today: family-wide for PARENT, own-only for ADMIN/MEMBER. Frontend requests go through Express and use the existing session; successful schedule mutations refresh the existing notification bell via `family-notifications-changed`.
 
 ---
 

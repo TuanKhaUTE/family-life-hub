@@ -546,27 +546,19 @@ This is important because university schedules can change.
 
 ---
 
-# 15. Dishwashing Chores
+# 15. Family Chores (Feature 3C)
 
-Mom creates and manages the dishwashing schedule.
+PARENT manages household chores: create, edit, reassign to any active member (including self), cancel one occurrence, or cancel a schedule. ADMIN and MEMBER do not inherit management permissions. All active members can view the family schedule; only the assigned member can complete their own occurrence, including PARENT's own chores. There is no parent completion override.
 
-Example:
+Categories are DISHES, TRASH, CLEANING, SHOPPING, LAUNDRY, and OTHER. Each dated occurrence is PENDING, COMPLETED, or CANCELLED. Completion is idempotent and records server timestamps and the assignee; future occurrences cannot be completed early. No points, penalties, rankings, or rewards are included.
 
-Monday:
-Bin
+A chore is either one-time or a simple weekly pattern with explicit weekday-to-member assignments, a start date, and an optional inclusive end date. No recurrence syntax or background generation is required. Completed/cancelled occurrence snapshots survive later schedule edits; pending occurrences follow the current pattern. Cancelling a schedule is terminal, preserves completed history, and does not hard-delete it.
 
-Tuesday:
-Tun
+Lịch keeps the calendar timeline separate from “Việc nhà hôm nay”. PARENT sees “Quản lý việc nhà”, “Thêm việc”, and “Lịch lặp hàng tuần”. Members see their own chores first, others read-only, and completed chores in a compact checked state. A DISHES chore without a specific time is labelled “Sau bữa tối”; other untimed chores use “Trong ngày”.
 
-Wednesday:
-Bin
+Home shows at most three non-cancelled chores for today: family assignments and statuses for PARENT, own chores for ADMIN/MEMBER. “Xem lịch” leads to Lịch; Home does not duplicate management or completion forms.
 
-Thursday:
-Tun
-
-Kha and Bin can view the schedule.
-
-A future version may support completion confirmation.
+Assignment/reassignment updates one notification per recipient and schedule, preserves read status, and safely handles retries. Former assignees' existing notices explain that the work is no longer assigned to them. There are no recurring reminder jobs, push notifications, or realtime updates.
 
 ---
 

@@ -14,6 +14,7 @@ import type { BreakfastDay } from '../src/services/breakfast.service.js'
 import type { MealRequestView } from '../src/services/meal-request.service.js'
 import type { FinalMeal } from '../src/services/final-meal.service.js'
 import type { CalendarOccurrence } from '../src/services/calendar.service.js'
+import type { ChoreOccurrence } from '../src/services/chore.service.js'
 
 const member: SafeFamilyProfile = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -92,6 +93,23 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
       })),
     },
     recent: { listRecent: vi.fn(async () => []) },
+    chores: {
+      list: vi.fn(
+        async (): Promise<{
+          from: string
+          to: string
+          timeZone: string
+          members: []
+          chores: ChoreOccurrence[]
+        }> => ({
+          from: '2099-05-01',
+          to: '2099-05-01',
+          timeZone: 'Asia/Ho_Chi_Minh',
+          members: [],
+          chores: [],
+        }),
+      ),
+    },
     calendar: {
       list: vi.fn(
         async (): Promise<{
@@ -124,6 +142,69 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'projects %s Home chores safely with own filtering and pending priority',
+    async (role) => {
+      const s = setup(role)
+      const schedule = {
+        id: member.id,
+        requestId: member.id,
+        title: 'Synthetic chore',
+        category: 'DISHES' as const,
+        scheduledDate: '2099-05-01',
+        scheduledTime: null,
+        assignedMemberId: member.id,
+        weeklyAssignments: [],
+        recurrenceUntil: null,
+        note: 'not needed on Home',
+        createdByMemberId: member.id,
+        cancelled: false,
+        createdAt: '2099-05-01T00:00:00Z',
+        updatedAt: '2099-05-01T00:00:00Z',
+      }
+      const chore: ChoreOccurrence = {
+        schedule,
+        date: '2099-05-01',
+        assignee: member,
+        status: 'PENDING',
+        completedAt: null,
+        completedByMemberId: null,
+      }
+      s.dependencies.chores.list.mockResolvedValue({
+        from: '2099-05-01',
+        to: '2099-05-01',
+        timeZone: 'Asia/Ho_Chi_Minh',
+        members: [],
+        chores: [
+          {
+            ...chore,
+            status: 'COMPLETED',
+            completedAt: '2099-05-01T01:00:00Z',
+            completedByMemberId: member.id,
+          },
+          { ...chore, assignee: { ...member, id: 'other' } },
+          chore,
+          { ...chore, status: 'CANCELLED' },
+        ],
+      })
+      const result = await s.service.get(s.profile)
+      expect(result.chores).toHaveLength(role === 'PARENT' ? 3 : 2)
+      expect(result.chores[0]!.status).toBe('PENDING')
+      if (role !== 'PARENT')
+        expect(result.chores.every((c) => c.assignee.id === member.id)).toBe(
+          true,
+        )
+      expect(JSON.stringify(result.chores)).not.toMatch(
+        /note|requestId|createdBy|completedBy|session/,
+      )
+      expect(s.dependencies.chores.list).toHaveBeenCalledWith(
+        s.profile,
+        '2099-05-01',
+        '2099-05-01',
+        role === 'PARENT' ? undefined : member.id,
+      )
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'limits %s Home calendar to three current/upcoming appropriate events',
     async (role) => {

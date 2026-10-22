@@ -18,6 +18,8 @@ import { DishRatingService } from '../services/dish-rating.service.js'
 import { HomeService } from '../services/home.service.js'
 import { CalendarService } from '../services/calendar.service.js'
 import { SupabaseCalendarRepository } from '../repositories/calendar.repository.js'
+import { ChoreService } from '../services/chore.service.js'
+import { SupabaseChoreRepository } from '../repositories/chore.repository.js'
 
 export function createHomeRouter(
   service: HomeService,
@@ -35,6 +37,7 @@ export default createHomeRouter(
     ratings: new DishRatingService(new SupabaseDishRatingRepository()),
     recent: new SupabaseHomeRepository(),
     calendar: new CalendarService(new SupabaseCalendarRepository()),
+    chores: new ChoreService(new SupabaseChoreRepository()),
   }),
   new FamilySessionService(new SupabaseAuthSessionRepository()),
 )

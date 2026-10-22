@@ -515,7 +515,7 @@ In the main kitchen, show only the compact **Đánh giá bữa tối** / **Xem g
 
 Feature 3B's Lịch is a mobile-first family calendar headed “Lịch” / “Cùng nhau sắp xếp thời gian”. Default to today's vertical timeline, with Today/Week controls, date navigation, and active-member chips. Use cream surfaces, sage/peach/lavender/blue owner cards, avatars, category icons, and timeline dots. Labels and dates remain Vietnamese. Preserve comfortable touch targets at 320px and 390px, not a shrunken month grid.
 
-Own event details offer explicit edit/delete controls; another owner's details are read-only regardless of role. Weekly details distinguish “Chỉnh sửa lần này”, “Chỉnh sửa cả lịch”, “Hủy lần này”, and confirmed “Xóa cả lịch”. Cancelled occurrences stay visibly marked. The shared form closes after a successful save. Do not add fake chores or a real chore module; the timeline is a separate component region so future household sections can sit alongside it.
+Own event details offer explicit edit/delete controls; another owner's details are read-only regardless of role. Weekly details distinguish “Chỉnh sửa lần này”, “Chỉnh sửa cả lịch”, “Hủy lần này”, and confirmed “Xóa cả lịch”. Cancelled occurrences stay visibly marked. The shared form closes after a successful save. Feature 3C adds real household chores in a separate section beneath the timeline, never as fake calendar events.
 
 Home's calendar placeholder is replaced with a compact “Lịch gia đình hôm nay” (PARENT) / “Lịch của bạn hôm nay” (ADMIN/MEMBER) card, owner avatars, up to three real upcoming/ongoing items, a calm empty state, and “Xem lịch”. No full editor is duplicated on Home.
 
@@ -545,19 +545,11 @@ Cancelled sessions should remain visible but clearly marked.
 
 # 19. Chores
 
-Dishwashing duties should feel playful rather than punitive.
+Household duties should feel friendly and collaborative, never punitive. Use “Việc nhà hôm nay”, “Giao cho”, “Sau bữa tối”, and “Đã làm xong”, with warm household icons, cream/yellow/sage rounded cards, member avatars, and readable Vietnamese dates. Keep chores visually separate from the calendar timeline.
 
-Example:
+PARENT manages through “Quản lý việc nhà”, “Thêm việc”, and “Lịch lặp hàng tuần”. The weekly form uses seven familiar weekday/member selectors, not technical recurrence syntax. All controls must remain comfortable at 320px and 390px, with visible focus states and touch targets of at least 44px. Forms collapse after successful saves.
 
-"Today's dish hero"
-
-Bin Bin
-
-Avoid harsh language such as:
-
-"Assigned task"
-
-when a warmer phrase is appropriate.
+Members' own chores appear first with a completion button only when eligible; other members' chores remain read-only. Completed cards collapse to “Hoàn thành ✓” without repeated completion controls. Cancellation is clearly distinct from completion. Home presents up to three compact chore summaries with “Xem lịch”, not management forms. No points, punitive language, rankings, or streaks.
 
 ---
 

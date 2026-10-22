@@ -11,6 +11,7 @@ import finalMealRouter from './routes/final-meal.routes.js'
 import dishRatingRouter from './routes/dish-rating.routes.js'
 import homeRouter from './routes/home.routes.js'
 import calendarRouter from './routes/calendar.routes.js'
+import choreRouter from './routes/chore.routes.js'
 
 const app = express()
 
@@ -24,6 +25,7 @@ app.use('/api', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/home', homeRouter)
 app.use('/api/calendar', calendarRouter)
+app.use('/api/chores', choreRouter)
 app.use('/api/breakfast', breakfastRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/meals/requests', mealRequestRouter)

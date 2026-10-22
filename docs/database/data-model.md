@@ -562,51 +562,17 @@ Weekly duplication should create or derive future sessions without granting edit
 
 # 6. Chore Domain
 
-## chore_schedules
+## Implemented family chores (Feature 3C)
 
-Suggested fields:
+- `chore_schedules`: UUID `id`, unique UUID `request_key` for create retries, trimmed `title` (1–120 characters), `category` (DISHES/TRASH/CLEANING/SHOPPING/LAUNDRY/OTHER), `scheduled_date`, nullable local minute-precision `scheduled_time`, nullable `assigned_member_id`, `is_weekly`, nullable `recurrence_until`, nullable trimmed `note` (up to 1000 characters), `created_by_member_id`, `cancelled`, UTC `created_at`/`updated_at`.
+- `chore_weekly_assignments`: composite primary key `(schedule_id, weekday)` with ISO weekday 1–7 and `assigned_member_id`. One-time schedules require a direct assignee; weekly schedules use explicit weekday assignments instead. Assignees must be active when configured.
+- `chore_occurrences`: composite primary key `(schedule_id, occurrence_date)`, snapshot `assigned_member_id`, persisted status COMPLETED or CANCELLED, nullable `completed_at`/`completed_by_member_id`, and UTC timestamps. PENDING is derived by absence of an occurrence row. COMPLETED requires both completion fields and the completing member must equal the assignee; CANCELLED has neither. Schedule and member relationships use foreign keys.
 
-id
+Reads expand weekly rules within an inclusive range of at most 31 days in the centralized family timezone; supported dates are 2000–2199. Persisted completion/cancellation snapshots remain visible after rule changes and preserve their assignee. There is no scheduled row generation. Cancelling a schedule retains completed history and makes pending occurrences cancelled; it is not a hard delete.
 
-created_by
+Session-authenticated REST endpoints invoke fixed-search-path, SECURITY INVOKER RPCs with the session actor. Active PARENT manages schedules, all active members read, and only the actual assignee completes today/past occurrences. Create retries, weekday replacement, assignment notifications, and completion metadata are atomic/idempotent. Duplicate create keys with different content conflict instead of overwriting.
 
-week_start_date
-
-created_at
-
-updated_at
-
----
-
-## chore_assignments
-
-Suggested fields:
-
-id
-
-schedule_id
-
-assignment_date
-
-assigned_member_id
-
-chore_type
-
-status
-
-created_at
-
-updated_at
-
-Initial chore type:
-
-DISHWASHING
-
-Possible future status:
-
-PENDING
-
-COMPLETED
+All three tables have RLS enabled, no browser policies, and PUBLIC/anon/authenticated privileges revoked. Only backend service_role has the required table/RPC privileges. `CHORE_ASSIGNMENT` notifications use `(recipient, type, CHORE_SCHEDULE, schedule_id)` identity, update text without resetting `read_at`, and never create daily reminder jobs.
 
 ---
 

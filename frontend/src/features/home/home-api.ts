@@ -1,3 +1,4 @@
+import { CHORE_CATEGORIES } from '../chores/chore-api'
 interface ResponseSummary {
   memberId: string
   displayName: string
@@ -13,6 +14,20 @@ export interface HomeSummary {
   date: string
   timeZone: string
   actions: { id: string; label: string }[]
+  chores: {
+    scheduleId: string
+    title: string
+    category: (typeof CHORE_CATEGORIES)[number]
+    scheduledTime: string | null
+    date: string
+    status: 'PENDING' | 'COMPLETED' | 'CANCELLED'
+    assignee: {
+      id: string
+      displayName: string
+      avatarType: string | null
+      avatarValue: string | null
+    }
+  }[]
   calendar: {
     events: {
       id: string
@@ -112,6 +127,26 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (
+    !Array.isArray(value.chores) ||
+    value.chores.length > 3 ||
+    !value.chores.every(
+      (c) =>
+        object(c) &&
+        text(c.scheduleId) &&
+        text(c.title) &&
+        CHORE_CATEGORIES.includes(c.category as never) &&
+        nullableText(c.scheduledTime) &&
+        day(c.date) &&
+        ['PENDING', 'COMPLETED', 'CANCELLED'].includes(String(c.status)) &&
+        object(c.assignee) &&
+        text(c.assignee.id) &&
+        text(c.assignee.displayName) &&
+        nullableText(c.assignee.avatarType) &&
+        nullableText(c.assignee.avatarValue),
+    )
+  )
+    return false
   if (
     !object(value.calendar) ||
     !Array.isArray(value.calendar.events) ||

@@ -18,6 +18,7 @@ import {
 import { CalendarForm } from './CalendarForm'
 import { CalendarDetails } from './CalendarDetails'
 import './calendar.css'
+import { ChoresSection } from '../chores/ChoresSection'
 
 export function CalendarPage({ profile }: { profile: FamilyProfile }) {
   const [today] = useState(() => familyDate())
@@ -202,7 +203,7 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
         />
       )}
       {state === 'loading' && (
-        <p className="calendar-loading" role="status">
+        <p className="calendar-loading" role="status" aria-label="Tải lịch">
           Đang xem lịch của cả nhà…
         </p>
       )}
@@ -292,6 +293,12 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
           })}
         </section>
       )}
+      <ChoresSection
+        profile={profile}
+        from={from}
+        to={to}
+        memberId={memberId}
+      />
     </div>
   )
 }

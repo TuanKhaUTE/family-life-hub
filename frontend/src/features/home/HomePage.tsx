@@ -5,6 +5,7 @@ import { FAMILY_TIME_ZONE } from '../meals/family-time'
 import { fetchHome, type HomeSummary } from './home-api'
 import { greeting } from './home-time'
 import { HomeCalendarSummary } from './HomeCalendarSummary'
+import { HomeChoresSummary } from './HomeChoresSummary'
 import './home.css'
 
 export type HomeDestination =
@@ -139,9 +140,16 @@ export function HomePage({
                 ))}
               </ul>
             ) : (
-              <p className="home-calm">Hôm nay mọi việc đang ổn 💚</p>
+              !data.chores.some((c) => c.status === 'PENDING') && (
+                <p className="home-calm">Hôm nay mọi việc đang ổn 💚</p>
+              )
             )}
           </section>
+          <HomeChoresSummary
+            chores={data.chores}
+            parent={parent}
+            onOpen={() => onNavigate('Lịch')}
+          />
           <section aria-labelledby="home-meals-title">
             <div className="home-section-title">
               <h2 id="home-meals-title">Bữa ăn hôm nay</h2>

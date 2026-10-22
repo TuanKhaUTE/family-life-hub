@@ -10,6 +10,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CalendarPage } from './CalendarPage'
 import { familyDate } from '../meals/family-time'
 import type { FamilyProfile } from '../auth/auth-api'
+vi.mock('../chores/chore-api', () => ({
+  fetchChores: async () => ({ members: [], chores: [] }),
+}))
 
 const id = '11111111-1111-4111-8111-111111111111',
   otherId = '22222222-2222-4222-8222-222222222222'
@@ -315,7 +318,9 @@ describe('shared family calendar', () => {
   it('has warm loading, empty and safe retry states', async () => {
     network([], true)
     render(<CalendarPage profile={profile} />)
-    expect(screen.getByRole('status').textContent).toContain('Đang xem lịch')
+    expect(
+      screen.getByRole('status', { name: 'Tải lịch' }).textContent,
+    ).toContain('Đang xem lịch')
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.queryByText('private connection detail')).toBeNull()
     network([])
