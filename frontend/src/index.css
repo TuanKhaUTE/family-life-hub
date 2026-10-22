@@ -3,16 +3,27 @@
   --cream-secondary: #fdf2e7;
   --surface: #ffffff;
   --surface-soft: #fffdfc;
+  --surface-warm: #fffdf9;
   --sage: #93b995;
   --sage-deep: #66896b;
+  --sage-soft: #eaf1e5;
   --peach: #f6b38e;
+  --peach-soft: #fceadd;
   --terracotta: #d97a5b;
   --yellow: #f4c86a;
+  --lavender-soft: #efebf5;
   --rose: #efa7a7;
   --text: #493b32;
   --text-secondary: #77665b;
   --text-muted: #9a8b82;
   --error: #a94f49;
+  --border: #e8dccf;
+  --radius-md: 1rem;
+  --radius-lg: 1.35rem;
+  --radius-xl: 1.6rem;
+  --shadow-card: 0 8px 24px rgb(91 70 56 / 0.06);
+  --shadow-soft: 0 3px 14px rgb(73 59 50 / 0.04);
+  --focus-ring: 3px solid #c78564;
   font-family:
     Inter, 'Nunito Sans', ui-rounded, system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
@@ -31,24 +42,34 @@
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--cream);
+  overflow-x: hidden;
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
 button {
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--yellow);
+  outline: var(--focus-ring);
   outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 ::selection {

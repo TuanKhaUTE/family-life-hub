@@ -1,11 +1,11 @@
-.activity-plans { display: grid; gap: .85rem; min-width: 0; color: #493b32; padding: 1rem; background: #f9f2e8; border: 1px solid #e6d6c5; border-radius: 1.2rem; }
+.activity-plans { display: grid; gap: .85rem; min-width: 0; color: #493b32; padding: 1rem; background: #f9f2e8; border: 1px solid #e6d6c5; border-radius: var(--radius-xl); box-shadow: var(--shadow-soft); }
 .activity-plans *, .activity-plans *::before, .activity-plans *::after { box-sizing: border-box; min-width: 0; }
 .activity-plans h3, .activity-plans h4, .activity-plans p { margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
 .activity-plans button { min-height: 44px; border: 1px solid #d8cdbf; border-radius: .8rem; padding: .6rem .8rem; background: #fffdf9; color: #493b32; font: inherit; cursor: pointer; }
 .activity-plans button:disabled { opacity: .6; cursor: wait; }
 .activity-plans .activity-primary { background: #e4efdd; color: #345539; border-color: #bdcfb4; font-weight: 700; }
 .activity-plan, .activity-statistics, .activity-list, .activity-plans fieldset { display: grid; gap: .65rem; }
-.activity-plan { padding: .9rem; border-radius: 1rem; background: #fffdf9; border: 1px solid #e4d8ca; }
+.activity-plan { padding: .9rem; border-radius: var(--radius-lg); background: #fffdf9; border: 1px solid #e4d8ca; box-shadow: var(--shadow-soft); }
 .activity-completed { background: #edf3e8; }
 .activity-hint { font-size: .85rem; color: #77665b; }
 .activity-plans fieldset { margin: 0; border: 0; padding: .8rem 0; }

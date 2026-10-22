@@ -1,7 +1,9 @@
 .home-shell {
   width: 100%;
   padding-top: max(6px, env(safe-area-inset-top));
-  padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  padding-right: 0.15rem;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  padding-left: 0.15rem;
 }
 .home-header {
   flex-wrap: wrap;
@@ -32,10 +34,11 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.15rem;
-  padding: 0.5rem 0.35rem calc(0.5rem + env(safe-area-inset-bottom));
-  background: #fffdf9;
-  border-top: 1px solid #e8dccf;
-  box-shadow: 0 -4px 20px rgb(73 59 50 / 0.06);
+  padding: 0.45rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom));
+  background: rgb(255 253 249 / 96%);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgb(73 59 50 / 0.08);
+  backdrop-filter: blur(12px);
 }
 .bottom-nav button {
   display: grid;
@@ -58,7 +61,7 @@
 }
 .bottom-nav button[aria-current='page'] {
   color: #405c40;
-  background: #eaf1e5;
+  background: var(--sage-soft);
 }
 .bottom-nav button:focus-visible {
   outline: 3px solid #c78564;

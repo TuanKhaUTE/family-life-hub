@@ -4,11 +4,11 @@
 }
 
 .auth-card {
-  padding: 32px 22px;
+  padding: clamp(1.35rem, 5vw, 2.6rem) clamp(1rem, 5vw, 2.6rem);
   border: 1px solid #f0e2d6;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 20px 55px rgba(91, 70, 56, 0.1);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: var(--shadow-card);
 }
 
 .auth-heading,
@@ -115,7 +115,7 @@
   gap: 5px 16px;
   padding: 16px;
   border: 1px solid #ecdfd4;
-  border-radius: 21px;
+  border-radius: var(--radius-lg);
   text-align: left;
   background: var(--surface-soft);
   cursor: pointer;
@@ -139,7 +139,7 @@
   place-items: center;
   overflow: hidden;
   border: 4px solid var(--surface);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   color: #76543f;
   background: #fbe3d5;
   box-shadow: 0 0 0 1px #eadccf;
@@ -190,7 +190,7 @@
 .empty-profiles {
   margin-top: 28px;
   padding: 24px 18px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   text-align: center;
   color: var(--text-secondary);
   background: var(--cream);
@@ -201,7 +201,7 @@
 .logout-button,
 .back-button {
   min-height: 46px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   font-weight: 800;
   cursor: pointer;
   transition:
@@ -360,10 +360,10 @@ button:disabled {
 .home-welcome {
   display: grid;
   gap: 20px;
-  margin-top: 56px;
-  padding: 28px 24px;
+  margin-top: 1.5rem;
+  padding: 1.35rem;
   border: 1px solid #eddfd4;
-  border-radius: 28px;
+  border-radius: var(--radius-xl);
   background: var(--surface);
   box-shadow: 0 20px 55px rgba(91, 70, 56, 0.09);
 }
@@ -382,7 +382,7 @@ button:disabled {
   margin: 16px 0 0;
   padding: 13px 16px;
   border: 1px solid #efcac7;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: #fff5f4;
   font-weight: 700;
 }

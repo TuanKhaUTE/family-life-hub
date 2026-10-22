@@ -4,10 +4,11 @@
   padding: 1.2rem;
   margin-top: 1.2rem;
   border: 1px solid #ebdbb9;
-  border-radius: 1.6rem;
+  border-radius: var(--radius-xl);
   background: #fff3dc;
   color: #493b32;
   min-width: 0;
+  box-shadow: var(--shadow-soft);
 }
 .chores-section * {
   min-width: 0;
@@ -148,8 +149,9 @@
   gap: 0.8rem;
   padding: 1rem;
   border: 1px solid #e7d8bc;
-  border-radius: 1.25rem;
+  border-radius: var(--radius-lg);
   background: #fffdf9;
+  box-shadow: var(--shadow-soft);
 }
 .chore-card-main {
   display: flex;

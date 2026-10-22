@@ -1,7 +1,7 @@
 .family-home {
   display: grid;
-  gap: 1.25rem;
-  margin: 1.25rem auto 0;
+  gap: 1rem;
+  margin: 1rem auto 0;
   max-width: 960px;
   color: #493b32;
 }
@@ -32,9 +32,11 @@
 .home-hero {
   display: grid;
   gap: 0.65rem;
-  padding: 1.4rem;
-  border-radius: 1.7rem;
-  background: #fdf2e7;
+  padding: 1.25rem;
+  border: 1px solid #f0dfd0;
+  border-radius: var(--radius-xl);
+  background: var(--cream-secondary);
+  box-shadow: var(--shadow-soft);
 }
 .home-greeting {
   display: flex;
@@ -56,11 +58,11 @@
   display: grid;
   align-content: start;
   gap: 0.8rem;
-  padding: 1.15rem;
-  border: 1px solid #e8dccf;
-  border-radius: 1.5rem;
-  background: #fffdf9;
-  box-shadow: 0 3px 14px rgb(73 59 50 / 0.035);
+  padding: 1.05rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-warm);
+  box-shadow: var(--shadow-soft);
 }
 .home-attention {
   background: #fff3dc;
@@ -148,11 +150,11 @@
   gap: 1rem;
 }
 .home-breakfast {
-  background: #edf2e7;
+  background: var(--sage-soft);
   border-color: #d8e3d1;
 }
 .home-dinner {
-  background: #fceadd;
+  background: var(--peach-soft);
   border-color: #eed6c7;
 }
 .home-card-icon {
@@ -265,7 +267,7 @@
   flex-shrink: 0;
 }
 .home-future .home-card {
-  background: #f0edf3;
+  background: var(--lavender-soft);
   border-color: #e4dfea;
 }
 .home-future .home-card:nth-child(2) {
@@ -313,5 +315,9 @@
   }
   .home-hero {
     padding: 1.7rem;
+  }
+
+  .home-card {
+    padding: 1.2rem;
   }
 }

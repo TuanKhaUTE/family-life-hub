@@ -1,10 +1,10 @@
 .breakfast-card {
-  margin-top: 18px;
-  padding: 22px;
+  margin-top: 1rem;
+  padding: 1.1rem;
   border: 1px solid #eadfd4;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background: #fdf0e5;
-  box-shadow: 0 16px 38px rgba(91, 70, 56, 0.07);
+  box-shadow: var(--shadow-card);
 }
 
 .breakfast-heading {
@@ -115,7 +115,7 @@
   gap: 10px;
   padding: 13px;
   border: 2px solid #e5ddd5;
-  border-radius: 17px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
   cursor: pointer;
   font-size: 0.91rem;
@@ -248,7 +248,7 @@
   gap: 13px;
   padding: 13px;
   border: 1px solid #e9dfd6;
-  border-radius: 17px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
 }
 

@@ -66,8 +66,9 @@
 }
 .dish-feedback-entry {
   padding: 0.75rem;
-  border-radius: 0.9rem;
+  border-radius: var(--radius-md);
   background: #fff9f3;
+  box-shadow: var(--shadow-soft);
 }
 .member-dish-summary button {
   justify-self: start;

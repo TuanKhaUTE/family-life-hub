@@ -13,6 +13,7 @@
   justify-content: center;
   background: rgb(60 48 40 / 35%);
   padding: 1rem;
+  overscroll-behavior: contain;
 }
 .share-sheet {
   width: min(100%, 36rem);
@@ -20,12 +21,12 @@
   overflow: auto;
   padding: 1.2rem;
   padding-bottom: max(1.2rem, env(safe-area-inset-bottom));
-  border-radius: 1.4rem;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: #fffaf2;
   color: #51473f;
   display: grid;
   gap: 1rem;
-  box-shadow: 0 8px 32px #584a3426;
+  box-shadow: 0 -12px 32px rgb(88 74 52 / 0.14);
 }
 .share-sheet header,
 .share-owner {
@@ -135,8 +136,9 @@
 .received-shares {
   padding: 1.1rem;
   border: 1px solid #e4d9ca;
-  border-radius: 1.3rem;
+  border-radius: var(--radius-xl);
   background: #fffdf8;
+  box-shadow: var(--shadow-soft);
 }
 .received-shares header {
   display: grid;
@@ -167,5 +169,10 @@
 @media (min-width: 600px) {
   .share-overlay {
     align-items: center;
+  }
+
+  .share-sheet {
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
   }
 }

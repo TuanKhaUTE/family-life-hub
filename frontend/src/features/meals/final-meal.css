@@ -1,9 +1,10 @@
 .final-meal-section {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   padding: 1rem;
   border: 1px solid #dfd8c9;
-  border-radius: 1.25rem;
+  border-radius: var(--radius-xl);
   background: #fff7dd;
+  box-shadow: var(--shadow-soft);
   color: #493b32;
 }
 .final-meal-section h3 {
@@ -121,7 +122,7 @@
   gap: 0.25rem;
   padding: 0.8rem;
   background: #f3f6ee;
-  border-radius: 1rem;
+  border-radius: var(--radius-md);
   overflow-wrap: anywhere;
 }
 .dish-category {

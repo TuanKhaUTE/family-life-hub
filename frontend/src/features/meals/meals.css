@@ -1,10 +1,10 @@
 .meals-card {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   padding: 1.1rem;
   border: 1px solid var(--color-border, #ded8c9);
-  border-radius: 1.5rem;
-  background: #eef4e9;
-  box-shadow: 0 8px 24px rgb(91 79 56 / 0.08);
+  border-radius: var(--radius-xl);
+  background: var(--sage-soft);
+  box-shadow: var(--shadow-card);
   color: #3f473d;
 }
 .meals-heading,
@@ -30,8 +30,8 @@
   gap: 1rem;
   margin: 1rem 0;
   padding: 1rem;
-  border-radius: 1.25rem;
-  background: #fff;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   border: 1px solid #e5ddca;
 }
 .meal-composer label,
@@ -135,8 +135,9 @@
 .meal-request {
   padding: 1rem;
   border: 1px solid #e0dacb;
-  border-radius: 1.25rem;
-  background: #fff;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
 }
 .meal-request--self_service {
   background: #f1f5ea;
@@ -193,7 +194,7 @@
   min-height: 3rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid #d8ddce;
-  border-radius: 0.9rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 .meal-choice input {
