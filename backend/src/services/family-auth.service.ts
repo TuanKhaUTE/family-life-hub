@@ -29,8 +29,11 @@ export interface SuccessfulFamilyLogin {
 export interface FamilyAuthRepository {
   listActiveProfiles(): Promise<SafeFamilyProfile[]>
   findActiveLoginRecord(memberId: string): Promise<FamilyLoginRecord | null>
-  recordFailedLogin(memberId: string): Promise<void>
-  completeSuccessfulLogin(memberId: string): Promise<boolean>
+  recordFailedLogin(memberId: string, expectedPinHash: string): Promise<void>
+  completeSuccessfulLogin(
+    memberId: string,
+    expectedPinHash: string,
+  ): Promise<boolean>
 }
 
 type PinVerifier = (pin: string, pinHash: string) => Promise<boolean>
@@ -91,17 +94,17 @@ export class FamilyAuthService {
     const pinMatches = await this.verify(pin, loginRecord.pinHash)
 
     if (!pinMatches) {
-      await this.recordFailure(memberId)
+      await this.recordFailure(memberId, loginRecord.pinHash)
       throw new InvalidCredentialsError()
     }
 
-    const completed = await this.completeSuccess(memberId)
+    const completed = await this.completeSuccess(memberId, loginRecord.pinHash)
 
     if (!completed) {
       throw new InvalidCredentialsError()
     }
 
-    const session = await this.createSession(memberId)
+    const session = await this.createSession(memberId, loginRecord.pinHash)
 
     return { profile: loginRecord.profile, session }
   }
@@ -124,25 +127,34 @@ export class FamilyAuthService {
     }
   }
 
-  private async recordFailure(memberId: string): Promise<void> {
+  private async recordFailure(
+    memberId: string,
+    pinHash: string,
+  ): Promise<void> {
     try {
-      await this.repository.recordFailedLogin(memberId)
+      await this.repository.recordFailedLogin(memberId, pinHash)
     } catch {
       throw new AuthUnavailableError()
     }
   }
 
-  private async completeSuccess(memberId: string): Promise<boolean> {
+  private async completeSuccess(
+    memberId: string,
+    pinHash: string,
+  ): Promise<boolean> {
     try {
-      return await this.repository.completeSuccessfulLogin(memberId)
+      return await this.repository.completeSuccessfulLogin(memberId, pinHash)
     } catch {
       throw new AuthUnavailableError()
     }
   }
 
-  private async createSession(memberId: string): Promise<CreatedFamilySession> {
+  private async createSession(
+    memberId: string,
+    pinHash: string,
+  ): Promise<CreatedFamilySession> {
     try {
-      return await this.sessionCreator.createSession(memberId)
+      return await this.sessionCreator.createSession(memberId, pinHash)
     } catch {
       throw new AuthUnavailableError()
     }
@@ -172,5 +184,7 @@ function validateLoginInput(input: unknown): {
 }
 
 function isActivelyLocked(record: FamilyLoginRecord, now: Date): boolean {
-  return record.lockedUntil !== null && record.lockedUntil.getTime() > now.getTime()
+  return (
+    record.lockedUntil !== null && record.lockedUntil.getTime() > now.getTime()
+  )
 }

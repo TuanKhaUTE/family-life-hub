@@ -17,7 +17,10 @@ export interface CreatedFamilySession {
 }
 
 export interface FamilySessionOperations {
-  createSession(memberId: string): Promise<CreatedFamilySession>
+  createSession(
+    memberId: string,
+    verifiedPinHash: string,
+  ): Promise<CreatedFamilySession>
   authenticate(token: string | null): Promise<AuthenticatedFamilySession>
   logout(token: string | null): Promise<void>
 }
@@ -48,7 +51,10 @@ export class FamilySessionService implements FamilySessionOperations {
     private readonly clock: Clock = () => new Date(),
   ) {}
 
-  async createSession(memberId: string): Promise<CreatedFamilySession> {
+  async createSession(
+    memberId: string,
+    verifiedPinHash: string,
+  ): Promise<CreatedFamilySession> {
     try {
       const token = this.tokenGenerator()
 
@@ -59,6 +65,7 @@ export class FamilySessionService implements FamilySessionOperations {
       const expiresAt = new Date(this.clock().getTime() + SESSION_LIFETIME_MS)
       await this.repository.createSession({
         memberId,
+        verifiedPinHash,
         tokenHash: this.tokenHasher(token),
         expiresAt,
       })

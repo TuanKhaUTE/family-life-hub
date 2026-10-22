@@ -23,6 +23,7 @@ export type HomeDestination =
   | 'Chi tiêu cá nhân'
   | 'Tiền ăn gia đình'
   | 'Học & Luyện'
+  | 'Điểm & bài kiểm tra'
   | 'Cá nhân'
 
 function displayDate(date: string) {

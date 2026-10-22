@@ -15,7 +15,13 @@ import {
 import { AssessmentForm } from './AssessmentForm'
 import './study.css'
 import { AssessmentSharing } from '../sharing/AssessmentSharing'
-export function StudyGrades({ onClose }: { onClose: () => void }) {
+export function StudyGrades({
+  onClose,
+  backLabel = 'Về Học tập',
+}: {
+  onClose: () => void
+  backLabel?: string
+}) {
   const [data, setData] = useState<GradeView | null>(null),
     [course, setCourse] = useState<string | null>(null),
     [version, setVersion] = useState(0),
@@ -74,7 +80,7 @@ export function StudyGrades({ onClose }: { onClose: () => void }) {
   return (
     <div className="study-page grades-page">
       <header className="study-hero">
-        <button onClick={onClose}>Về Học tập</button>
+        <button onClick={onClose}>{backLabel}</button>
         <h1 ref={heading} tabIndex={-1}>
           Điểm &amp; bài kiểm tra
         </h1>

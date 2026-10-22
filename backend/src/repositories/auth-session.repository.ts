@@ -8,6 +8,7 @@ import type {
 
 export interface NewAuthSession {
   memberId: string
+  verifiedPinHash: string
   tokenHash: string
   expiresAt: Date
 }
@@ -60,16 +61,19 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
   private client?: SupabaseClient
 
   constructor(
-    private readonly clientFactory: SupabaseClientFactory =
-      createSupabaseServerClient,
+    private readonly clientFactory: SupabaseClientFactory = createSupabaseServerClient,
   ) {}
 
   async createSession(session: NewAuthSession): Promise<void> {
-    const { error } = await this.getClient().from('auth_sessions').insert({
-      member_id: session.memberId,
-      token_hash: session.tokenHash,
-      expires_at: session.expiresAt.toISOString(),
-    })
+    const { error } = await this.getClient().rpc(
+      'create_verified_auth_session',
+      {
+        p_member_id: session.memberId,
+        p_expected_pin_hash: session.verifiedPinHash,
+        p_token_hash: session.tokenHash,
+        p_expires_at: session.expiresAt.toISOString(),
+      },
+    )
 
     if (error) {
       throw new AuthSessionDataError()

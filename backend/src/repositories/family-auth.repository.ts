@@ -45,8 +45,7 @@ export class SupabaseFamilyAuthRepository implements FamilyAuthRepository {
   private client?: SupabaseClient
 
   constructor(
-    private readonly clientFactory: SupabaseClientFactory =
-      createSupabaseServerClient,
+    private readonly clientFactory: SupabaseClientFactory = createSupabaseServerClient,
   ) {}
 
   async listActiveProfiles(): Promise<SafeFamilyProfile[]> {
@@ -95,10 +94,13 @@ export class SupabaseFamilyAuthRepository implements FamilyAuthRepository {
     }
   }
 
-  async recordFailedLogin(memberId: string): Promise<void> {
+  async recordFailedLogin(
+    memberId: string,
+    expectedPinHash: string,
+  ): Promise<void> {
     const { data, error } = await this.getClient().rpc(
       'record_failed_pin_login',
-      { p_member_id: memberId },
+      { p_member_id: memberId, p_expected_pin_hash: expectedPinHash },
     )
 
     if (error || typeof data !== 'boolean') {
@@ -106,10 +108,13 @@ export class SupabaseFamilyAuthRepository implements FamilyAuthRepository {
     }
   }
 
-  async completeSuccessfulLogin(memberId: string): Promise<boolean> {
+  async completeSuccessfulLogin(
+    memberId: string,
+    expectedPinHash: string,
+  ): Promise<boolean> {
     const { data, error } = await this.getClient().rpc(
       'complete_successful_pin_login',
-      { p_member_id: memberId },
+      { p_member_id: memberId, p_expected_pin_hash: expectedPinHash },
     )
 
     if (error || typeof data !== 'boolean') {

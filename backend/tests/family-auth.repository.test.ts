@@ -46,7 +46,6 @@ class FakeQueryBuilder {
     this.operations.push({ method: 'maybeSingle', arguments: [] })
     return this.result
   }
-
 }
 
 class FakeSupabaseClient {
@@ -236,11 +235,16 @@ describe('SupabaseFamilyAuthRepository lockout mutations', () => {
       error: null,
     })
 
-    await expect(repository.recordFailedLogin(memberId)).resolves.toBeUndefined()
+    await expect(
+      repository.recordFailedLogin(memberId, 'synthetic-hash'),
+    ).resolves.toBeUndefined()
     expect(client.rpcCalls).toEqual([
       {
         name: 'record_failed_pin_login',
-        arguments: { p_member_id: memberId },
+        arguments: {
+          p_member_id: memberId,
+          p_expected_pin_hash: 'synthetic-hash',
+        },
       },
     ])
   })
@@ -252,13 +256,16 @@ describe('SupabaseFamilyAuthRepository lockout mutations', () => {
       error: null,
     })
 
-    await expect(repository.completeSuccessfulLogin(memberId)).resolves.toBe(
-      false,
-    )
+    await expect(
+      repository.completeSuccessfulLogin(memberId, 'synthetic-hash'),
+    ).resolves.toBe(false)
     expect(client.rpcCalls).toEqual([
       {
         name: 'complete_successful_pin_login',
-        arguments: { p_member_id: memberId },
+        arguments: {
+          p_member_id: memberId,
+          p_expected_pin_hash: 'synthetic-hash',
+        },
       },
     ])
   })
@@ -274,8 +281,8 @@ describe('SupabaseFamilyAuthRepository lockout mutations', () => {
 
       const result =
         rpcName === 'record_failed_pin_login'
-          ? repository.recordFailedLogin(memberId)
-          : repository.completeSuccessfulLogin(memberId)
+          ? repository.recordFailedLogin(memberId, 'synthetic-hash')
+          : repository.completeSuccessfulLogin(memberId, 'synthetic-hash')
 
       await expect(result).rejects.toBeInstanceOf(FamilyAuthDataError)
       await expect(result).rejects.not.toThrow('upstream secret detail')

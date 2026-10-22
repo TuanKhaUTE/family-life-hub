@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { FamilyProfile } from './auth-api'
 
 interface ProfileSelectorProps {
+  notice?: string
   profiles: FamilyProfile[]
   onSelect: (profile: FamilyProfile) => void
   onRefresh: () => void
@@ -12,14 +13,19 @@ export function ProfileSelector({
   profiles,
   onSelect,
   onRefresh,
+  notice,
 }: ProfileSelectorProps) {
   return (
-    <section className="auth-card profile-selector" aria-labelledby="profile-title">
+    <section
+      className="auth-card profile-selector"
+      aria-labelledby="profile-title"
+    >
       <header className="auth-heading">
         <p className="eyebrow">Family Life Hub</p>
         <h1 id="profile-title">Hôm nay ai đang dùng?</h1>
         <p className="auth-copy">Chọn hồ sơ của bạn để vào nhà nhé.</p>
       </header>
+      {notice && <p role="status">{notice}</p>}
 
       {profiles.length > 0 ? (
         <ul className="profile-grid" aria-label="Hồ sơ gia đình">
@@ -43,7 +49,11 @@ export function ProfileSelector({
       ) : (
         <div className="empty-profiles">
           <p>Hiện chưa có hồ sơ gia đình nào.</p>
-          <button className="secondary-button" type="button" onClick={onRefresh}>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onRefresh}
+          >
             Kiểm tra lại
           </button>
         </div>

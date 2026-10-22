@@ -836,6 +836,8 @@ Real PINs or private family information must not appear in public seed data.
 
 # 19. Implementation Rule
 
+Feature 6B adds no tables or columns. Restricted profile/security RPCs validate the active actor/session, whitelist own display-name/avatar updates, and rotate credentials plus revoke all target sessions atomically. Only ADMIN may recover another active member; the actor's verified current hash is checked again inside the transaction. Hash-bound login/session RPCs reject stale credentials after rotation. Existing default-deny RLS, roles, ownership, and private-record sharing rules remain unchanged. See `20261022160000_add_profile_security_functions.sql` and `database/tests/profile-security.rollback.sql`.
+
 This document describes the expected long-term model.
 
 Do not generate every table immediately.

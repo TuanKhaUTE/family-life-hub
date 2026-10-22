@@ -79,6 +79,43 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+it('PIN change ends current view and returns to profile selection with a sign-in notice', async () => {
+  const calls: string[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      calls.push(url)
+      if (url === '/api/auth/me') return jsonResponse({ profile })
+      if (url === '/api/auth/profiles')
+        return jsonResponse({ profiles: [profile] })
+      if (url === '/api/profile/me/pin' && init?.method === 'POST')
+        return new Response(null, { status: 204 })
+      if (url === '/api/profile/me')
+        return jsonResponse({ settings: { profile, avatarChoices: [] } })
+      if (url.startsWith('/api/shares/received'))
+        return jsonResponse({
+          received: { records: [], page: 1, totalCount: 0, hasMore: false },
+        })
+      return new Response(null, { status: 503 })
+    }),
+  )
+  const user = userEvent.setup()
+  render(<AuthFlow />)
+  await screen.findByRole('navigation')
+  await user.click(screen.getByRole('button', { name: 'Cá nhân' }))
+  await user.click(await screen.findByRole('button', { name: 'Đổi mã PIN' }))
+  for (const label of ['Mã PIN hiện tại', 'Mã PIN mới', 'Xác nhận mã PIN mới'])
+    await user.type(screen.getByLabelText(label), '123456')
+  await user.click(screen.getByRole('button', { name: 'Lưu mã PIN mới' }))
+  await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' })
+  expect(screen.getByRole('status').textContent).toContain(
+    'Tất cả phiên của bạn đã kết thúc',
+  )
+  expect(calls).not.toContain('/api/auth/logout')
+  expect(screen.queryByRole('navigation')).toBeNull()
+})
+
 describe('AuthFlow', () => {
   it('uses Vietnamese for the primary profile-selection flow', async () => {
     vi.stubGlobal('fetch', signedOutFetch())

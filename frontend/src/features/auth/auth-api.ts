@@ -106,7 +106,7 @@ function readProfileProperty(payload: unknown): FamilyProfile {
   return readProfile(payload.profile)
 }
 
-function readProfile(value: unknown): FamilyProfile {
+export function readProfile(value: unknown): FamilyProfile {
   if (
     !isObject(value) ||
     typeof value.id !== 'string' ||

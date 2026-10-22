@@ -69,13 +69,16 @@ describe('FamilySessionService.createSession', () => {
       () => now,
     )
 
-    await expect(service.createSession(memberId)).resolves.toEqual({
+    await expect(
+      service.createSession(memberId, 'synthetic-hash'),
+    ).resolves.toEqual({
       token: rawToken,
       expiresAt: new Date('2026-10-28T00:00:00.000Z'),
     })
     expect(repository.createCalls).toEqual([
       {
         memberId,
+        verifiedPinHash: 'synthetic-hash',
         tokenHash: expectedHash,
         expiresAt: new Date('2026-10-28T00:00:00.000Z'),
       },
@@ -88,7 +91,7 @@ describe('FamilySessionService.createSession', () => {
     repository.error = new Error('secret database detail')
     const service = new FamilySessionService(repository)
 
-    const result = service.createSession(memberId)
+    const result = service.createSession(memberId, 'synthetic-hash')
 
     await expect(result).rejects.toBeInstanceOf(SessionUnavailableError)
     await expect(result).rejects.not.toThrow('secret')
@@ -107,8 +110,8 @@ describe('FamilySessionService authentication and logout', () => {
       () => now,
     )
 
-    const first = await service.createSession(memberId)
-    const second = await service.createSession(memberId)
+    const first = await service.createSession(memberId, 'synthetic-hash')
+    const second = await service.createSession(memberId, 'synthetic-hash')
 
     await expect(service.authenticate(first.token)).resolves.toEqual(
       authenticatedSession,

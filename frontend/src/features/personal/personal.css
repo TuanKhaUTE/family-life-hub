@@ -1,0 +1,140 @@
+.personal-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.personal-page .expense-card {
+  margin: 0;
+  min-width: 0;
+}
+.personal-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+.personal-identity p {
+  margin: 0.3rem 0;
+  color: var(--color-text-muted, #6a7068);
+}
+.personal-page form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.personal-page label {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 600;
+  min-width: 0;
+}
+.personal-page input:not([type='radio']):not([type='checkbox']),
+.personal-page select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0.7rem;
+  border: 1px solid #ccc8bc;
+  border-radius: 12px;
+  font: inherit;
+  background: #fffdf8;
+  color: #39443b;
+  min-width: 0;
+}
+.personal-page button,
+.personal-page a {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.personal-page button {
+  border: 1px solid #b7c7af;
+  border-radius: 14px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #374d3b;
+  background: #e5eddf;
+  cursor: pointer;
+}
+.personal-page button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.personal-page button[hidden] {
+  display: none;
+}
+.personal-page :focus-visible {
+  outline: 3px solid #687f5d;
+  outline-offset: 3px;
+}
+.personal-page fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.avatar-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.avatar-choices label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.7rem;
+  min-height: 48px;
+  border: 1px solid #d7d7ca;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.avatar-choices label:has(:checked) {
+  background: #e5eddf;
+  border: 2px solid #6c8560;
+}
+.avatar-choices input,
+.reset-confirmation input {
+  width: 20px;
+  height: 20px;
+  accent-color: #637b56;
+  flex-shrink: 0;
+}
+.personal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.personal-page .reset-confirmation {
+  display: flex;
+  align-items: flex-start;
+  font-weight: 400;
+  line-height: 1.6;
+  padding: 0.5rem 0;
+}
+.personal-privacy {
+  background: #f0edf5;
+}
+.personal-privacy a {
+  display: flex;
+  align-items: center;
+  color: #536c47;
+  margin-top: 0.7rem;
+  overflow-wrap: anywhere;
+}
+.personal-shortcut {
+  margin-top: 0.75rem;
+  display: block;
+}
+.personal-page [role='alert'] {
+  color: #934f3c;
+  overflow-wrap: anywhere;
+}
+.personal-page [role='status'] {
+  color: #4c6447;
+  overflow-wrap: anywhere;
+}
+.personal-page #personal-received {
+  scroll-margin-top: 1rem;
+}

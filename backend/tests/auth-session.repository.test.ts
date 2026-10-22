@@ -60,6 +60,11 @@ class FakeQueryBuilder {
 }
 
 class FakeSupabaseClient {
+  readonly rpcCalls: unknown[] = []
+  async rpc(name: string, args: unknown) {
+    this.rpcCalls.push({ name, args })
+    return this.result
+  }
   readonly queries: Array<{ table: string; builder: FakeQueryBuilder }> = []
   result: SupabaseResult = { data: null, error: null }
 
@@ -93,26 +98,27 @@ function createHarness(client = new FakeSupabaseClient()) {
 }
 
 describe('SupabaseAuthSessionRepository.createSession', () => {
-  it('inserts only the member, token hash, and fixed expiry', async () => {
+  it('atomically checks the verified PIN hash before inserting a session', async () => {
     const { client, repository } = createHarness()
 
     await expect(
-      repository.createSession({ memberId, tokenHash, expiresAt }),
+      repository.createSession({
+        memberId,
+        tokenHash,
+        expiresAt,
+        verifiedPinHash: 'synthetic-hash',
+      }),
     ).resolves.toBeUndefined()
-    expect(client.queries[0]).toEqual({
-      table: 'auth_sessions',
-      builder: expect.any(FakeQueryBuilder),
-    })
-    expect(client.queries[0]!.builder.operations).toEqual([
+    expect(client.queries).toEqual([])
+    expect(client.rpcCalls).toEqual([
       {
-        method: 'insert',
-        arguments: [
-          {
-            member_id: memberId,
-            token_hash: tokenHash,
-            expires_at: expiresAt.toISOString(),
-          },
-        ],
+        name: 'create_verified_auth_session',
+        args: {
+          p_member_id: memberId,
+          p_expected_pin_hash: 'synthetic-hash',
+          p_token_hash: tokenHash,
+          p_expires_at: expiresAt.toISOString(),
+        },
       },
     ])
   })
@@ -169,7 +175,9 @@ describe('SupabaseAuthSessionRepository.deleteByTokenHash', () => {
   it('deletes only the row matching the current token hash', async () => {
     const { client, repository } = createHarness()
 
-    await expect(repository.deleteByTokenHash(tokenHash)).resolves.toBeUndefined()
+    await expect(
+      repository.deleteByTokenHash(tokenHash),
+    ).resolves.toBeUndefined()
     expect(client.queries[0]!.builder.operations).toEqual([
       { method: 'delete', arguments: [] },
       { method: 'eq', arguments: ['token_hash', tokenHash] },
@@ -182,12 +190,20 @@ describe('SupabaseAuthSessionRepository safe failures', () => {
     'redacts upstream %s errors',
     async (operation) => {
       const client = new FakeSupabaseClient()
-      client.result = { data: null, error: { message: 'secret database detail' } }
+      client.result = {
+        data: null,
+        error: { message: 'secret database detail' },
+      }
       const { repository } = createHarness(client)
 
       const result =
         operation === 'create'
-          ? repository.createSession({ memberId, tokenHash, expiresAt })
+          ? repository.createSession({
+              memberId,
+              tokenHash,
+              expiresAt,
+              verifiedPinHash: 'synthetic-hash',
+            })
           : operation === 'find'
             ? repository.findAuthenticatedSession(tokenHash, now)
             : repository.deleteByTokenHash(tokenHash)

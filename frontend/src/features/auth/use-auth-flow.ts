@@ -17,7 +17,7 @@ const LOGOUT_ERROR_MESSAGE = 'Không thể xác nhận đăng xuất. Vui lòng 
 export type AuthFlowState =
   | { view: 'checking-session' }
   | { view: 'loading-profiles' }
-  | { view: 'choosing-profile'; profiles: FamilyProfile[] }
+  | { view: 'choosing-profile'; profiles: FamilyProfile[]; notice?: string }
   | {
       view: 'entering-pin'
       profiles: FamilyProfile[]
@@ -40,12 +40,12 @@ export function useAuthFlow() {
   const loginPending = useRef(false)
   const logoutPending = useRef(false)
 
-  const loadProfiles = useCallback(async (): Promise<void> => {
+  const loadProfiles = useCallback(async (notice?: string): Promise<void> => {
     setState({ view: 'loading-profiles' })
 
     try {
       const profiles = await getFamilyProfiles()
-      setState({ view: 'choosing-profile', profiles })
+      setState({ view: 'choosing-profile', profiles, notice })
     } catch {
       setState({ view: 'unexpected-error', retryOperation: 'profiles' })
     }
@@ -202,6 +202,17 @@ export function useAuthFlow() {
   }
 
   return {
+    updateProfile: (profile: FamilyProfile) =>
+      setState((s) =>
+        s.view === 'authenticated' && s.profile.id === profile.id
+          ? { ...s, profile }
+          : s,
+      ),
+    requireSignIn: () => {
+      void loadProfiles(
+        'Đã đổi mã PIN. Tất cả phiên của bạn đã kết thúc. Vui lòng đăng nhập lại bằng mã mới.',
+      )
+    },
     state,
     selectProfile,
     chooseAnotherProfile,

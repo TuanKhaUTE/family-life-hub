@@ -71,7 +71,7 @@ describe('mobile family shell', () => {
         }),
       ).toBeTruthy()
       await user.click(within(nav).getByRole('button', { name: 'Cá nhân' }))
-      expect(screen.getByRole('heading', { name: 'Góc của bạn' })).toBeTruthy()
+      expect(screen.getByRole('heading', { name: 'Cá nhân' })).toBeTruthy()
       expect(screen.queryByRole('dialog')).toBeNull()
     },
   )

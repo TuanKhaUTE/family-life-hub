@@ -13,6 +13,8 @@ export function AuthFlow() {
     logOut,
     retry,
     refreshProfiles,
+    updateProfile,
+    requireSignIn,
   } = useAuthFlow()
 
   switch (state.view) {
@@ -23,6 +25,7 @@ export function AuthFlow() {
     case 'choosing-profile':
       return (
         <ProfileSelector
+          notice={state.notice}
           profiles={state.profiles}
           onSelect={selectProfile}
           onRefresh={() => void refreshProfiles()}
@@ -41,6 +44,8 @@ export function AuthFlow() {
     case 'authenticated':
       return (
         <AuthenticatedShell
+          onProfileUpdated={updateProfile}
+          onSessionEnded={requireSignIn}
           profile={state.profile}
           isLoggingOut={state.isLoggingOut}
           error={state.error}

@@ -8,6 +8,7 @@ import { StudyPage } from '../study/StudyPage'
 import { CalendarPage } from '../calendar/CalendarPage'
 import { ExpensePage } from '../expenses/ExpensePage'
 import { PersonalPage } from '../personal/PersonalPage'
+import { StudyGrades } from '../study/StudyGrades'
 import { MealFoodCost } from '../expenses/MealFoodCost'
 import { familyDate } from '../meals/family-time'
 import './shell.css'
@@ -17,6 +18,8 @@ interface AuthenticatedShellProps {
   isLoggingOut: boolean
   error: string | null
   onLogout: () => void
+  onProfileUpdated?: (p: FamilyProfile) => void
+  onSessionEnded?: () => void
 }
 
 export function AuthenticatedShell({
@@ -24,6 +27,8 @@ export function AuthenticatedShell({
   isLoggingOut,
   error,
   onLogout,
+  onProfileUpdated,
+  onSessionEnded,
 }: AuthenticatedShellProps) {
   const [destination, setDestination] = useState<HomeDestination>('Trang chủ')
   const destinations = [
@@ -74,6 +79,12 @@ export function AuthenticatedShell({
         {destination === 'Học & Luyện' && profile.role !== 'PARENT' && (
           <StudyPage profile={profile} />
         )}
+        {destination === 'Điểm & bài kiểm tra' && profile.role !== 'PARENT' && (
+          <StudyGrades
+            backLabel="Về Cá nhân"
+            onClose={() => setDestination('Cá nhân')}
+          />
+        )}
         {destination === 'Bếp' && (
           <>
             <h1>Bếp nhà mình</h1>
@@ -105,6 +116,11 @@ export function AuthenticatedShell({
         )}
         {destination === 'Cá nhân' && (
           <PersonalPage
+            onProfileUpdated={onProfileUpdated}
+            onSessionEnded={onSessionEnded}
+            onStudy={() => setDestination('Học & Luyện')}
+            onKitchen={() => setDestination('Bếp')}
+            onSharing={() => setDestination('Điểm & bài kiểm tra')}
             profile={profile}
             onExpenses={() =>
               setDestination(
@@ -121,6 +137,8 @@ export function AuthenticatedShell({
             key={label}
             aria-current={
               destination === label ||
+              (destination === 'Điểm & bài kiểm tra' &&
+                label === 'Học & Luyện') ||
               (destination === 'Chi tiêu cá nhân' && label === 'Cá nhân') ||
               (destination === 'Tiền ăn gia đình' &&
                 label === (profile.role === 'PARENT' ? 'Chi tiêu' : 'Cá nhân'))
