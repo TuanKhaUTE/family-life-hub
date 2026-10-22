@@ -214,45 +214,48 @@ describe('per-dish family feedback', () => {
   it('rejects malformed network feedback safely', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          json({
-            feedback: {
-              mealId: profile.id,
-              ready: true,
-              dishes: [{ ...dishes[0], ratings: [{ ...rating, rating: 6 }] }],
-            },
-          }),
-        ),
+      vi.fn().mockResolvedValue(
+        json({
+          feedback: {
+            mealId: profile.id,
+            ready: true,
+            dishes: [{ ...dishes[0], ratings: [{ ...rating, rating: 6 }] }],
+          },
+        }),
+      ),
     )
     view()
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Đánh giá món' })).toBeNull()
   })
   it('does not fetch or render rating controls for a preparing final meal', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        json({
-          meal: {
-            id: profile.id,
-            mealDate: '2099-01-01',
-            mealType: 'DINNER',
-            mealRequestId: null,
-            finalizedByMemberId: profile.id,
-            readyAt: null,
-            readyMessage: null,
-            createdAt: rating.createdAt,
-            updatedAt: rating.updatedAt,
-            dishes,
-          },
-        }),
-      )
+    const fetchMock = vi.fn().mockResolvedValue(
+      json({
+        meal: {
+          id: profile.id,
+          mealDate: '2099-01-01',
+          mealType: 'DINNER',
+          mealRequestId: null,
+          finalizedByMemberId: profile.id,
+          readyAt: null,
+          readyMessage: null,
+          createdAt: rating.createdAt,
+          updatedAt: rating.updatedAt,
+          dishes,
+        },
+      }),
+    )
     vi.stubGlobal('fetch', fetchMock)
     render(<FinalMealSection profile={profile} requests={[]} />)
     await screen.findByText('Mẹ đang chuẩn bị bữa này')
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]))
+    expect(
+      urls.filter((url) => url.startsWith('/api/meals/final/')),
+    ).toHaveLength(1)
+    expect(urls.filter((url) => url.includes('/ratings'))).toHaveLength(0)
+    expect(
+      urls.filter((url) => url.startsWith('/api/expenses/family-food/slot')),
+    ).toHaveLength(1)
     expect(screen.queryByRole('button', { name: 'Đánh giá món' })).toBeNull()
   })
   it('limits comments and requires a star before saving', async () => {

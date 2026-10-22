@@ -16,6 +16,15 @@ const profile: FamilyProfile = {
 }
 function summary(): HomeSummary {
   return {
+    familyFood: {
+      month: '2099-05',
+      currency: 'VND',
+      currentTotal: '290000',
+      previousMonth: '2099-04',
+      previousTotal: '200000',
+      differenceAmount: '90000',
+      percentageChange: 45,
+    },
     date: '2099-05-01',
     timeZone: 'Asia/Ho_Chi_Minh',
     actions: [],
@@ -426,9 +435,12 @@ describe('warm role-aware Home', () => {
       expect(
         screen.getByText(role === 'PARENT' ? 'Tiền ăn gia đình' : 'Cá nhân'),
       ).toBeTruthy()
-      expect(screen.queryAllByText('Sắp có')).toHaveLength(
-        role === 'PARENT' ? 1 : 0,
-      )
+      expect(screen.queryAllByText('Sắp có')).toHaveLength(0)
+      expect(
+        within(
+          screen.getByRole('region', { name: 'Tiền ăn gia đình tháng này' }),
+        ).getByText('290.000 đ'),
+      ).toBeTruthy()
     },
   )
   it('shows action and recent aggregate without exposing technical identifiers', async () => {
@@ -629,7 +641,7 @@ describe('warm role-aware Home', () => {
         ).toBe('page')
       } else {
         await userEvent.click(
-          screen.getByRole('button', { name: 'Xem Tiền ăn gia đình' }),
+          screen.getByRole('button', { name: 'Xem tiền ăn gia đình' }),
         )
         expect(screen.getByRole('heading', { name: 'Chi tiêu' })).toBeTruthy()
       }

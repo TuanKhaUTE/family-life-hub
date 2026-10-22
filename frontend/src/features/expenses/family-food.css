@@ -1,0 +1,91 @@
+.family-food {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.expense-card.food-total,
+.home-card.home-family-food {
+  background: #fff1c9;
+}
+.food-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+.food-breakdown p {
+  padding: 0.8rem;
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+.food-breakfast {
+  background: #fae5d7;
+}
+.food-dinner {
+  background: #e6eddc;
+}
+.food-records,
+.food-items {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+}
+.food-records > li,
+.food-cost {
+  padding: 1rem;
+  border-radius: 1.1rem;
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.food-items > li {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.8rem;
+}
+.food-items span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.food-items strong {
+  flex-shrink: 0;
+}
+.food-form-item {
+  display: grid;
+  gap: 0.7rem;
+  border: 1px solid #e4d9ca;
+  padding: 0.9rem;
+  border-radius: 1rem;
+}
+.food-cost {
+  color: #51473f;
+  margin-block: 0.8rem;
+}
+.food-cost p,
+.food-cost h3 {
+  margin: 0;
+}
+.food-cost button {
+  min-height: 44px;
+  border-radius: 0.8rem;
+  border: 1px solid #cdbca9;
+  background: #fffdf8;
+  padding: 0.7rem;
+  color: inherit;
+  font: inherit;
+}
+.food-cost button:focus-visible {
+  outline: 3px solid #a96b49;
+  outline-offset: 3px;
+}
+@media (max-width: 350px) {
+  .food-breakdown {
+    grid-template-columns: 1fr;
+  }
+  .food-items > li {
+    flex-wrap: wrap;
+  }
+}

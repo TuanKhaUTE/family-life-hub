@@ -843,61 +843,15 @@ ADMIN does not automatically bypass personal-data privacy.
 
 ---
 
-# 23. Household Food Expenses
+# 23. Family Food Spending (Feature 5B)
 
-Household food spending is managed by Mom.
+Tiền ăn gia đình is shared food spending, strictly separate from personal expenses. All active members may read meal dates, item names/prices, meal totals and monthly comparisons. Only PARENT may create, edit or delete with confirmation; ADMIN has no management bypass. BREAKFAST and DINNER only; no lunch, groceries category, budgets, splitting or notifications.
 
-Only Mom is expected to enter household food expenses in normal usage.
+Each date/meal type has at most one entry with 1–30 editable items, optional note, completed family-local date and exact whole-VND amounts (1–1,000,000,000 per item). Totals derive from items. Existing finalized dinner names and selected/custom breakfast labels may assist entry, but prices are never guessed. Names are independent historical snapshots, so changing meal wording does not alter costs.
 
-Possible categories include:
+All roles have Cá nhân and Tiền ăn gia đình tabs in Chi tiêu. PARENT enters through Chi tiêu navigation; others through Cá nhân, without a sixth bottom-nav item. Personal records remain editable only by their owner. Shared food is read-only for ADMIN/MEMBER. Saving collapses the form; editing/deleting updates totals. Empty/error states never invent data.
 
-- Breakfast
-- Groceries
-- Eating out
-- Drinks
-- Other
-
-Example:
-
-Date:
-19/10/2026
-
-Amount:
-320,000 VND
-
-Category:
-Groceries
-
-Note:
-Meat, vegetables, fish
-
----
-
-## 23.1 Household Spending Analytics
-
-The system should calculate:
-
-- total food spending this month;
-- previous month's total;
-- difference in amount;
-- percentage change;
-- spending by category.
-
-Example:
-
-October:
-4,320,000 VND
-
-September:
-3,850,000 VND
-
-Difference:
-+470,000 VND
-
-Change:
-+12.2%
-
-The system should present the result neutrally rather than judge the family's spending.
+Monthly current/previous totals, exact signed difference and breakfast/dinner breakdown cover all records, independently of recent-meal pagination (20 per page). Percentages are omitted for zero prior month or unrepresentable ratios. Home shows a separate compact shared monthly card, never combined with own personal spending. Bếp shows read-only dated item prices and meal totals for today's breakfast/dinner; management remains in Chi tiêu.
 
 ---
 
@@ -905,15 +859,15 @@ The system should present the result neutrally rather than judge the family's sp
 
 ## Implemented foundation (Feature 5A)
 
-Every active family member, including PARENT, manages only their own personal expenses. Neither ADMIN nor PARENT bypasses ownership. No sharing exists. Household food spending is a separate future domain, not a personal-expense category or authorization exception.
+Every active family member, including PARENT, manages only their own personal expenses. Neither ADMIN nor PARENT bypasses ownership. No sharing exists. Household food spending is a separate shared domain (Feature 5B), not a personal-expense category or authorization exception.
 
-PARENT's Chi tiêu workspace has a functional Cá nhân tab and a separate Tiền ăn gia đình — Sắp có tab with no invented prices/totals. ADMIN/MEMBER open Chi tiêu cá nhân from Cá nhân and keep the approved five-item bottom navigation. Home may show only the signed-in member's own compact current-month total/comparison, clearly labelled personal; no notes, records, category detail, or other members' spending are returned there.
+PARENT's Chi tiêu workspace has functional Cá nhân and Tiền ăn gia đình tabs. ADMIN/MEMBER open Chi tiêu from Cá nhân, edit only their own personal records and view shared food costs read-only, keeping the approved five-item bottom navigation. Home may show only the signed-in member's own compact current-month total/comparison, clearly labelled personal; no notes, records, category detail, or other members' spending are returned there.
 
 Expenses store positive whole VND, from 1 to 1,000,000,000 đồng per record. The API uses canonical integer strings, storage uses bigint, and monetary sums/differences use exact integer arithmetic, never floating-point money. Dates are completed family-local dates from 2000–2199, not future; notes are optional, trimmed, and limited to 1000 characters. Categories are FOOD, TRANSPORT, SHOPPING, ENTERTAINMENT, STUDY, FITNESS, BILLS, OTHER. They describe personal spending only.
 
 Owners can add/edit/delete with confirmation and filter by calendar month. Saving closes the form, selects the saved record's month, and refreshes totals. Recent records use 20-row pages; whole-month totals/category breakdown do not depend on the page. Comparisons use the preceding calendar month, including January rollover. Signed difference is exact; percentage is rounded to one decimal using integer ratio arithmetic. A zero prior total produces no percentage; an unrepresentably large ratio is also omitted rather than becoming infinite. Categories show actual non-zero totals only, with neutral wording rather than overspending judgments.
 
-No shared food-expense schema, budgets, recurring bills, conversion, bank sync, OCR, notifications, or gamification are introduced.
+Feature 5A creates no shared schema; Feature 5B implements that separate shared domain. Budgets, recurring bills, conversion, bank sync, OCR, expense notifications and gamification remain out of scope.
 
 ## Longer-term direction
 

@@ -698,49 +698,17 @@ StudyService derives numeric percentages, arithmetic mean percentages, scored-we
 
 ---
 
-# 11. Household Expense Domain
+# 11. Shared Family Food Spending (Feature 5B)
 
-## household_food_expenses
+Migration: `20261022140000_create_family_food_expenses.sql`.
 
-Suggested fields:
+`family_food_expenses`: UUID id, meal_date (completed family-local date, 2000–2199), meal_type BREAKFAST/DINNER only, optional trimmed note (1000 characters), created_by_member_id FK with RESTRICT, UTC created_at/updated_at. One itemized entry per date/type; an existing slot must be edited, never duplicated.
 
-id
+`family_food_expense_items`: UUID id, food_expense_id FK with CASCADE, trimmed nonblank name (1–120 characters), bigint amount (1–1,000,000,000 whole VND), unique sort_order within the meal (0–29), UTC timestamps. Deferred constraints forbid committed empty meals. Totals derive from items, never stored. An atomic mutation replaces only expense items; no meal history or ratings are touched.
 
-entered_by
+All active members read shared food costs. Only active PARENT manages them; ADMIN has no override. Both tables have default-deny RLS, no browser policies/grants, and backend-only service_role access. SECURITY INVOKER RPCs independently validate active actor/parent role, dates/items, with fixed empty search paths and qualified relations. Writes serialize with a transaction advisory lock. Monthly totals and previous-month/breakfast/dinner breakdown are independent of 20-entry pagination; currency is canonical integer text in JSON.
 
-expense_date
-
-amount
-
-currency
-
-category
-
-note
-
-related_meal_id
-
-created_at
-
-updated_at
-
-Initial currency:
-
-VND
-
-Possible categories:
-
-BREAKFAST
-
-GROCERIES
-
-EATING_OUT
-
-DRINKS
-
-OTHER
-
-Mom is the normal creator of these records.
+Meal date/type gives stable context. Names are editable snapshots suggested from finalized dinner or SELECTED/CUSTOM breakfast responses, without invented prices or brittle dish FKs. Read-only Bếp shows dated item snapshots and derived totals. Personal expenses remain entirely owner-scoped, in separate tables/RPCs. Verification: `database/tests/family-food.rollback.sql` (synthetic rollback-only).
 
 ---
 
@@ -756,7 +724,7 @@ Default-deny RLS has no browser policies. PUBLIC/anon/authenticated grants are r
 
 SECURITY INVOKER functions `personal_expense_read(actor, month, page)` and `personal_expense_mutate(actor, id, input, remove)` have fixed empty search paths and qualified relations. Session actor identity scopes every query/mutation; client owner fields cannot select a different owner. Foreign/missing IDs have the same error. Per-owner transaction advisory locks serialize writes.
 
-Read RPC returns 20-row month pages, whole-month count/totals, previous-calendar-month total, and non-zero category totals. Money is cast to canonical text in JSON to avoid JavaScript precision loss. The service uses BigInt for signed difference and rounded percentage ratios; no derived money summary is stored. Home explicitly projects only own month/currency/totals/comparison, not expense records or notes. Rollback-only verification: `database/tests/personal-expense.rollback.sql`. No shared food-expense tables or sharing policies are created.
+Read RPC returns 20-row month pages, whole-month count/totals, previous-calendar-month total, and non-zero category totals. Money is cast to canonical text in JSON to avoid JavaScript precision loss. The service uses BigInt for signed difference and rounded percentage ratios; no derived money summary is stored. Home explicitly projects only own month/currency/totals/comparison, not expense records or notes. Rollback-only verification: `database/tests/personal-expense.rollback.sql`. Feature 5A creates no shared tables or personal sharing policies; Feature 5B uses the separate family_food_expenses domain above.
 
 ---
 

@@ -13,6 +13,7 @@ import { DinnerFinalizer } from './DinnerFinalizer'
 import { MealDishRatings } from './MealDishRatings'
 import { MealFeedbackSheet } from './MealFeedbackSheet'
 import './final-meal.css'
+import { MealFoodCost } from '../expenses/MealFoodCost'
 
 export function FinalMealSection({
   profile,
@@ -39,6 +40,7 @@ export function FinalMealSection({
             request.status !== 'CANCELLED',
         )}
       />
+      <MealFoodCost date={date} mealType="DINNER" />
     </section>
   )
 }

@@ -631,11 +631,11 @@ Study visuals should use the same family design system rather than turning into 
 
 # 23. Expense Design
 
-Feature 5A uses cream rounded cards with sage totals, peach actions, and muted-blue category bars. Mom's Chi tiêu has keyboard-accessible Cá nhân and Tiền ăn gia đình tabs. The latter is a polished Sắp có explanation only, without fake values. ADMIN/MEMBER's Cá nhân contains one clear “Mở chi tiêu cá nhân” entry; the full experience is a separate focused subview, with Cá nhân remaining highlighted in the five-item bottom navigation.
+Feature 5A uses cream rounded cards with sage totals, peach actions, and muted-blue category bars. Mom's Chi tiêu has keyboard-accessible Cá nhân and Tiền ăn gia đình tabs. Feature 5B makes the latter functional for all roles: PARENT manages, ADMIN/MEMBER only view. ADMIN/MEMBER's Cá nhân contains one clear “Mở chi tiêu cá nhân” entry; the full experience is a separate focused subview, with Cá nhân remaining highlighted in the five-item bottom navigation.
 
 Use natural Vietnamese, a centralized exact VND formatter (“120.000 đ”), labelled month/date/category/note inputs, 44px controls, and layouts comfortable at 320px/390px. Add/edit forms collapse on success and switch to the saved record's month; deletion requires confirmation. Historical totals are labelled with their actual selected month rather than “Tháng này”. Recent rows are paginated; non-zero category bars and whole-month totals use real data only.
 
-Comparisons are neutral “Tăng”/“Giảm”, never red/green spending judgments. Zero prior month explains that no percentage is calculated. Home has a compact own-only “Chi tiêu cá nhân tháng này” card, clearly separate from future family food spending and without notes/history. Cá nhân is functional and must no longer carry a Sắp có badge; Tiền ăn gia đình remains Sắp có.
+Comparisons are neutral “Tăng”/“Giảm”, never red/green spending judgments. Zero prior month explains that no percentage is calculated. Home has a compact own-only “Chi tiêu cá nhân tháng này” card, clearly separate from shared family food spending and without notes/history. Cá nhân is functional and must no longer carry a Sắp có badge; Tiền ăn gia đình is functional, not Sắp có. Shared food uses cream rounded item cards, peach breakfast, sage dinner and soft-yellow totals; item prices and exact meal totals are readable at 320/390px. All roles have keyboard-accessible private/shared tabs; personal totals are never merged with shared totals. Bếp costs are dated, read-only snapshots, with no management controls; management stays in Chi tiêu.
 
 Financial data should remain calm and neutral.
 

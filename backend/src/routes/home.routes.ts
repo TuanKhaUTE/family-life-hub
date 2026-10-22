@@ -26,6 +26,8 @@ import { FitnessService } from '../services/fitness.service.js'
 import { SupabaseFitnessRepository } from '../repositories/fitness.repository.js'
 import { PersonalExpenseService } from '../services/personal-expense.service.js'
 import { SupabasePersonalExpenseRepository } from '../repositories/personal-expense.repository.js'
+import { FamilyFoodService } from '../services/family-food.service.js'
+import { SupabaseFamilyFoodRepository } from '../repositories/family-food.repository.js'
 
 export function createHomeRouter(
   service: HomeService,
@@ -37,6 +39,7 @@ export function createHomeRouter(
 }
 export default createHomeRouter(
   new HomeService({
+    familyFood: new FamilyFoodService(new SupabaseFamilyFoodRepository()),
     breakfast: new BreakfastService(new SupabaseBreakfastRepository()),
     requests: new MealRequestService(new SupabaseMealRequestRepository()),
     meals: new FinalMealService(new SupabaseFinalMealRepository()),

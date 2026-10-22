@@ -54,6 +54,28 @@ function network(data = workspace(), readError = false, writeError = false) {
         return new Response(
           JSON.stringify({ notifications: [], unreadCount: 0 }),
         )
+      if (url.startsWith('/api/expenses/family-food'))
+        return new Response(
+          JSON.stringify({
+            familyFood: {
+              month,
+              page: 1,
+              totalCount: 0,
+              hasMore: false,
+              currency: 'VND',
+              expenses: [],
+              summary: {
+                currentTotal: '0',
+                previousTotal: '0',
+                previousMonth: workspace().summary.previousMonth,
+                differenceAmount: '0',
+                percentageChange: null,
+                breakfastTotal: '0',
+                dinnerTotal: '0',
+              },
+            },
+          }),
+        )
       if (!url.startsWith('/api/expenses/personal'))
         return new Response(JSON.stringify({ home: {} }))
       if (!init?.method) {
@@ -147,9 +169,13 @@ it('opens Mom spending workspace without adding a sixth navigation item', async 
   expect(screen.getByRole('tab', { name: 'Tiền ăn gia đình' })).toBeTruthy()
   await ready()
   fireEvent.click(screen.getByRole('tab', { name: 'Tiền ăn gia đình' }))
-  expect(screen.getByText('Sắp có')).toBeTruthy()
+  expect(
+    await screen.findByText('Chưa có chi phí ăn uống trong tháng này'),
+  ).toBeTruthy()
   expect(screen.queryByText('120.000 đ')).toBeNull()
-  expect(calls.some((c) => /household|food-expense/.test(c.url))).toBe(false)
+  expect(calls.some((c) => c.url.startsWith('/api/expenses/family-food'))).toBe(
+    true,
+  )
   fireEvent.click(screen.getByRole('tab', { name: 'Cá nhân' }))
   await ready()
 })
@@ -183,7 +209,15 @@ it.each(['ADMIN', 'MEMBER'] as const)(
     expect(
       nav.getByRole('button', { name: 'Cá nhân' }).getAttribute('aria-current'),
     ).toBe('page')
-    expect(screen.queryByRole('tab', { name: 'Tiền ăn gia đình' })).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: 'Tiền ăn gia đình' }))
+    expect(
+      await screen.findByText(
+        'Khi mẹ thêm chi phí bữa ăn, thông tin sẽ xuất hiện ở đây.',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Thêm chi phí ăn uống' }),
+    ).toBeNull()
     expect(
       calls
         .filter((c) => c.url.startsWith('/api/expenses/personal'))
@@ -280,7 +314,7 @@ it('shows neutral month comparison and only actual category totals', async () =>
   expect(categories.queryByText('Mua sắm')).toBeNull()
   expect(screen.queryByText(/vượt ngân sách|quá nhiều/i)).toBeNull()
 })
-it('supports keyboard switching to the family placeholder without a food API', async () => {
+it('supports keyboard switching between private expenses and shared food', async () => {
   const calls = network()
   render(<ExpensePage parent />)
   await ready()
@@ -290,7 +324,9 @@ it('supports keyboard switching to the family placeholder without a food API', a
   const family = screen.getByRole('tab', { name: 'Tiền ăn gia đình' })
   expect(family.getAttribute('aria-selected')).toBe('true')
   expect(document.activeElement).toBe(family)
-  expect(screen.getByText('Sắp có')).toBeTruthy()
+  expect(
+    await screen.findByText('Chưa có chi phí ăn uống trong tháng này'),
+  ).toBeTruthy()
   fireEvent.keyDown(family, { key: 'Home' })
   await ready()
   expect(

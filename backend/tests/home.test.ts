@@ -80,6 +80,17 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
     ],
   }
   const dependencies = {
+    familyFood: {
+      summary: vi.fn(async () => ({
+        month: '2099-05',
+        currency: 'VND' as const,
+        currentTotal: '290000',
+        previousTotal: '200000',
+        previousMonth: '2099-04',
+        differenceAmount: '90000',
+        percentageChange: 45,
+      })),
+    },
     breakfast: { getDay: vi.fn(async () => breakfast) },
     requests: {
       listCurrent: vi.fn(async (): Promise<MealRequestView[]> => [plan]),
@@ -212,6 +223,25 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'exposes %s shared food summary separately from private money',
+    async (role) => {
+      const s = setup(role),
+        result = await s.service.get(s.profile)
+      expect(s.dependencies.familyFood.summary).toHaveBeenCalledWith(s.profile)
+      expect(result.familyFood).toEqual({
+        month: '2099-05',
+        currency: 'VND',
+        currentTotal: '290000',
+        previousMonth: '2099-04',
+        previousTotal: '200000',
+        differenceAmount: '90000',
+        percentageChange: 45,
+      })
+      expect(result.personalExpenses.currentTotal).toBe('120000')
+      expect(result.familyFood).not.toHaveProperty('expenses')
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'includes only %s own compact personal-spending summary',
     async (role) => {

@@ -72,13 +72,7 @@ export function HomePage({
     month: 'long',
   }).format(now)
   const future = parent
-    ? [
-        {
-          title: 'Tiền ăn gia đình',
-          icon: '🌱',
-          destination: 'Tiền ăn gia đình' as const,
-        },
-      ]
+    ? []
     : [{ title: 'Cá nhân', icon: '☀', destination: 'Cá nhân' as const }]
   return (
     <div className="family-home">
@@ -212,6 +206,28 @@ export function HomePage({
               </button>
             </section>
           )}
+          {data.familyFood && (
+            <section
+              className="home-card home-family-food"
+              aria-label="Tiền ăn gia đình tháng này"
+            >
+              <h2>Tiền ăn gia đình</h2>
+              <p>
+                Tháng này:{' '}
+                <strong>{formatVnd(data.familyFood.currentTotal)}</strong>
+              </p>
+              <p>{expenseComparisonText(data.familyFood)}</p>
+              <p className="home-meta">
+                Chi phí chung bữa sáng và bữa tối, không gồm chi tiêu cá nhân.
+              </p>
+              <button
+                className="home-link"
+                onClick={() => onNavigate('Tiền ăn gia đình')}
+              >
+                Xem tiền ăn gia đình
+              </button>
+            </section>
+          )}
           <section aria-labelledby="home-meals-title">
             <div className="home-section-title">
               <h2 id="home-meals-title">Bữa ăn hôm nay</h2>
@@ -342,7 +358,6 @@ export function HomePage({
           <article className="home-card" key={card.title}>
             <span aria-hidden="true">{card.icon}</span>
             <h2>{card.title}</h2>
-            {parent && <span className="coming-soon">Sắp có</span>}
             <button
               className="home-link"
               onClick={() => onNavigate(card.destination)}

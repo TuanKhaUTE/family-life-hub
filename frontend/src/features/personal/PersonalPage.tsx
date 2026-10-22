@@ -21,6 +21,10 @@ export function PersonalPage({
           Ghi lại và xem các khoản chi của chính bạn. Không chia sẻ với thành
           viên khác.
         </p>
+        <p>
+          Trong Chi tiêu, bạn cũng có thể xem tiền ăn chung ở tab Tiền ăn gia
+          đình. Các khoản cá nhân vẫn chỉ của riêng bạn.
+        </p>
         <button className="expense-primary" onClick={onExpenses}>
           Mở chi tiêu cá nhân
         </button>

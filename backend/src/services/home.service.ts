@@ -10,6 +10,7 @@ import type { ChoreService } from './chore.service.js'
 import type { StudyService } from './study.service.js'
 import type { FitnessService } from './fitness.service.js'
 import type { PersonalExpenseService } from './personal-expense.service.js'
+import type { FamilyFoodService } from './family-food.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -37,6 +38,7 @@ interface HomeDependencies {
   study: Pick<StudyService, 'summary'>
   fitness: Pick<FitnessService, 'summary'>
   expenses: Pick<PersonalExpenseService, 'summary'>
+  familyFood: Pick<FamilyFoodService, 'summary'>
 }
 
 export class HomeService {
@@ -61,6 +63,7 @@ export class HomeService {
         study,
         fitness,
         expenses,
+        familyFood,
       } = this.dependencies
       const [
         breakfast,
@@ -72,6 +75,7 @@ export class HomeService {
         studySummary,
         fitnessSummary,
         expenseSummary,
+        foodSummary,
       ] = await Promise.all([
         breakfastService.getDay(profile, 'next'),
         requests.listCurrent(profile),
@@ -82,6 +86,7 @@ export class HomeService {
         parent ? Promise.resolve(null) : study.summary(profile),
         parent ? Promise.resolve(null) : fitness.summary(profile),
         expenses.summary(profile),
+        familyFood.summary(profile),
       ])
       const plan = plans.find(
         (p) =>
@@ -186,6 +191,15 @@ export class HomeService {
           previousTotal: expenseSummary.previousTotal,
           differenceAmount: expenseSummary.differenceAmount,
           percentageChange: expenseSummary.percentageChange,
+        },
+        familyFood: {
+          month: foodSummary.month,
+          currency: foodSummary.currency,
+          currentTotal: foodSummary.currentTotal,
+          previousMonth: foodSummary.previousMonth,
+          previousTotal: foodSummary.previousTotal,
+          differenceAmount: foodSummary.differenceAmount,
+          percentageChange: foodSummary.percentageChange,
         },
         ...(!parent && fitnessSummary
           ? {

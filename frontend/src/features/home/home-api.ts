@@ -12,14 +12,11 @@ interface ResponseSummary {
   memberId: string
   displayName: string
   state:
-    | 'NO_RESPONSE'
-    | 'SELECTED'
-    | 'SELECTED_OPTION'
-    | 'CUSTOM'
-    | 'NOT_EATING'
+    'NO_RESPONSE' | 'SELECTED' | 'SELECTED_OPTION' | 'CUSTOM' | 'NOT_EATING'
   choice: string | null
 }
 export interface HomeSummary {
+  familyFood?: ExpenseHomeSummary
   personalExpenses?: ExpenseHomeSummary
   fitness?: FitnessHomeSummary
   study?: Omit<StudySummary, 'courses'> & {
@@ -147,6 +144,11 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (
+    value.familyFood !== undefined &&
+    !validExpenseHomeSummary(value.familyFood)
+  )
+    return false
   if (
     value.personalExpenses !== undefined &&
     !validExpenseHomeSummary(value.personalExpenses)

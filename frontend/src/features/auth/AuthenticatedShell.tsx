@@ -8,6 +8,8 @@ import { StudyPage } from '../study/StudyPage'
 import { CalendarPage } from '../calendar/CalendarPage'
 import { ExpensePage } from '../expenses/ExpensePage'
 import { PersonalPage } from '../personal/PersonalPage'
+import { MealFoodCost } from '../expenses/MealFoodCost'
+import { familyDate } from '../meals/family-time'
 import './shell.css'
 
 interface AuthenticatedShellProps {
@@ -76,6 +78,7 @@ export function AuthenticatedShell({
           <>
             <h1>Bếp nhà mình</h1>
             <BreakfastSection profile={profile} />
+            <MealFoodCost date={familyDate()} mealType="BREAKFAST" />
             <MealRequestSection profile={profile} />
           </>
         )}
@@ -83,8 +86,16 @@ export function AuthenticatedShell({
         {destination === 'Chi tiêu' && profile.role === 'PARENT' && (
           <ExpensePage parent />
         )}
-        {destination === 'Tiền ăn gia đình' && profile.role === 'PARENT' && (
-          <ExpensePage parent initialTab="family" />
+        {destination === 'Tiền ăn gia đình' && (
+          <ExpensePage
+            parent={profile.role === 'PARENT'}
+            initialTab="family"
+            onBack={
+              profile.role !== 'PARENT'
+                ? () => setDestination('Cá nhân')
+                : undefined
+            }
+          />
         )}
         {destination === 'Chi tiêu cá nhân' && profile.role !== 'PARENT' && (
           <ExpensePage
@@ -111,7 +122,8 @@ export function AuthenticatedShell({
             aria-current={
               destination === label ||
               (destination === 'Chi tiêu cá nhân' && label === 'Cá nhân') ||
-              (destination === 'Tiền ăn gia đình' && label === 'Chi tiêu')
+              (destination === 'Tiền ăn gia đình' &&
+                label === (profile.role === 'PARENT' ? 'Chi tiêu' : 'Cá nhân'))
                 ? 'page'
                 : undefined
             }
