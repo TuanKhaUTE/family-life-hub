@@ -23,10 +23,8 @@ From that problem, the project is designed to gradually support:
 
 ## Project Status
 
-Feature 0 project foundation implemented.
-
-The repository contains a minimal React frontend, an Express backend, and a
-health endpoint at `GET /api/health`.
+The project is an actively developed full-stack family app. Current product
+capabilities and rules are maintained in the canonical documentation below.
 
 ## Planned Stack
 
