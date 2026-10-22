@@ -11,6 +11,7 @@ export interface Course {
   semesterId: string
   name: string
   code: string | null
+  practiceTracking?: boolean
 }
 export interface Goal {
   id: string
@@ -47,6 +48,36 @@ export interface StudyWorkspace {
   goals: Goal[]
   sessions: StudySession[]
   summary: StudySummary
+}
+export interface PracticeResult {
+  id: string
+  sessionId: string
+  courseId: string
+  courseName: string
+  studiedAt: string
+  metricTitle: string
+  score: number
+  maxScore: number
+  note: string | null
+  createdAt: string
+  updatedAt: string
+}
+export interface PracticeTrend {
+  courseId: string
+  courseName: string
+  latest: PracticeResult | null
+  previous: PracticeResult | null
+  changePercentagePoints: number | null
+  thisWeekAverage: number | null
+  previousWeekAverage: number | null
+  thisMonthAverage: number | null
+  previousMonthAverage: number | null
+  history: PracticeResult[]
+}
+export interface PracticeView {
+  courses: { id: string; name: string; practiceTracking: boolean }[]
+  results: PracticeResult[]
+  trends: PracticeTrend[]
 }
 export type StudyRecord = Semester | Course | Goal | StudySession
 export class StudyApiError extends Error {
@@ -123,6 +154,7 @@ export async function fetchStudy(signal: AbortSignal): Promise<StudyWorkspace> {
         name: v.name,
         semesterId: v.semesterId,
         code: v.code as string | null,
+        practiceTracking: v.practiceTracking === true,
       }
     }),
     goals: s.goals.map((v) => {
@@ -177,6 +209,14 @@ export async function saveStudy(
 export async function deleteStudy(kind: StudyKind | 'assessments', id: string) {
   await request(`/${kind}/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
+export async function fetchPractice(courseId: string | null, signal: AbortSignal): Promise<PracticeView> {
+  const body = await request(`/practice${courseId ? `?${new URLSearchParams({ courseId })}` : ''}`, { signal })
+  if (!object(body) || !object(body.practice) || !Array.isArray(body.practice.courses) || !Array.isArray(body.practice.results) || !Array.isArray(body.practice.trends)) invalid()
+  return body.practice as unknown as PracticeView
+}
+export async function savePractice(id: string | null, input: unknown) { await request(`/practice${id ? `/${encodeURIComponent(id)}` : ''}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(input) }) }
+export async function deletePractice(id: string) { await request(`/practice/${encodeURIComponent(id)}`, { method: 'DELETE' }) }
+export async function togglePractice(courseId: string, enabled: boolean) { await request(`/practice/courses/${encodeURIComponent(courseId)}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }) }
 export { request as studyRequest }
 export function studyError(error: unknown) {
   if (error instanceof StudyApiError) {

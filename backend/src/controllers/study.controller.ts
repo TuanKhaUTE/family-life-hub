@@ -36,5 +36,20 @@ export function createStudyController(service: StudyService) {
       await service.remove(req.auth!.profile, req.params.kind, req.params.id)
       res.sendStatus(204)
     }),
+    practice: handle(async (req, res) => {
+      res.json({ practice: await service.practice(req.auth!.profile, req.query.courseId) })
+    }),
+    savePractice: handle(async (req, res) => {
+      await service.savePractice(req.auth!.profile, req.params.id ?? null, req.body)
+      res.sendStatus(204)
+    }),
+    removePractice: handle(async (req, res) => {
+      await service.removePractice(req.auth!.profile, req.params.id)
+      res.sendStatus(204)
+    }),
+    togglePractice: handle(async (req, res) => {
+      await service.togglePractice(req.auth!.profile, req.params.id, req.body?.enabled)
+      res.sendStatus(204)
+    }),
   }
 }

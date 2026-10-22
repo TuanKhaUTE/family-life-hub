@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { familyDate } from '../meals/family-time'
 import {
   saveStudy,
+  togglePractice,
   studyError,
   type StudyKind,
   type StudyRecord,
@@ -35,6 +36,7 @@ export function StudyForm({
     ),
     [end, setEnd] = useState(String(initial?.endDate ?? familyDate()))
   const [active, setActive] = useState(Boolean(initial?.isActive ?? true)),
+    [practiceTracking, setPracticeTracking] = useState(Boolean(initial?.practiceTracking ?? false)),
     [semester, setSemester] = useState(
       String(
         initial?.semesterId ??
@@ -53,6 +55,7 @@ export function StudyForm({
     [completed, setCompleted] = useState(initial?.status === 'COMPLETED')
   const [pending, setPending] = useState(false),
     [error, setError] = useState<string | null>(null)
+  const initialPracticeTracking = Boolean(initial?.practiceTracking ?? false)
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
   async function submit(event: FormEvent) {
@@ -90,6 +93,7 @@ export function StudyForm({
               }
     try {
       await saveStudy(kind, record?.id ?? null, input)
+      if (kind === 'courses' && record?.id && practiceTracking !== initialPracticeTracking) await togglePractice(record.id, practiceTracking)
       onSaved()
     } catch (error) {
       setError(studyError(error))
@@ -186,6 +190,12 @@ export function StudyForm({
                   onChange={(e) => setCode(e.target.value)}
                 />
               </label>
+              {record && (
+                <label className="study-check">
+                  <input type="checkbox" checked={practiceTracking} onChange={(e) => setPracticeTracking(e.target.checked)} />
+                  Theo dõi điểm luyện tập
+                </label>
+              )}
             </>
           )}
           {(kind === 'goals' || kind === 'sessions') && (

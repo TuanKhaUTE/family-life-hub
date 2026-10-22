@@ -82,7 +82,7 @@ export function StudyGrades({
       <header className="study-hero">
         <button onClick={onClose}>{backLabel}</button>
         <h1 ref={heading} tabIndex={-1}>
-          Điểm &amp; bài kiểm tra
+          Điểm môn học
         </h1>
         <p>Một góc riêng để nhìn lại kết quả học tập, theo nhịp của bạn.</p>
       </header>

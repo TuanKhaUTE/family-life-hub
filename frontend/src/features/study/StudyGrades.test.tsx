@@ -160,9 +160,9 @@ it('opens a focused grades area from the otherwise calm Study page', async () =>
     ),
   )
   render(<StudyPage profile={profile} />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Xem điểm' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Xem điểm môn học' }))
   expect(
-    await screen.findByRole('heading', { name: 'Điểm & bài kiểm tra' }),
+    await screen.findByRole('heading', { name: 'Điểm môn học' }),
   ).toBeTruthy()
   expect(
     await screen.findByText('Bài tổng hợp', { selector: 'h2' }),
@@ -324,5 +324,5 @@ it('PARENT never requests or displays grades', () => {
   vi.stubGlobal('fetch', fetch)
   render(<StudyPage profile={{ ...profile, role: 'PARENT' }} />)
   expect(fetch).not.toHaveBeenCalled()
-  expect(screen.queryByText('Điểm & bài kiểm tra')).toBeNull()
+  expect(screen.queryByText('Điểm môn học')).toBeNull()
 })

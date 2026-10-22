@@ -15,6 +15,7 @@ import { StudyRecords, recordName } from './StudyRecords'
 import { StudyGrades } from './StudyGrades'
 import { FitnessSection } from '../fitness/FitnessSection'
 import { ActivityPlans } from '../activities/ActivityPlans'
+import { PracticeScores } from './PracticeScores'
 import './study.css'
 export function StudyPage({ profile }: { profile: FamilyProfile }) {
   return profile.role === 'PARENT' ? (
@@ -230,6 +231,10 @@ function MemberStudyPage() {
                 học.
               </p>
             </section>
+            <PracticeScores
+              courseIds={data.courses.map((course) => course.id)}
+              sessionIds={data.sessions.filter((session) => session.courseId !== null).map((session) => session.id)}
+            />
             <section className="study-card">
               <h3>Môn đang học</h3>
               {data.courses.filter((c) =>
@@ -253,11 +258,11 @@ function MemberStudyPage() {
               )}
             </section>
             <section className="study-card grades-entry">
-              <h3>Điểm &amp; bài kiểm tra</h3>
+              <h3>Điểm môn học</h3>
               <p className="study-muted">
                 Xem lại kết quả từng môn trong góc riêng của bạn.
               </p>
-              <button onClick={() => setGradesOpen(true)}>Xem điểm</button>
+              <button onClick={() => setGradesOpen(true)}>Xem điểm môn học</button>
             </section>
             {manage && (
               <section className="study-card" aria-label="Quản lý môn học">

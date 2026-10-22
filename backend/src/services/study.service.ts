@@ -11,6 +11,12 @@ import {
   type AssessmentData,
   type Assessment,
 } from './study-assessment.js'
+import {
+  normalizePracticeResult,
+  summarizePractice,
+  type PracticeResult,
+  type PracticeResultInput,
+} from './study-practice.js'
 export const STUDY_KINDS = [
   'semesters',
   'courses',
@@ -22,7 +28,7 @@ export type StudyKind = (typeof STUDY_KINDS)[number]
 export type StudyInput =
   | AssessmentInput
   | { name: string; startDate: string; endDate: string; isActive: boolean }
-  | { semesterId: string; name: string; code: string | null }
+  | { semesterId: string; name: string; code: string | null; practiceTracking?: boolean }
   | {
       courseId: string | null
       title: string
@@ -48,6 +54,7 @@ export interface StudyCourse {
   semesterId: string
   name: string
   code: string | null
+  practiceTracking: boolean
 }
 export interface StudyGoal {
   id: string
@@ -98,6 +105,9 @@ export interface StudyRepository {
     input: StudyInput | null,
     remove: boolean,
   ): Promise<void>
+  readPractice?(actorId: string, courseId: string | null): Promise<{ courses: StudyCourse[]; results: PracticeResult[] }>
+  mutatePractice?(actorId: string, id: string | null, input: PracticeResultInput | null, remove: boolean): Promise<void>
+  togglePractice?(actorId: string, courseId: string, enabled: boolean): Promise<void>
 }
 export class StudyService {
   constructor(
@@ -170,6 +180,32 @@ export class StudyService {
     const k = kindValue(kind)
     studyId(id)
     await this.run(() => this.repository.mutate(actor.id, k, id, null, true))
+  }
+  async practice(actor: SafeFamilyProfile, courseId: unknown = undefined) {
+    allowed(actor)
+    if (courseId !== undefined && courseId !== null) studyId(courseId)
+    if (!this.repository.readPractice) throw new ApiError(503, 'STUDY_UNAVAILABLE', 'Study is temporarily unavailable')
+    const data = await this.run(() => this.repository.readPractice!(actor.id, (courseId as string | undefined) ?? null))
+    return { courses: data.courses, results: data.results, trends: summarizePractice(data.results, getFamilyDate(this.clock())) }
+  }
+  async savePractice(actor: SafeFamilyProfile, id: unknown, input: unknown) {
+    allowed(actor)
+    if (id !== null) studyId(id)
+    if (!this.repository.mutatePractice) throw new ApiError(503, 'STUDY_UNAVAILABLE', 'Study is temporarily unavailable')
+    const data = normalizePracticeResult(input)
+    await this.run(() => this.repository.mutatePractice!(actor.id, id as string | null, data, false))
+  }
+  async removePractice(actor: SafeFamilyProfile, id: unknown) {
+    allowed(actor)
+    studyId(id)
+    if (!this.repository.mutatePractice) throw new ApiError(503, 'STUDY_UNAVAILABLE', 'Study is temporarily unavailable')
+    await this.run(() => this.repository.mutatePractice!(actor.id, id, null, true))
+  }
+  async togglePractice(actor: SafeFamilyProfile, courseId: unknown, enabled: unknown) {
+    allowed(actor)
+    studyId(courseId)
+    if (typeof enabled !== 'boolean' || !this.repository.togglePractice) throw new ApiError(400, 'STUDY_INVALID', 'Invalid practice setting')
+    await this.run(() => this.repository.togglePractice!(actor.id, courseId, enabled))
   }
   private async run<T>(action: () => Promise<T>) {
     try {
@@ -248,7 +284,7 @@ export function normalizeStudy(
   const v = input as Record<string, unknown>
   const keys = {
     semesters: ['name', 'startDate', 'endDate', 'isActive'],
-    courses: ['name', 'semesterId', 'code'],
+    courses: ['name', 'semesterId', 'code', 'practiceTracking'],
     goals: ['title', 'courseId', 'targetMinutes', 'targetDate', 'status'],
     sessions: ['courseId', 'studiedAt', 'durationMinutes', 'note'],
   }[kind]
@@ -261,10 +297,12 @@ export function normalizeStudy(
   }
   if (kind === 'courses') {
     studyId(v.semesterId)
+    if (v.practiceTracking !== undefined && typeof v.practiceTracking !== 'boolean') invalid()
     return {
       semesterId: v.semesterId,
       name: text(v.name, 120),
       code: optionalText(v.code, 40),
+      practiceTracking: v.practiceTracking === true,
     }
   }
   if (kind === 'goals') {

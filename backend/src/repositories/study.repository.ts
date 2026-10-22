@@ -13,6 +13,7 @@ import {
   type StudyWorkspace,
   type StudyRepository,
 } from '../services/study.service.js'
+import { normalizePracticeResult, type PracticeResultInput } from '../services/study-practice.js'
 export class SupabaseStudyRepository implements StudyRepository {
   private client?: SupabaseClient
   constructor(
@@ -112,6 +113,29 @@ export class SupabaseStudyRepository implements StudyRepository {
       throw new Error('Invalid assessment storage response')
     }
   }
+  async readPractice(actorId: string, courseId: string | null) {
+    const data = await this.rpc('study_practice_read', { p_actor_member_id: actorId, p_course_id: courseId })
+    try {
+      if (!object(data) || !Array.isArray(data.courses) || !Array.isArray(data.results)) throw new Error()
+      const courses = data.courses.map((course) => {
+        if (!object(course) || typeof course.name !== 'string' || typeof course.practiceTracking !== 'boolean') throw new Error()
+        studyId(course.id)
+        return { id: course.id, semesterId: '', name: course.name, code: null, practiceTracking: course.practiceTracking }
+      })
+      const results = data.results.map((row) => {
+        if (!object(row) || typeof row.id !== 'string' || typeof row.courseId !== 'string' || typeof row.courseName !== 'string' || typeof row.studiedAt !== 'string' || typeof row.createdAt !== 'string' || typeof row.updatedAt !== 'string') throw new Error()
+        studyId(row.id); studyId(row.sessionId); studyId(row.courseId)
+        return { id: row.id, ...normalizePracticeResult({ sessionId: row.sessionId, metricTitle: row.metricTitle, score: row.score, maxScore: row.maxScore, note: row.note }), courseId: row.courseId, courseName: row.courseName, studiedAt: row.studiedAt, createdAt: row.createdAt, updatedAt: row.updatedAt }
+      })
+      return { courses, results }
+    } catch { throw new Error('Invalid practice storage response') }
+  }
+  async mutatePractice(actorId: string, id: string | null, input: PracticeResultInput | null, remove: boolean) {
+    await this.rpc('study_practice_mutate', { p_actor_member_id: actorId, p_id: id, p_input: input, p_remove: remove })
+  }
+  async togglePractice(actorId: string, courseId: string, enabled: boolean) {
+    await this.rpc('study_course_practice_toggle', { p_actor_member_id: actorId, p_course_id: courseId, p_enabled: enabled })
+  }
 }
 export function parseStudyWorkspace(
   value: unknown,
@@ -126,7 +150,7 @@ export function parseStudyWorkspace(
       studyId(row.id)
       const keys = {
         semesters: ['name', 'startDate', 'endDate', 'isActive'],
-        courses: ['name', 'semesterId', 'code'],
+        courses: ['name', 'semesterId', 'code', 'practiceTracking'],
         goals: ['title', 'courseId', 'targetMinutes', 'targetDate', 'status'],
         sessions: ['courseId', 'studiedAt', 'durationMinutes', 'note'],
       }[kind]
