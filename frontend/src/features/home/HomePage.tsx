@@ -5,6 +5,7 @@ import { FAMILY_TIME_ZONE } from '../meals/family-time'
 import { fetchHome, type HomeSummary } from './home-api'
 import { greeting } from './home-time'
 import { HomeCalendarSummary } from './HomeCalendarSummary'
+import { HomeGamification } from './HomeGamification'
 import { HouseholdDutyCard } from '../chores/HouseholdDutyCard'
 import { StudyProgress } from '../study/StudyProgress'
 import { ActivityStatistics } from '../activities/ActivityStatistics'
@@ -189,6 +190,9 @@ export function HomePage({
               Xem lịch
             </button>
           </section>
+          {data.gamification && (
+            <HomeGamification gamification={data.gamification} parent={parent} />
+          )}
           {!parent && data.study && (
             <section
               className="home-card home-study"

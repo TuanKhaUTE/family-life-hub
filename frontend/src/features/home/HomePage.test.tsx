@@ -118,6 +118,52 @@ it('assignee completes today from Home and refreshes persisted completion state'
     screen.queryByRole('button', { name: 'Hoàn thành việc nhà ✓' }),
   ).toBeNull()
 })
+it('shows a compact private weekly joy summary for a member', async () => {
+  const home = summary()
+  home.gamification = {
+    breakfastStreak: 4,
+    household: { completedRecent: 3 },
+    achievements: [{ key: 'feedback', label: 'Người góp ý nhiệt tình' }],
+    personal: {
+      study: { completed: 4, planned: 5, streak: 5 },
+      fitness: { completed: 2, planned: 3, streak: 2 },
+    },
+  }
+  network(home)
+  render(<HomePage profile={profile} onNavigate={() => {}} />)
+  const section = await screen.findByRole('region', { name: 'Điểm vui tuần này' })
+  expect(within(section).getByText('🔥 4 ngày chọn bữa sáng đúng giờ')).toBeTruthy()
+  expect(within(section).getByText('Học tập: 4/5 buổi tuần này · 5 buổi liên tiếp')).toBeTruthy()
+  expect(within(section).getByText('3 lần hoàn thành việc nhà gần đây ✓')).toBeTruthy()
+  expect(within(section).getByText('Người góp ý nhiệt tình')).toBeTruthy()
+})
+it('shows Mom family achievements without private study or fitness metrics', async () => {
+  const home = summary()
+  home.gamification = {
+    breakfastStreak: 0,
+    household: { completedRecent: 5 },
+    achievements: [{ key: 'favorite', label: 'Món cả nhà yêu thích' }],
+  }
+  network(home)
+  render(<HomePage profile={{ ...profile, role: 'PARENT' }} onNavigate={() => {}} />)
+  const section = await screen.findByRole('region', { name: 'Điểm vui tuần này' })
+  expect(within(section).getByText('Món cả nhà yêu thích')).toBeTruthy()
+  expect(within(section).getByText('Cả nhà đã hoàn thành 5 việc nhà gần đây ✓')).toBeTruthy()
+  expect(within(section).queryByText(/Học tập:|Rèn luyện:/)).toBeNull()
+})
+it('keeps the joy summary warm when there is not enough achievement data', async () => {
+  const home = summary()
+  home.gamification = {
+    breakfastStreak: 0,
+    household: { completedRecent: 0 },
+    achievements: [],
+  }
+  network(home)
+  render(<HomePage profile={profile} onNavigate={() => {}} />)
+  const section = await screen.findByRole('region', { name: 'Điểm vui tuần này' })
+  expect(within(section).getByText('Mỗi việc nhỏ hôm nay đều đáng ghi nhận.')).toBeTruthy()
+  expect(within(section).queryByText(/🔥/)).toBeNull()
+})
 it.each([false, true])(
   'Home shows the lifecycle copy and purchase message without exposing a meal editor: purchased=%s',
   async (purchased) => {

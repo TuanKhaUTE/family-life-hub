@@ -88,6 +88,11 @@ describe('combined daily household duties', () => {
     await service.complete(member, '2099-05-04')
     expect(repository.complete).toHaveBeenCalledWith(member.id, '2099-05-04')
   })
+  it('reads a bounded recent duty window for derived consistency metrics', async () => {
+    const { service, repository } = setup()
+    await expect(service.recentCompletions(member, '2099-05-04', 7)).resolves.toEqual({ members: [], duties: [] })
+    expect(repository.list).toHaveBeenCalledWith(member.id, '2099-04-28', '2099-05-04')
+  })
   it.each(['2099-05-03', '2099-05-05'])(
     'rejects non-today completion %s',
     async (date) => {

@@ -514,6 +514,54 @@ describe('role-aware home', () => {
     s.breakfast.responses = []
     expect((await s.service.get(s.profile)).actions).toEqual([])
   })
+  it('derives private progress, breakfast streak, household consistency, and real meal achievements', async () => {
+    const s = setup('MEMBER')
+    Object.assign(s.dependencies.breakfast, {
+      getRecent: vi.fn(async () => [
+        {
+          ...s.breakfast,
+          date: '2099-05-01',
+          deadlineAt: '2099-04-30T18:00:00Z',
+          responses: [{ ...s.breakfast.responses[0]!, state: 'SELECTED' }],
+        },
+        {
+          ...s.breakfast,
+          date: '2099-04-30',
+          deadlineAt: '2099-04-29T18:00:00Z',
+          responses: [{ ...s.breakfast.responses[0]!, state: 'NOT_EATING' }],
+        },
+      ]),
+    })
+    Object.assign(s.dependencies.household, {
+      recentCompletions: vi.fn(async () => ({
+        members: [],
+        duties: [
+          { id: 'd1', date: '2099-04-30', assignee: member, cancelled: false, completedAt: '2099-04-30T10:00:00Z', completedByMemberId: member.id },
+          { id: 'd2', date: '2099-04-29', assignee: { ...member, id: 'other' }, cancelled: false, completedAt: '2099-04-29T10:00:00Z', completedByMemberId: 'other' },
+        ],
+      })),
+    })
+    s.dependencies.recent.listRecent.mockResolvedValue([
+      { id: 'dish-1', name: 'Món 1', mealDate: '2099-05-01', averageRating: 5, ratingCount: 2, ownRating: 5 },
+      { id: 'dish-2', name: 'Món 2', mealDate: '2099-04-30', averageRating: 4, ratingCount: 1, ownRating: 4 },
+      { id: 'dish-3', name: 'Món 3', mealDate: '2099-04-29', averageRating: 4, ratingCount: 1, ownRating: 4 },
+    ])
+    const result = await s.service.get(s.profile)
+    expect(result.gamification).toMatchObject({
+      breakfastStreak: 2,
+      household: { completedRecent: 1 },
+      achievements: [{ key: 'feedback', label: 'Người góp ý nhiệt tình' }],
+      personal: {
+        study: { completed: 1, planned: 2, streak: 1 },
+        fitness: { completed: 1, planned: 2, streak: 1 },
+      },
+    })
+  })
+  it('does not expose personal gamification metrics to Mom', async () => {
+    const s = setup('PARENT')
+    const result = await s.service.get(s.profile)
+    expect(result.gamification).not.toHaveProperty('personal')
+  })
   it('parent preparing reminder replaces missing dinner response reminders', async () => {
     const s = setup('PARENT')
     s.dependencies.meals.get.mockResolvedValue(s.meal)

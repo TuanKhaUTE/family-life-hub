@@ -21,6 +21,15 @@ interface ResponseSummary {
   choice: string | null
 }
 export interface HomeSummary {
+  gamification?: {
+    breakfastStreak: number
+    household: { completedRecent: number }
+    achievements: { key: string; label: string }[]
+    personal?: {
+      study: { completed: number; planned: number; streak: number } | null
+      fitness: { completed: number; planned: number; streak: number } | null
+    }
+  }
   householdDuty?: HouseholdDuty | null
   personalCalendar?: HomeSummary['calendar']
   familyFood?: ExpenseHomeSummary
@@ -154,6 +163,35 @@ function validHome(value: unknown): value is HomeSummary {
     !Array.isArray(value.recentDishes)
   )
     return false
+  if (value.gamification !== undefined) {
+    const gamification = value.gamification
+    if (
+      !object(gamification) ||
+      !count(gamification.breakfastStreak) ||
+      !object(gamification.household) ||
+      !count(gamification.household.completedRecent) ||
+      !Array.isArray(gamification.achievements) ||
+      !gamification.achievements.every(
+        (achievement) =>
+          object(achievement) && text(achievement.key) && text(achievement.label),
+      )
+    )
+      return false
+    if (gamification.personal !== undefined) {
+      if (!object(gamification.personal)) return false
+      for (const key of ['study', 'fitness']) {
+        const metric = gamification.personal[key]
+        if (
+          metric !== null &&
+          (!object(metric) ||
+            !count(metric.completed) ||
+            !count(metric.planned) ||
+            !count(metric.streak))
+        )
+          return false
+      }
+    }
+  }
   const b = value.breakfast
   for (const key of ['study', 'fitness']) {
     const summary = value[key]

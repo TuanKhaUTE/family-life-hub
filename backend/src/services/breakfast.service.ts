@@ -212,6 +212,22 @@ export class BreakfastService {
     }
   }
 
+  async getRecent(
+    profile: SafeFamilyProfile,
+    throughDate: string,
+    limit = 14,
+  ): Promise<BreakfastDay[]> {
+    if (!isBreakfastDate(throughDate) || !Number.isInteger(limit) || limit < 1 || limit > 31) {
+      throw new BreakfastValidationError('Invalid breakfast history request')
+    }
+
+    const days: BreakfastDay[] = []
+    for (let offset = 0; offset < limit; offset += 1) {
+      days.push(await this.getDay(profile, shiftDate(throughDate, -offset)))
+    }
+    return days
+  }
+
   async saveResponse(
     profile: SafeFamilyProfile,
     requestedDate: unknown,
@@ -307,6 +323,12 @@ function resolveRequestedDate(value: unknown, now: Date): string {
   }
 
   return value
+}
+
+function shiftDate(date: string, days: number): string {
+  const value = new Date(`${date}T12:00:00Z`)
+  value.setUTCDate(value.getUTCDate() + days)
+  return value.toISOString().slice(0, 10)
 }
 
 function normalizeResponse(input: unknown): NormalizedResponse {

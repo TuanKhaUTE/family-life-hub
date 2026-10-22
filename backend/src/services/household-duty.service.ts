@@ -50,6 +50,15 @@ export class HouseholdDutyService {
       invalid()
     return this.run(() => this.repository.list(actor.id, from, to))
   }
+  async recentCompletions(
+    actor: SafeFamilyProfile,
+    throughDate: string,
+    limit = 30,
+  ) {
+    if (!validDate(throughDate) || !Number.isInteger(limit) || limit < 1 || limit > 30)
+      invalid()
+    return this.list(actor, shiftDate(throughDate, -(limit - 1)), throughDate)
+  }
   async saveWeek(actor: SafeFamilyProfile, value: unknown) {
     parentOnly(actor)
     if (
@@ -123,4 +132,9 @@ function only(value: Record<string, unknown>, keys: string[]) {
 }
 function invalid(): never {
   throw new ApiError(400, 'DUTY_INVALID', 'Invalid household duty input')
+}
+function shiftDate(date: string, days: number): string {
+  const value = new Date(`${date}T12:00:00Z`)
+  value.setUTCDate(value.getUTCDate() + days)
+  return value.toISOString().slice(0, 10)
 }

@@ -12,6 +12,13 @@ import type { StudyService } from './study.service.js'
 import type { FitnessService } from './fitness.service.js'
 import type { PersonalExpenseService } from './personal-expense.service.js'
 import type { FamilyFoodService } from './family-food.service.js'
+import {
+  calculateBreakfastStreak,
+  countRecentDutyCompletions,
+  deriveMealAchievements,
+} from './gamification.service.js'
+import type { BreakfastDay } from './breakfast.service.js'
+import type { DutyView } from './household-duty.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -30,13 +37,17 @@ export interface HomeRepository {
 }
 interface HomeDependencies {
   activities: Pick<ActivityPlanService, 'progress'>
-  breakfast: Pick<BreakfastService, 'getDay'>
+  breakfast: Pick<BreakfastService, 'getDay'> & {
+    getRecent?: BreakfastService['getRecent']
+  }
   requests: Pick<MealRequestService, 'listCurrent'>
   meals: Pick<FinalMealService, 'get'>
   ratings: Pick<DishRatingService, 'get'>
   recent: HomeRepository
   calendar: Pick<CalendarService, 'list'>
-  household: Pick<HouseholdDutyService, 'list'>
+  household: Pick<HouseholdDutyService, 'list'> & {
+    recentCompletions?: HouseholdDutyService['recentCompletions']
+  }
   study: Pick<StudyService, 'summary'>
   fitness: Pick<FitnessService, 'summary'>
   expenses: Pick<PersonalExpenseService, 'summary'>
@@ -81,6 +92,8 @@ export class HomeService {
         personalView,
         studyActivity,
         fitnessActivity,
+        breakfastHistory,
+        dutyHistory,
       ] = await Promise.all([
         breakfastService.getDay(profile, 'next'),
         requests.listCurrent(profile),
@@ -97,6 +110,12 @@ export class HomeService {
           : calendar.list(profile, date, date, profile.id, 'PERSONAL'),
         parent ? Promise.resolve(null) : this.dependencies.activities.progress(profile, 'STUDY'),
         parent ? Promise.resolve(null) : this.dependencies.activities.progress(profile, 'FITNESS'),
+        !parent && breakfastService.getRecent
+          ? breakfastService.getRecent(profile, date, 14)
+          : Promise.resolve([] as BreakfastDay[]),
+        household.recentCompletions
+          ? household.recentCompletions(profile, date, 30)
+          : Promise.resolve(null as DutyView | null),
       ])
       const plan = plans.find(
         (p) =>
@@ -136,6 +155,25 @@ export class HomeService {
             !d.cancelled &&
             (parent || d.assignee.id === profile.id),
         ) ?? null
+      const breakfastStreak = calculateBreakfastStreak(
+        breakfastHistory.map((day) => ({
+          date: day.date,
+          state:
+            day.responses.find((response) => response.member.id === profile.id)
+              ?.state ?? 'NO_RESPONSE',
+          deadlineAt: day.deadlineAt,
+        })),
+        now,
+      )
+      const dutyRecords = (dutyHistory?.duties ?? []).map((item) => ({
+        assigneeId: item.assignee.id,
+        completedAt: item.completedAt,
+        cancelled: item.cancelled,
+      }))
+      const completedRecent = parent
+        ? dutyRecords.filter((item) => item.completedAt !== null && !item.cancelled).length
+        : countRecentDutyCompletions(dutyRecords, profile.id)
+      const achievements = deriveMealAchievements(profile.role, recentDishes)
       if (breakfast.isOpen && !breakfast.purchase) {
         for (const response of breakfastResponses.filter(
           (r) => r.state === 'NO_RESPONSE',
@@ -203,6 +241,31 @@ export class HomeService {
             : null,
         },
         recentDishes,
+        gamification: {
+          breakfastStreak,
+          household: { completedRecent },
+          achievements,
+          ...(!parent
+            ? {
+                personal: {
+                  study: studyActivity
+                    ? {
+                        completed: studyActivity.consistency.completed,
+                        planned: studyActivity.consistency.planned,
+                        streak: studyActivity.consistency.streak,
+                      }
+                    : null,
+                  fitness: fitnessActivity
+                    ? {
+                        completed: fitnessActivity.consistency.completed,
+                        planned: fitnessActivity.consistency.planned,
+                        streak: fitnessActivity.consistency.streak,
+                      }
+                    : null,
+                },
+              }
+            : {}),
+        },
         personalExpenses: {
           month: expenseSummary.month,
           currency: expenseSummary.currency,

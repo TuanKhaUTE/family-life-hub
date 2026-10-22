@@ -69,6 +69,25 @@
 .home-calm {
   color: #405c40;
 }
+.home-gamification {
+  background: #fff8ed;
+  border-color: #efdcb9;
+}
+.home-gamification-grid,
+.home-achievements {
+  display: grid;
+  gap: 0.45rem;
+}
+.home-gamification-grid p,
+.home-achievements {
+  margin: 0;
+}
+.home-achievements {
+  list-style: none;
+  padding: 0;
+  color: #6b4c2f;
+  font-weight: 650;
+}
 .home-actions,
 .home-responses,
 .home-dishes,

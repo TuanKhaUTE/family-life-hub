@@ -208,6 +208,18 @@ function createHarness(repository = new FakeBreakfastRepository()) {
 }
 
 describe('BreakfastService catalog and day views', () => {
+  it('reads a bounded breakfast history in descending family-date order', async () => {
+    const { service, repository } = createHarness()
+
+    await expect(
+      service.getRecent(memberProfile, '2026-10-22', 2),
+    ).resolves.toHaveLength(2)
+    expect(repository.selectionReadCalls.map((call) => call.date)).toEqual([
+      '2026-10-22',
+      '2026-10-21',
+    ])
+  })
+
   it('returns the active ordered catalog', async () => {
     const { service } = createHarness()
 
