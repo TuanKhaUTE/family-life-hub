@@ -1,0 +1,18 @@
+.activity-plans { display: grid; gap: .85rem; min-width: 0; color: #493b32; padding: 1rem; background: #f9f2e8; border: 1px solid #e6d6c5; border-radius: 1.2rem; }
+.activity-plans *, .activity-plans *::before, .activity-plans *::after { box-sizing: border-box; min-width: 0; }
+.activity-plans h3, .activity-plans h4, .activity-plans p { margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.activity-plans button { min-height: 44px; border: 1px solid #d8cdbf; border-radius: .8rem; padding: .6rem .8rem; background: #fffdf9; color: #493b32; font: inherit; cursor: pointer; }
+.activity-plans button:disabled { opacity: .6; cursor: wait; }
+.activity-plans .activity-primary { background: #e4efdd; color: #345539; border-color: #bdcfb4; font-weight: 700; }
+.activity-plan, .activity-statistics, .activity-list, .activity-plans fieldset { display: grid; gap: .65rem; }
+.activity-plan { padding: .9rem; border-radius: 1rem; background: #fffdf9; border: 1px solid #e4d8ca; }
+.activity-completed { background: #edf3e8; }
+.activity-hint { font-size: .85rem; color: #77665b; }
+.activity-plans fieldset { margin: 0; border: 0; padding: .8rem 0; }
+.activity-plans label { display: grid; gap: .35rem; }
+.activity-plans input, .activity-plans select, .activity-plans textarea { width: 100%; min-height: 44px; border: 1px solid #d8cdbf; border-radius: .7rem; padding: .6rem; background: #fffdf9; color: #493b32; font: inherit; }
+.activity-plans textarea { min-height: 80px; resize: vertical; }
+.activity-time-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .65rem; }
+.activity-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.activity-plans :is(button,input,select,textarea):focus-visible { outline: 3px solid #aa5b40; outline-offset: 3px; }
+.activity-plans [role=alert] { color: #963e37; }

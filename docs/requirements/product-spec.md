@@ -295,11 +295,9 @@ Kha and Bin should receive an in-app notification and, when supported, a push no
 
 # 7. Daily Dinner Requests
 
-Feature 2G limits the active Bếp flow to the next breakfast and today's dinner, interpreted in `Asia/Ho_Chi_Minh`. The family normally skips lunch. Lunch schema and historical data remain intact, but no lunch controls, arbitrary date pickers, future planning or history lists appear in the normal kitchen experience.
+Feature 2G limits the active Bếp flow to the next breakfast and the current recurring dinner cycle, interpreted in `Asia/Ho_Chi_Minh`. The family normally skips lunch. Lunch schema and historical data remain intact, but no lunch controls, arbitrary date pickers, future planning or history lists appear in the normal kitchen experience.
 
-Mom uses one simple dinner question: “Hôm nay mọi người muốn ăn gì?”, an optional message, and an editable response deadline defaulting to 14:00 today in family time. Ingredient/options suggestions are written naturally in the message, not a poll builder. Self-service remains a separate plan action. Breakfast stays recurring and automatically uses the relevant cycle; neither Mom nor children choose a breakfast date.
-
-If no request is necessary, the system should not automatically create one.
+Correction Batch C1 makes dinner recurring and system-driven. The backend ensures one basic question for dinner date D from D−1 18:00 through D 01:00 family time: “Tối mai tụi con muốn ăn gì?”. Mom may add or edit an optional “Gợi ý / lời nhắn của mẹ”; she does not create a new daily request. Kha and Bin answer independently with free text, may change their own answers before 01:00, and receive no punishment for NO_RESPONSE. Existing legacy polls, self-service rows, and historical responses remain compatible but are not the normal new dinner UI.
 
 ---
 
@@ -344,11 +342,7 @@ Kha and Bin select from the provided options.
 
 # 8. Meal Request Deadline
 
-Today's dinner supports a same-day response deadline, entered as a time rather than an arbitrary calendar date. Technical APIs remain date-capable for compatibility; this does not expose date planning in the normal UI.
-
-The default is 14:00 today, family time. Mom may adjust it; a deadline already in the past must be changed, not silently moved to tomorrow. Response creation/updates lock at the exact deadline on the backend and in the active UI. Replies are free text, including explicit “Hôm nay con không ăn tối”; recognized explicit no-dinner phrases become NOT_EATING and never cooked-dish candidates. Other free-text replies themselves may be candidates; no NLP or AI parsing is introduced.
-
-The deadline must remain configurable.
+The recurring dinner response window is fixed: it opens at D−1 18:00 and closes at D 01:00 in family time. Technical APIs remain date-capable for compatibility; the normal UI does not expose arbitrary dinner dates or editable deadlines. Response creation and updates lock at the exact cutoff on the backend and in the active UI. Replies are free text, including explicit “Hôm nay con không ăn tối”; recognized explicit no-dinner phrases become NOT_EATING and never cooked-dish candidates. Other free-text replies themselves may be candidates; no NLP or AI parsing is introduced.
 
 ---
 

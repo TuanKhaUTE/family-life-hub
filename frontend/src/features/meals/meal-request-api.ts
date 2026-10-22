@@ -84,6 +84,7 @@ export async function createMealRequest(
 export async function updateMealRequest(
   id: string,
   input:
+    | { parentMessage: string | null }
     | {
         status: MealStatus
         deadlineAt?: string | null

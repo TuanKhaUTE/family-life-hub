@@ -14,6 +14,7 @@ import { StudyProgress, studyDuration } from './StudyProgress'
 import { StudyRecords, recordName } from './StudyRecords'
 import { StudyGrades } from './StudyGrades'
 import { FitnessSection } from '../fitness/FitnessSection'
+import { ActivityPlans } from '../activities/ActivityPlans'
 import './study.css'
 export function StudyPage({ profile }: { profile: FamilyProfile }) {
   return profile.role === 'PARENT' ? (
@@ -115,6 +116,8 @@ function MemberStudyPage() {
         )}
         {state === 'ready' && data && (
           <>
+            <ActivityPlans kind="STUDY" courses={data.courses} onChanged={reload} />
+            <p className="study-muted">Bên dưới là mục tiêu và phần ghi bổ sung cho buổi đã học thực tế. Lên lịch chưa hoàn thành không cộng giờ học.</p>
             <div className="study-actions">
               <button
                 className="study-primary"

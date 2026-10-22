@@ -26,6 +26,7 @@ export interface CalendarInput {
   recurrenceUntil: string | null
 }
 export interface CalendarEvent extends CalendarInput {
+  activity?: { id: string; kind: 'STUDY' | 'FITNESS'; completedAt: string | null } | null
   id: string
   ownerMemberId: string
   createdAt: string

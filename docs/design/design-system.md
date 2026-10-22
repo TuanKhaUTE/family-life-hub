@@ -471,9 +471,9 @@ These should remain visually clear and distinct from normal dishes.
 
 # 16. Meal Request UI
 
-Correction Batch A simplifies dinner to “Hôm nay mọi người muốn ăn gì?”, optional family message, and a time-only deadline defaulting to 14:00. Do not show mode selectors, structured poll cards or option builders. Children use one focused text reply; saved replies collapse and deadline-expired replies are read-only. Preserve response-derived finalization and the secondary “Thêm món khác”. Breakfast uses 18:00–01:00 family-time editing, calm locked/no-response states, and only a compact purchased summary/message after confirmation; never leave the large old chooser underneath. Notification sheets acknowledge visible unread items automatically, with no normal mark-read button and truthful retry feedback.
+Correction Batch C1 makes dinner a recurring overnight flow: show “Tối mai tụi con muốn ăn gì?” from 18:00 the previous family day through 01:00 on the dinner date, with an optional “Gợi ý / lời nhắn của mẹ”. Do not show a daily create form or expose mode/options in the normal dinner flow. Children use one focused free-text reply; saved replies collapse, and after 01:00 they are read-only with a calm no-punishment message. Preserve historical poll responses and response-derived finalization. Breakfast keeps its 18:00–01:00 family-time editing and purchased summary behavior. Notification sheets acknowledge visible unread items automatically, with no normal mark-read button and truthful retry feedback.
 
-Feature 2G uses three distinct daily regions: peach **Bữa sáng tiếp theo**, sage **Bữa tối hôm nay**, and warm yellow/cream **Bữa tối đã chốt**. Do not show lunch, calendar date pickers, future planning, or cancelled/history cards in normal Bếp. Dinner deadlines use time-only controls. Parent finalization starts with **Món hai đứa đã chọn** candidates; **Thêm món khác** stays secondary. Category controls are optional, not mandatory setup. **Xóa kế hoạch** confirms removal from the active view while history remains internal.
+Feature 2G uses three distinct daily regions: peach **Bữa sáng tiếp theo**, sage **Bữa tối nhà mình**, and warm yellow/cream **Bữa tối đã chốt**. Do not show lunch, calendar date pickers, future planning, or cancelled/history cards in normal Bếp. Parent finalization starts with **Món hai đứa đã chọn** candidates; **Thêm món khác** stays secondary. Category controls are optional, not mandatory setup. Legacy cancellation remains available only in the advanced compatibility controls; the recurring question itself is backend-managed.
 
 Parent-created meal requests should feel conversational.
 
@@ -603,6 +603,8 @@ weekly goals.
 
 Avoid encouraging unhealthy daily workout streaks.
 
+Correction Batch C1 adds dated owner-only personal plans before the legacy workout/history controls. A planned session says **Chưa hoàn thành** and contributes zero progress; the owner can complete it with actual minutes, correct those minutes later, or reschedule/cancel before its family-day due boundary. The calendar link is personal and never appears in Lịch nhà. Show actual today/week/month totals, neutral previous-period comparisons, and **N buổi đúng kế hoạch liên tiếp 🔥** only for on-time scheduled completions; rest days do not break the streak.
+
 ---
 
 # 22. Study Design
@@ -614,6 +616,8 @@ Cá nhân contains “Được chia sẻ với bạn” for every role: warm lav
 Feature 4A uses “Học tập & Rèn luyện”, with peach/orange study cards on cream, books/target/clock icons, rounded surfaces, simple labelled progress bars, and natural Vietnamese. Show real totals or “Chưa có buổi học nào trong tuần này”; never sample courses or invented progress. “Ghi buổi học”, “Thêm mục tiêu”, and “Quản lý môn học” open compact feature-owned forms that close after successful saves. Explicit confirmation precedes deletion; linked-record errors explain how to unlink first.
 
 Keep controls at least 44px and forms comfortable at 320px/390px. Course, semester, and goal names must wrap safely. Study is personal, not family-readable: no member switcher, family comparison, or parent overview. Home shows only the signed-in ADMIN/MEMBER's own weekly summary; PARENT receives no Study card. Feature 4B adds grades below, and Feature 4C provides the separate private Rèn luyện section described above.
+
+Correction Batch C1 places the dated plan/completion flow first in Học & Luyện. A Study plan may optionally link an owned course, remains at zero until completed, and records actual minutes and an optional completion note. Completion is idempotent; explicit correction updates the same actual session. Home shows only the signed-in member's compact actual-progress summary, never a parent's or sibling's plan data.
 
 Feature 4B adds a separate “Điểm & bài kiểm tra” entry with “Xem điểm”, opening a focused peach/lavender view. Use a course selector and rounded cards rather than a gradebook table. “Thêm điểm” and “Chỉnh sửa” forms collapse after saving; “Xóa” requires confirmation. Show numeric scores, derived percentages, optional letter/weight/date, and real course summaries with honest weighted coverage. Empty states say “Chưa có điểm nào” and explain that results appear when added. Keep low results neutral: no red alarms, judgmental labels, comparisons, or ranks. Home may show only the signed-in member's latest result subtly; Mom's Home shows no grade data; explicitly received results appear only in Cá nhân. No GPA or final-grade claim.
 

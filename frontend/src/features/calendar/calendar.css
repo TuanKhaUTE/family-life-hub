@@ -90,6 +90,7 @@
   outline: 3px solid #aa5b40;
   outline-offset: 3px;
 }
+.calendar-page .calendar-activity-completed { border-left-color: #496f45 !important; box-shadow: inset 0 0 0 2px #66896b; }
 .calendar-page * {
   min-width: 0;
 }

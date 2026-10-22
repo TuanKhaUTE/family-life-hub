@@ -20,6 +20,7 @@ export function MealPlanControls({
   onChanged: (request: MealRequest) => void
 }) {
   const [editing, setEditing] = useState(false)
+  const recurringDinner = request.mealType === 'DINNER'
   const [mode, setMode] = useState<MealMode | 'SELF_SERVICE'>(
     request.mode ?? 'SELF_SERVICE',
   )
@@ -58,7 +59,9 @@ export function MealPlanControls({
     const deadlineAt =
       mode === 'SELF_SERVICE'
         ? null
-        : localInputToUtc(`${request.mealDate}T${deadline}`)
+        : localInputToUtc(
+            `${request.mealDate}T${recurringDinner ? '01:00' : deadline}`,
+          )
     if (
       !valid ||
       (mode !== 'SELF_SERVICE' &&
@@ -177,7 +180,7 @@ export function MealPlanControls({
                 Chuyển sang tự túc
               </button>
             </div>
-            {mode !== 'SELF_SERVICE' && (
+            {mode !== 'SELF_SERVICE' && !recurringDinner && (
               <label>
                 Hạn trả lời
                 <input

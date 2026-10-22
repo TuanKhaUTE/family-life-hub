@@ -13,6 +13,7 @@ import homeRouter from './routes/home.routes.js'
 import calendarRouter from './routes/calendar.routes.js'
 import choreRouter from './routes/chore.routes.js'
 import householdDutyRouter from './routes/household-duty.routes.js'
+import activityPlanRouter from './routes/activity-plan.routes.js'
 import studyRouter from './routes/study.routes.js'
 import fitnessRouter from './routes/fitness.routes.js'
 import wellnessRouter from './routes/wellness.routes.js'
@@ -33,6 +34,7 @@ app.use('/api', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/home', homeRouter)
 app.use('/api/calendar', calendarRouter)
+app.use('/api/personal-activities', activityPlanRouter)
 app.use('/api/chores/duties', householdDutyRouter)
 app.use('/api/chores', choreRouter)
 app.use('/api/study', studyRouter)

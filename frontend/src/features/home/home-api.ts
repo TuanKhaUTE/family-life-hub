@@ -1,4 +1,5 @@
 import { CHORE_CATEGORIES } from '../chores/chore-api'
+import { validActivityProgress, type ActivityProgress } from '../activities/activity-api'
 import {
   validHouseholdDuty,
   type HouseholdDuty,
@@ -24,8 +25,9 @@ export interface HomeSummary {
   personalCalendar?: HomeSummary['calendar']
   familyFood?: ExpenseHomeSummary
   personalExpenses?: ExpenseHomeSummary
-  fitness?: FitnessHomeSummary
+  fitness?: FitnessHomeSummary & { activityProgress?: ActivityProgress }
   study?: Omit<StudySummary, 'courses'> & {
+    activityProgress?: ActivityProgress
     latestAssessment?: {
       courseName: string
       title: string
@@ -153,6 +155,10 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  for (const key of ['study', 'fitness']) {
+    const summary = value[key]
+    if (object(summary) && summary.activityProgress !== undefined && !validActivityProgress(summary.activityProgress)) return false
+  }
   if (
     value.householdDuty !== undefined &&
     value.householdDuty !== null &&

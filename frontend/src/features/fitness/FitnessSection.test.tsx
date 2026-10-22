@@ -11,6 +11,7 @@ import { StudyPage } from '../study/StudyPage'
 import { FitnessSection } from './FitnessSection'
 import type { FitnessWorkspace, FitnessKind } from './fitness-api'
 import { familyDate } from '../meals/family-time'
+import { emptyActivityView } from '../activities/activity-fixtures.test-utils'
 vi.mock('../wellness/wellness-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../wellness/wellness-api')>()),
   fetchWellness: async () => ({
@@ -71,6 +72,7 @@ function network(data = workspace(), readError = false, writeError = false) {
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url, init })
+      if (url.startsWith('/api/personal-activities')) return new Response(JSON.stringify({ activities: emptyActivityView() }))
       if (!init?.method) {
         if (readError) throw new Error('private network detail')
         return new Response(JSON.stringify({ fitness: data }))

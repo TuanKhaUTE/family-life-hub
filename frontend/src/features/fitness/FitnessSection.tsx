@@ -19,6 +19,7 @@ import {
 } from './fitness-display'
 import './fitness.css'
 import { WellnessSection } from '../wellness/WellnessSection'
+import { ActivityPlans } from '../activities/ActivityPlans'
 export function FitnessSection() {
   const [data, setData] = useState<FitnessWorkspace | null>(null),
     [state, setState] = useState<'loading' | 'ready' | 'error'>('loading'),
@@ -123,6 +124,8 @@ export function FitnessSection() {
       )}
       {state === 'ready' && data && (
         <>
+          <ActivityPlans kind="FITNESS" onChanged={reload} />
+          <p className="fitness-muted">Ghi bổ sung bên dưới chỉ dành cho buổi đã tập thực tế. Lịch mẫu cũ được giữ lại, chưa tự sinh buổi tập có ngày giờ.</p>
           <div className="fitness-actions">
             <button
               className="fitness-primary"

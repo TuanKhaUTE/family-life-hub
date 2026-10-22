@@ -8,6 +8,7 @@ import {
 } from './calendar-api'
 import { calendarDay, calendarTime, CATEGORY_LABELS } from './calendar-time'
 import { familyDate } from '../meals/family-time'
+import { ActivityPlans } from '../activities/ActivityPlans'
 
 export function CalendarDetails({
   item,
@@ -90,7 +91,8 @@ export function CalendarDetails({
       {!own && (
         <p className="calendar-hint">Lịch của thành viên khác · Chỉ xem</p>
       )}
-      {own && (
+      {own && item.event.activity && <ActivityPlans kind={item.event.activity.kind} planId={item.event.activity.id} onChanged={() => onChanged('Đã cập nhật buổi của bạn.')} />}
+      {own && !item.event.activity && (
         <div className="calendar-detail-actions">
           <button
             className="calendar-primary"

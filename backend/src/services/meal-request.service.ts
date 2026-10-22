@@ -7,7 +7,9 @@ import {
   getFamilyDate,
   isFamilyDate,
   familyDateTimeToUtc,
+  getBreakfastTiming,
 } from '../time/family-calendar.js'
+import { dinnerTiming } from '../time/dinner-cycle.js'
 
 export type MealType = 'LUNCH' | 'DINNER'
 export type MealMode = 'OPEN_CHOICE' | 'OPTION_POLL'
@@ -67,6 +69,8 @@ export interface MealRequestView extends MealRequestRecord {
 }
 
 export interface MealRequestRepository {
+  ensureDinner(actorId: string, date: string): Promise<void>
+  setDinnerSuggestion(actorId: string, id: string, message: string | null): Promise<void>
   configureRequest(input: {
     actorMemberId: string
     requestId: string
@@ -139,13 +143,15 @@ export class MealRequestService {
 
   async listCurrent(profile: SafeFamilyProfile): Promise<MealRequestView[]> {
     try {
+      const cycle = dinnerTiming(this.clock())
+      await this.repository.ensureDinner(profile.id, cycle.date)
       const requests = await this.repository.listCurrentRequests(
         getFamilyDate(this.clock()),
       )
       return await this.hydrate(
         requests.filter(
           (request) =>
-            request.mealDate === getFamilyDate(this.clock()) &&
+            (request.mealDate === getFamilyDate(this.clock()) || request.mealDate === cycle.date) &&
             request.mealType === 'DINNER' &&
             request.status !== 'CANCELLED',
         ),
@@ -177,7 +183,7 @@ export class MealRequestService {
         input.deadlineAt === undefined &&
         isFamilyDate(input.mealDate)
           ? {
-              deadlineAt: familyDateTimeToUtc(input.mealDate, 14).toISOString(),
+              deadlineAt: familyDateTimeToUtc(input.mealDate, 1).toISOString(),
             }
           : {}),
       }
@@ -209,6 +215,11 @@ export class MealRequestService {
     const current = await this.safeFind(requestId)
     if (current === null)
       throw new MealRequestNotFoundError('Meal request was not found')
+    if (current.mealType === 'DINNER' && isObject(input) && onlyKeys(input, ['parentMessage']) && Object.hasOwn(input, 'parentMessage')) {
+      const message = input.parentMessage
+      if (message !== null && (typeof message !== 'string' || Array.from(message.trim()).length > 300)) bad()
+      try { await this.repository.setDinnerSuggestion(profile.id, requestId, typeof message === 'string' ? message.trim() || null : null); return await this.getHydrated(requestId, profile) } catch (error) { if (isKnown(error)) throw error; throw new MealRequestUnavailableError('Dinner suggestion could not be saved') }
+    }
     if (
       isObject(input) &&
       ('mode' in input ||
@@ -599,6 +610,7 @@ function effectiveStatus(
   request: MealRequestRecord,
   now: Date,
 ): MealRequestStatus {
+  if (request.mealType === 'DINNER' && request.status === 'OPEN' && !getBreakfastTiming(request.mealDate, now).isOpen) return 'CLOSED'
   return request.status === 'OPEN' &&
     request.deadlineAt &&
     Date.parse(request.deadlineAt) <= now.getTime()

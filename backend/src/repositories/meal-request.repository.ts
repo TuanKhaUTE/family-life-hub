@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseServerClient } from '../config/supabase.js'
 import {
   MealRequestConflictError,
+  MealRequestClosedError,
   MealResponseResetRequiredError,
   type MealMember,
   type MealRequestRecord,
@@ -24,6 +25,14 @@ const responseColumns =
 export class MealRequestDataError extends Error {}
 
 export class SupabaseMealRequestRepository implements MealRequestRepository {
+  async ensureDinner(actorId: string, date: string) {
+    const { error } = await this.getClient().rpc('ensure_recurring_dinner', { p_actor_member_id: actorId, p_date: date })
+    if (error) throw new MealRequestDataError()
+  }
+  async setDinnerSuggestion(actorId: string, id: string, message: string | null) {
+    const { error } = await this.getClient().rpc('set_dinner_suggestion', { p_actor_member_id: actorId, p_id: id, p_message: message })
+    if (error) throw new MealRequestDataError()
+  }
   async configureRequest(
     input: Parameters<MealRequestRepository['configureRequest']>[0],
   ): Promise<string> {
@@ -186,6 +195,7 @@ export class SupabaseMealRequestRepository implements MealRequestRepository {
       p_option_id: input.optionId,
       p_custom_text: input.customText,
     })
+    if (error?.code === '23514') throw new MealRequestClosedError('Meal responses are closed')
     return rpcUuid(data, error)
   }
 

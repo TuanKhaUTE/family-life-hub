@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthenticatedShell } from '../auth/AuthenticatedShell'
-import { familyDate } from './family-time'
+import { familyDate, relevantBreakfastDate } from './family-time'
 
 const id = '11111111-1111-4111-8111-111111111111'
 const dishId = '22222222-2222-4222-8222-222222222222'
@@ -47,7 +47,27 @@ describe('integrated daily kitchen', () => {
               ],
             },
           })
-        if (url === '/api/meals/requests/current') return json({ requests: [] })
+        if (url === '/api/meals/requests/current')
+          return json({
+            requests: [
+              {
+                id,
+                mealDate: relevantBreakfastDate(),
+                mealType: 'DINNER',
+                mode: 'OPEN_CHOICE',
+                status: 'OPEN',
+                deadlineAt: '2099-05-02T00:00:00Z',
+                parentMessage: null,
+                createdBy: { id, displayName: 'Synthetic Parent' },
+                options: [],
+                createdAt: '2099-05-01T00:00:00Z',
+                updatedAt: '2099-05-01T00:00:00Z',
+                timeZone: 'Asia/Ho_Chi_Minh',
+                isOpen: true,
+                responses: [],
+              },
+            ],
+          })
         if (url === `/api/meals/final/${familyDate()}/DINNER`)
           return json({
             meal: {
@@ -86,7 +106,7 @@ describe('integrated daily kitchen', () => {
         name: 'Bữa sáng tiếp theo',
       })
       const dinner = await screen.findByRole('region', {
-        name: 'Bữa tối hôm nay',
+        name: 'Bữa tối nhà mình',
       })
       const finalized = await screen.findByRole('region', {
         name: 'Bữa tối đã chốt',

@@ -95,7 +95,7 @@ export function CalendarGrid({
               return (
                 <button
                   key={`${item.event.id}:${item.date}`}
-                  className={`calendar-block calendar-tone-${tone}${item.cancelled ? ' calendar-cancelled' : ''}`}
+                  className={`calendar-block calendar-tone-${tone}${item.cancelled ? ' calendar-cancelled' : ''}${item.event.activity?.completedAt ? ' calendar-activity-completed' : ''}`}
                   style={{
                     top,
                     height: bottom - top,
@@ -105,7 +105,7 @@ export function CalendarGrid({
                   onClick={() => onSelect(item)}
                   aria-label={`${calendarTime(item.startsAt)}–${calendarTime(item.endsAt)} · ${item.owner.displayName} · ${item.title}${item.cancelled ? ' · Đã hủy lần này' : ''}`}
                 >
-                  <strong>{item.title}</strong>
+                  <strong>{item.event.activity?.completedAt ? '✓ ' : ''}{item.title}</strong>
                   <span className="calendar-event-time">
                     <time dateTime={item.startsAt}>
                       {calendarTime(item.startsAt)}

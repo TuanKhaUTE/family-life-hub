@@ -1,18 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { FamilyProfile } from '../auth/auth-api'
 import {
   familyDate,
-  localInputToUtc,
-  defaultDinnerDeadline,
+  relevantBreakfastDate,
+  breakfastLifecycle,
 } from './family-time'
 import {
-  createMealRequest,
+  updateMealRequest,
   fetchCurrentMealRequests,
   MealClosedApiError,
-  MealConflictApiError,
-  MealResetRequiredApiError,
   saveMealResponse,
-  type CreateMealRequest,
   type MealRequest,
   type MealSubmission,
 } from './meal-request-api'
@@ -22,7 +19,7 @@ import { MealPlanControls } from './MealPlanControls'
 import { useFamilyClock } from './use-family-clock'
 
 export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
-  const today = familyDate(useFamilyClock())
+  const now = useFamilyClock(), today = familyDate(now), targetDate = relevantBreakfastDate(now), phase = breakfastLifecycle(targetDate, now).phase
   const [requests, setRequests] = useState<MealRequest[]>([])
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [reload, setReload] = useState(0)
@@ -34,7 +31,7 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
           setRequests(
             items.filter(
               (item) =>
-                item.mealDate === today &&
+                (item.mealDate === today || item.mealDate === targetDate) &&
                 item.mealType === 'DINNER' &&
                 item.status !== 'CANCELLED',
             ),
@@ -48,7 +45,7 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
     return () => {
       active = false
     }
-  }, [reload, today])
+  }, [reload, today, targetDate, phase])
   const replace = (item: MealRequest) =>
     setRequests((current) =>
       [
@@ -83,14 +80,11 @@ export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
     <>
       <section className="meals-card" aria-labelledby="meals-title">
         <Heading />
-        {profile.role === 'PARENT' && requests.length === 0 && (
-          <ParentComposer onCreated={replace} />
-        )}
         <div className="meal-list">
-          {requests.length === 0 ? (
-            <p className="meal-empty">Chưa có kế hoạch bữa tối hôm nay.</p>
+          {!requests.some(r => r.mealDate === targetDate) ? (
+            <p className="meal-empty">Chưa có câu hỏi cho chu kỳ này. Cả nhà thử tải lại nhé.</p>
           ) : (
-            requests.map((request) => (
+            requests.filter(r => r.mealDate === targetDate).map((request) => (
               <MealCard
                 key={request.id}
                 request={request}
@@ -110,149 +104,13 @@ function Heading() {
     <header className="meals-heading">
       <div>
         <p className="eyebrow">Bữa ăn gia đình</p>
-        <h2 id="meals-title">Bữa tối hôm nay</h2>
+        <h2 id="meals-title">Bữa tối nhà mình</h2>
       </div>
       <span aria-hidden="true">🍲</span>
     </header>
   )
 }
 
-function ParentComposer({
-  onCreated,
-}: {
-  onCreated: (request: MealRequest) => void
-}) {
-  const [open, setOpen] = useState(false),
-    [deadline, setDeadline] = useState(() => defaultDinnerDeadline()),
-    [message, setMessage] = useState(''),
-    [pending, setPending] = useState(false),
-    [error, setError] = useState<string | null>(null),
-    [confirmReset, setConfirmReset] = useState(false)
-  const selfService = useRef(false),
-    guard = useRef(false)
-  async function submit(event?: FormEvent, confirmed = false, self = false) {
-    event?.preventDefault()
-    if (guard.current) return
-    selfService.current = self
-    const mealDate = familyDate(),
-      deadlineAt = localInputToUtc(mealDate + 'T' + deadline)
-    if (!self && (!deadlineAt || Date.parse(deadlineAt) <= Date.now())) {
-      setError('Mẹ chọn giờ trả lời sau thời điểm hiện tại nhé.')
-      return
-    }
-    guard.current = true
-    setPending(true)
-    setError(null)
-    try {
-      const saved = await createMealRequest({
-        mealDate,
-        mealType: 'DINNER',
-        mode: self ? 'SELF_SERVICE' : 'OPEN_CHOICE',
-        ...(self ? {} : { deadlineAt: deadlineAt! }),
-        parentMessage: message.trim() || null,
-        ...(confirmed ? { confirmResponseReset: true } : {}),
-      } as CreateMealRequest)
-      onCreated(saved)
-      setOpen(false)
-      setMessage('')
-      setConfirmReset(false)
-    } catch (cause) {
-      if (cause instanceof MealResetRequiredApiError) setConfirmReset(true)
-      else
-        setError(
-          cause instanceof MealConflictApiError
-            ? 'Bữa tối đã có kế hoạch. Mẹ mở thẻ hiện có và chọn “Chỉnh sửa” nhé.'
-            : 'Chưa thể gửi câu hỏi. Mẹ kiểm tra hạn trả lời rồi thử lại nhé.',
-        )
-    } finally {
-      guard.current = false
-      setPending(false)
-    }
-  }
-  if (!open)
-    return (
-      <button
-        className="primary-button meal-create-button"
-        onClick={() => setOpen(true)}
-      >
-        Lên kế hoạch bữa ăn
-      </button>
-    )
-  return (
-    <form
-      className="meal-composer"
-      onSubmit={(e) => void submit(e, false, false)}
-    >
-      <h3>Hôm nay mọi người muốn ăn gì?</h3>
-      <label>
-        Lời nhắn cho cả nhà
-        <textarea
-          autoFocus
-          value={message}
-          maxLength={300}
-          placeholder="Mẹ có cơm gà, bún bò hoặc phở, hai đứa nói mẹ biết nha."
-          onChange={(e) => setMessage(e.target.value)}
-          disabled={pending}
-        />
-      </label>
-      <label>
-        Hạn trả lời
-        <input
-          type="time"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-          required
-          disabled={pending}
-        />
-      </label>
-      <p>Giờ gia đình · mặc định 14:00 hôm nay.</p>
-      {error && (
-        <p role="alert" className="meal-error">
-          {error}
-        </p>
-      )}
-      <div className="meal-actions">
-        <button className="primary-button" disabled={pending || confirmReset}>
-          {pending ? 'Đang gửi…' : 'Tạo yêu cầu'}
-        </button>
-        <button
-          type="button"
-          className="secondary-button"
-          disabled={pending}
-          onClick={() => setOpen(false)}
-        >
-          Hủy
-        </button>
-        <button
-          type="button"
-          className="text-button"
-          disabled={pending || confirmReset}
-          onClick={() => void submit(undefined, false, true)}
-        >
-          Để cả nhà tự túc
-        </button>
-      </div>
-      {confirmReset && (
-        <div role="alertdialog" aria-label="Xác nhận tạo lại kế hoạch">
-          <p>
-            Kế hoạch mới sẽ bỏ các phản hồi cũ không còn phù hợp. Mẹ có muốn
-            tiếp tục không?
-          </p>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void submit(undefined, true, selfService.current)}
-          >
-            Đồng ý, tạo lại kế hoạch
-          </button>
-          <button type="button" onClick={() => setConfirmReset(false)}>
-            Quay lại
-          </button>
-        </div>
-      )}
-    </form>
-  )
-}
 
 function MealCard({
   request,
@@ -270,6 +128,7 @@ function MealCard({
       request.isOpen &&
       request.status === 'OPEN' &&
       request.deadlineAt !== null &&
+      breakfastLifecycle(request.mealDate, now).isOpen &&
       now.getTime() < Date.parse(request.deadlineAt),
   }
   return (
@@ -287,7 +146,7 @@ function MealCard({
               ? 'Kế hoạch đã hủy'
               : request.status === 'SELF_SERVICE'
                 ? 'Tự túc'
-                : 'Hôm nay mọi người muốn ăn gì?'}
+                : 'Tối mai tụi con muốn ăn gì?'}
           </h3>
         </div>
         <span className="meal-status">
@@ -305,15 +164,11 @@ function MealCard({
       )}
       {request.deadlineAt && request.status !== 'CANCELLED' && (
         <p className="meal-deadline">
-          Trả lời trước {formatDeadline(request.deadlineAt, request.timeZone)}
+          Trả lời từ 18:00 hôm trước đến 01:00 ngày ăn tối. Sau đó Mẹ xem để đi chợ nhé.
         </p>
       )}
       {profile.role === 'PARENT' ? (
-        <MealPlanControls
-          key={request.updatedAt + request.status}
-          request={request}
-          onChanged={onChanged}
-        />
+        <DinnerParentView request={request} onChanged={onChanged} />
       ) : (
         <MemberRequestView
           request={request}
@@ -325,6 +180,18 @@ function MealCard({
   )
 }
 
+function DinnerParentView({ request, onChanged }: { request: MealRequest; onChanged: (request: MealRequest) => void }) {
+  const [message, setMessage] = useState(request.parentMessage ?? ''), [editing, setEditing] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null)
+  return <div>
+    {request.status !== 'SELF_SERVICE' && <ul className="response-list">{request.responses.map(r => <li key={r.member.id}><strong>{r.member.displayName}</strong><span>{responseLabel(r)}</span></li>)}</ul>}
+    {editing ? <form className="meal-composer" onSubmit={async e => {
+      e.preventDefault(); if (busy) return
+      setBusy(true); setError(null)
+      try { onChanged(await updateMealRequest(request.id, { parentMessage: message.trim() || null })); setEditing(false) } catch { setError('Chưa lưu được lời nhắn. Mẹ thử lại nhé.') } finally { setBusy(false) }
+    }}><fieldset disabled={busy}><label>Gợi ý / lời nhắn của mẹ<textarea maxLength={300} value={message} onChange={e => setMessage(e.target.value)} /></label>{error && <p role="alert">{error}</p>}<button className="primary-button">Lưu lời nhắn</button><button type="button" className="secondary-button" onClick={() => setEditing(false)}>Để sau</button></fieldset></form> : <button className="secondary-button" onClick={() => { setMessage(request.parentMessage ?? ''); setEditing(true) }}>Gợi ý / lời nhắn của mẹ</button>}
+    <details><summary>Điều chỉnh kế hoạch bữa tối</summary><MealPlanControls key={request.updatedAt + request.status} request={request} onChanged={onChanged} /></details>
+  </div>
+}
 function MemberRequestView({
   request,
   profile,
@@ -362,7 +229,7 @@ function MemberRequestView({
     return (
       <div className="meal-closed">
         <SavedResponse response={response} />
-        <p role="status">Đã đóng phản hồi.</p>
+        <p role="status">Đã đóng phản hồi lúc 01:00. Chưa trả lời cũng không sao, Mẹ sẽ chọn giúp nhé.</p>
       </div>
     )
   if (response && response.state !== 'NO_RESPONSE' && !editing)
@@ -414,7 +281,7 @@ function MemberRequestView({
         <p className="meal-empty">Chưa trả lời</p>
       )}
       <label>
-        Bạn muốn ăn gì tối nay?
+        Bạn muốn ăn gì cho bữa tối này?
         <textarea
           autoFocus
           value={text}
@@ -511,13 +378,6 @@ function formatDate(value: string, timeZone: string) {
     timeZone,
     dateStyle: 'medium',
   }).format(new Date(`${value}T12:00:00Z`))
-}
-function formatDeadline(value: string, timeZone: string) {
-  return new Intl.DateTimeFormat('vi-VN', {
-    timeZone,
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
 }
 function sortRequests(a: MealRequest, b: MealRequest) {
   return (

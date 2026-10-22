@@ -6,6 +6,7 @@ import type { MealRequestService } from './meal-request.service.js'
 import type { FinalMealService } from './final-meal.service.js'
 import type { DishRatingService } from './dish-rating.service.js'
 import type { CalendarService } from './calendar.service.js'
+import type { ActivityPlanService } from './activity-plan.service.js'
 import type { HouseholdDutyService } from './household-duty.service.js'
 import type { StudyService } from './study.service.js'
 import type { FitnessService } from './fitness.service.js'
@@ -28,6 +29,7 @@ export interface HomeRepository {
   ): Promise<RecentHomeDish[]>
 }
 interface HomeDependencies {
+  activities: Pick<ActivityPlanService, 'progress'>
   breakfast: Pick<BreakfastService, 'getDay'>
   requests: Pick<MealRequestService, 'listCurrent'>
   meals: Pick<FinalMealService, 'get'>
@@ -77,6 +79,8 @@ export class HomeService {
         expenseSummary,
         foodSummary,
         personalView,
+        studyActivity,
+        fitnessActivity,
       ] = await Promise.all([
         breakfastService.getDay(profile, 'next'),
         requests.listCurrent(profile),
@@ -91,6 +95,8 @@ export class HomeService {
         parent
           ? Promise.resolve(null)
           : calendar.list(profile, date, date, profile.id, 'PERSONAL'),
+        parent ? Promise.resolve(null) : this.dependencies.activities.progress(profile, 'STUDY'),
+        parent ? Promise.resolve(null) : this.dependencies.activities.progress(profile, 'FITNESS'),
       ])
       const plan = plans.find(
         (p) =>
@@ -218,6 +224,7 @@ export class HomeService {
         ...(!parent && fitnessSummary
           ? {
               fitness: {
+                activityProgress: fitnessActivity,
                 weekStart: fitnessSummary.weekStart,
                 weekEnd: fitnessSummary.weekEnd,
                 sessionsThisWeek: fitnessSummary.sessionsThisWeek,
@@ -231,6 +238,7 @@ export class HomeService {
         ...(!parent && studySummary
           ? {
               study: {
+                activityProgress: studyActivity,
                 weekStart: studySummary.weekStart,
                 weekEnd: studySummary.weekEnd,
                 totalMinutes: studySummary.totalMinutes,

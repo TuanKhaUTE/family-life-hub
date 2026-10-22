@@ -7,6 +7,7 @@ import { greeting } from './home-time'
 import { HomeCalendarSummary } from './HomeCalendarSummary'
 import { HouseholdDutyCard } from '../chores/HouseholdDutyCard'
 import { StudyProgress } from '../study/StudyProgress'
+import { ActivityStatistics } from '../activities/ActivityStatistics'
 import { gradeScore } from '../study/grade-display'
 import { FitnessSummary } from '../fitness/FitnessSummary'
 import { formatVnd, expenseComparisonText } from '../expenses/expense-display'
@@ -195,6 +196,7 @@ export function HomePage({
             >
               <h2>📚 Học tập tuần này</h2>
               <StudyProgress summary={data.study} compact />
+              {data.study.activityProgress && <ActivityStatistics progress={data.study.activityProgress} compact study />}
               {data.study.latestAssessment && (
                 <p className="home-meta">
                   {data.study.latestAssessment.courseName} ·{' '}
@@ -217,6 +219,7 @@ export function HomePage({
             >
               <h2>🌿 Rèn luyện tuần này</h2>
               <FitnessSummary summary={data.fitness} compact />
+              {data.fitness.activityProgress && <ActivityStatistics progress={data.fitness.activityProgress} compact />}
               <button
                 className="home-link"
                 onClick={() => onNavigate('Học & Luyện')}

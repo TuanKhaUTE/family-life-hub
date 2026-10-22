@@ -175,6 +175,7 @@ function occurrence(value: unknown): CalendarOccurrence {
     recurrenceUntil: e.recurrenceUntil,
   })
   const event: CalendarEvent = {
+    ...(e.activity === undefined ? {} : { activity: activity(e.activity) }),
     id: e.id,
     ownerMemberId: e.ownerMemberId,
     ...input,
@@ -197,6 +198,12 @@ function occurrence(value: unknown): CalendarOccurrence {
 }
 function nullableText(value: unknown) {
   return value === null || typeof value === 'string'
+}
+function activity(value: unknown): CalendarEvent['activity'] {
+  if (value === null) return null
+  if (!object(value) || (value.kind !== 'STUDY' && value.kind !== 'FITNESS') || !(value.completedAt === null || timestamp(value.completedAt))) throw new Error('Invalid calendar activity')
+  requireId(value.id)
+  return { id: value.id, kind: value.kind, completedAt: value.completedAt as string | null }
 }
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)

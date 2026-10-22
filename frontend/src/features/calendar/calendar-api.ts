@@ -24,6 +24,7 @@ export interface CalendarInput {
   recurrenceUntil: string | null
 }
 export interface CalendarEvent extends CalendarInput {
+  activity?: { id: string; kind: 'STUDY' | 'FITNESS'; completedAt: string | null } | null
   id: string
   ownerMemberId: string
   createdAt: string
@@ -206,6 +207,7 @@ function readOccurrence(value: unknown): CalendarOccurrence {
     invalid()
   return {
     event: {
+      ...(e.activity === undefined ? {} : { activity: readActivity(e.activity) }),
       ...(e.calendarType === undefined
         ? {}
         : { calendarType: e.calendarType as 'FAMILY' | 'PERSONAL' }),
@@ -233,6 +235,11 @@ function readOccurrence(value: unknown): CalendarOccurrence {
 }
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+function readActivity(value: unknown): CalendarEvent['activity'] {
+  if (value === null) return null
+  if (!object(value) || typeof value.id !== 'string' || (value.kind !== 'STUDY' && value.kind !== 'FITNESS') || !(value.completedAt === null || stamp(value.completedAt))) invalid()
+  return { id: value.id, kind: value.kind, completedAt: value.completedAt as string | null }
 }
 function nullable(value: unknown) {
   return value === null || typeof value === 'string'

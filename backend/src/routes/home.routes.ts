@@ -1,4 +1,6 @@
 import { Router } from 'express'
+import { ActivityPlanService } from '../services/activity-plan.service.js'
+import { SupabaseActivityPlanRepository } from '../repositories/activity-plan.repository.js'
 import { createHomeController } from '../controllers/home.controller.js'
 import { createRequireAuth } from '../middleware/require-auth.js'
 import {
@@ -39,6 +41,7 @@ export function createHomeRouter(
 }
 export default createHomeRouter(
   new HomeService({
+    activities: new ActivityPlanService(new SupabaseActivityPlanRepository()),
     familyFood: new FamilyFoodService(new SupabaseFamilyFoodRepository()),
     breakfast: new BreakfastService(new SupabaseBreakfastRepository()),
     requests: new MealRequestService(new SupabaseMealRequestRepository()),

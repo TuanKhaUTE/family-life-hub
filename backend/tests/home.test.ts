@@ -80,6 +80,7 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
     ],
   }
   const dependencies = {
+    activities: { progress: vi.fn(async () => ({ today: { minutes: 90, sessions: 1 }, week: { minutes: 90, sessions: 1, previousMinutes: 60, previousSessions: 1, differenceMinutes: 30, differenceSessions: 0, percentage: 50 }, month: { minutes: 90, sessions: 1, previousMinutes: 0, previousSessions: 0, differenceMinutes: 90, differenceSessions: 1, percentage: null }, consistency: { planned: 2, completed: 1, streak: 1 } })) },
     familyFood: {
       summary: vi.fn(async () => ({
         month: '2099-05',
@@ -214,6 +215,20 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)('%s Home gets completed activity metrics only and never queries child data for Mom', async role => {
+    const s = setup(role)
+    const result = await s.service.get(s.profile)
+    if (role === 'PARENT') {
+      expect(s.dependencies.activities.progress).not.toHaveBeenCalled()
+      expect(result).not.toHaveProperty('study')
+      expect(result).not.toHaveProperty('fitness')
+    } else {
+      expect(result.study!.activityProgress.today.minutes).toBe(90)
+      expect(result.fitness!.activityProgress.consistency).toEqual({ planned: 2, completed: 1, streak: 1 })
+      expect(s.dependencies.activities.progress).toHaveBeenCalledWith(s.profile, 'STUDY')
+      expect(s.dependencies.activities.progress).toHaveBeenCalledWith(s.profile, 'FITNESS')
+    }
+  })
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'exposes %s shared food summary separately from private money',
     async (role) => {

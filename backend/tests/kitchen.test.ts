@@ -55,6 +55,7 @@ describe('daily kitchen', () => {
   })
   it('hydrates candidates only for the parent, keeping member views own-response only', async () => {
     const repository = {
+      ensureDinner: vi.fn(async () => {}),
       listCurrentRequests: vi.fn().mockResolvedValue([base]),
       listActiveMembers: vi.fn().mockResolvedValue([member]),
       listResponses: vi.fn().mockResolvedValue([
@@ -109,6 +110,7 @@ describe('daily kitchen', () => {
   })
   it('exposes only today dinner, hiding lunch, future, and cancelled history', async () => {
     const repository = {
+      ensureDinner: vi.fn(async () => {}),
       listCurrentRequests: vi
         .fn()
         .mockResolvedValue([

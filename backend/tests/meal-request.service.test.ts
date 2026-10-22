@@ -29,7 +29,7 @@ const admin = { ...member, role: 'ADMIN' as const }
 const optionId = '33333333-3333-4333-8333-333333333333'
 const requestId = '44444444-4444-4444-8444-444444444444'
 const responseId = '55555555-5555-4555-8555-555555555555'
-const now = new Date('2026-10-21T08:00:00.000Z')
+const now = new Date('2026-10-20T12:00:00.000Z')
 const record: MealRequestRecord = {
   id: requestId,
   mealDate: '2026-10-21',
@@ -62,6 +62,8 @@ const saved: MealResponseRecord = {
 }
 
 class FakeRepository implements MealRequestRepository {
+  async ensureDinner() {}
+  async setDinnerSuggestion(_actorId: string, id: string, message: string | null) { this.requests = this.requests.map(r => r.id === id ? { ...r, parentMessage: message } : r) }
   async configureRequest(
     input: Parameters<MealRequestRepository['configureRequest']>[0],
   ) {
@@ -164,10 +166,10 @@ describe('MealRequestService', () => {
     repository = new FakeRepository()
     service = new MealRequestService(repository, () => now)
   })
-  it('defaults new dinner to free-text and 14:00 family time', async () => {
+  it('defaults new dinner to free-text and 01:00 family time', async () => {
     const morning = new MealRequestService(
       repository,
-      () => new Date('2026-10-21T01:00:00Z'),
+      () => new Date('2026-10-20T12:00:00Z'),
     )
     await morning.create(parent, {
       mealDate: '2026-10-21',
@@ -177,7 +179,7 @@ describe('MealRequestService', () => {
     expect(repository.createdInputs[0]).toMatchObject({
       mode: 'OPEN_CHOICE',
       options: [],
-      deadlineAt: '2026-10-21T07:00:00.000Z',
+      deadlineAt: '2026-10-20T18:00:00.000Z',
     })
   })
   it('rejects new structured dinner polls without touching history', async () => {
@@ -252,7 +254,7 @@ describe('MealRequestService', () => {
 
   it('treats an elapsed open request as closed', async () => {
     repository.requests = [
-      { ...record, deadlineAt: '2026-10-21T07:00:00.000Z' },
+      { ...record, deadlineAt: '2026-10-20T11:00:00.000Z' },
     ]
     expect((await service.listCurrent(member))[0]).toMatchObject({
       status: 'CLOSED',
@@ -321,7 +323,7 @@ describe('MealRequestService', () => {
   it.each([
     [
       {
-        mealDate: '2026-10-20',
+        mealDate: '2026-10-19',
         mealType: 'LUNCH',
         mode: 'OPEN_CHOICE',
         deadlineAt: '2026-10-21T12:00:00Z',
@@ -353,7 +355,7 @@ describe('MealRequestService', () => {
         mealDate: '2026-10-21',
         mealType: 'LUNCH',
         mode: 'OPEN_CHOICE',
-        deadlineAt: '2026-10-21T07:00:00Z',
+        deadlineAt: '2026-10-20T11:00:00Z',
       },
       'past deadline',
     ],
@@ -476,7 +478,7 @@ describe('MealRequestService', () => {
     await expect(
       service.saveResponse(parent, requestId, { responseType: 'NOT_EATING' }),
     ).rejects.toBeInstanceOf(MealRequestForbiddenError)
-    repository.requests = [{ ...record, deadlineAt: '2026-10-21T07:00:00Z' }]
+    repository.requests = [{ ...record, deadlineAt: '2026-10-20T11:00:00Z' }]
     await expect(
       service.saveResponse(member, requestId, { responseType: 'NOT_EATING' }),
     ).rejects.toBeInstanceOf(MealRequestClosedError)

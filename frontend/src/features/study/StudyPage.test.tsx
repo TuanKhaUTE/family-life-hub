@@ -11,6 +11,7 @@ import { AuthenticatedShell } from '../auth/AuthenticatedShell'
 import { StudyPage } from './StudyPage'
 import type { StudyWorkspace, StudyKind } from './study-api'
 import { familyDate } from '../meals/family-time'
+import { emptyActivityView } from '../activities/activity-fixtures.test-utils'
 vi.mock('../wellness/wellness-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../wellness/wellness-api')>()),
   fetchWellness: async () => ({
@@ -115,6 +116,7 @@ function network(data = workspace(), failRead = false, failWrite = false) {
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url, init })
+      if (url.startsWith('/api/personal-activities')) return new Response(JSON.stringify({ activities: emptyActivityView() }))
       if (!init?.method) {
         if (failRead) throw new Error('private network detail')
         return new Response(JSON.stringify({ study: data }))

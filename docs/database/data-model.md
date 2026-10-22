@@ -320,7 +320,7 @@ There is one request per `(meal_date, meal_type)`. Interactive requests require 
 
 Cancellation retains the request, its mode/options/deadline and responses for history, but blocks new responses. The parent can reconfigure the same slot afterward. Expiry remains a closed read state and is not cancellation. RLS is enabled with no browser policies; only the backend service role has table access.
 
-Feature 2G excludes CANCELLED, lunch and non-today plans from active kitchen lookup without deleting history or changing meal-type constraints. A service-only eight-argument `create_meal_request` overload accepts explicit confirmation before discarding incompatible historical responses on slot reuse; the original seven-argument RPC remains compatible. Compatible responses and notification `read_at` remain intact.
+Feature 2G excludes CANCELLED, lunch and non-current-cycle plans from active kitchen lookup without deleting history or changing meal-type constraints. Correction Batch C1 adds `ensure_recurring_dinner` and `set_dinner_suggestion`: the backend materializes one OPEN dinner row for the current D-1 18:00–D 01:00 family-time cycle, and parent suggestion edits reuse that row. The normal dinner UI does not create daily requests. A service-only eight-argument `create_meal_request` overload accepts explicit confirmation before discarding incompatible historical responses on slot reuse; the original seven-argument RPC remains compatible. Compatible responses and notification `read_at` remain intact.
 
 ---
 
@@ -458,7 +458,7 @@ Home additionally exposes family rating averages/counts for up to three recent r
 
 ## Implemented family calendar (Feature 3B)
 
-Correction Batch B reuses `calendar_events` with explicit `calendar_type` FAMILY/PERSONAL (default FAMILY for new legacy writes). Existing child-owned events are conservatively backfilled PERSONAL; all PARENT events remain FAMILY, including retained inactive-parent history. During the locked migration only, existing owner/update-timestamp triggers are paused for that type-only backfill and restored before commit, preserving original timestamps. Inactive owners remain hidden until reactivation. A visibility trigger rejects new PARENT personal events. Both old/new `calendar_read` signatures enforce privacy; the new signature adds type and rejects foreign PERSONAL filters. Legacy save updates retain type unless the owner explicitly changes it. No Study/Fitness integration is added.
+Correction Batch B reuses `calendar_events` with explicit `calendar_type` FAMILY/PERSONAL (default FAMILY for new legacy writes). Existing child-owned events are conservatively backfilled PERSONAL; all PARENT events remain FAMILY, including retained inactive-parent history. During the locked migration only, existing owner/update-timestamp triggers are paused for that type-only backfill and restored before commit, preserving original timestamps. Inactive owners remain hidden until reactivation. A visibility trigger rejects new PARENT personal events. Both old/new `calendar_read` signatures enforce privacy; the new signature adds type and rejects foreign PERSONAL filters. Legacy save updates retain type unless the owner explicitly changes it. Correction Batch C1 links private Study/Fitness plans to dated PERSONAL events and keeps planned activity out of family calendar reads.
 
 Week-copy provenance columns `copied_from_event_id`, `copied_from_date`, `copy_target_week` have a unique index with owner identity. Provenance is retained as an identity snapshot, not a cascading foreign key. `calendar_duplicate_week` expands only owned FAMILY source occurrences, skips cancelled entries and recurring instances already in the next week, creates concrete next-week rows atomically and deduplicates retries. Source edits do not overwrite saved copies. All new functions remain service_role-only SECURITY INVOKER with empty search paths.
 
@@ -467,6 +467,10 @@ Week-copy provenance columns `copied_from_event_id`, `copied_from_date`, `copy_t
 `calendar_occurrence_exceptions` uses `(event_id, occurrence_date)` as its primary key, with a cascading event FK. The date identifies the original recurring occurrence, even if moved. A cancelled row has no override fields. A non-cancelled row has its own title, UTC start/end, nullable note, and timestamps. Retry updates reuse the same exception. Triggers validate that the original date belongs to an active owner's weekly series. Series scheduling changes with existing exceptions fail rather than deleting or orphaning those exceptions.
 
 Both tables have default-deny RLS, no browser policies, and no PUBLIC/anon/authenticated privileges. Service-role-only SECURITY INVOKER functions use a fixed empty search path. Backend session actors are checked for activity and ownership inside mutation RPCs. Family reads omit inactive owners and project safe profiles only. Bounded reads expand at most 31 family dates and include moved exceptions based on their effective interval, not just their original date. Home uses these same reads without writing calendar data.
+
+## personal_activity_plans (Correction Batch C1)
+
+`personal_activity_plans` links one owner-owned dated PERSONAL `calendar_events` row to a `STUDY` or `FITNESS` plan. It stores optional same-owner `course_id` for Study, `completed_at`, and `cancelled`; the calendar event remains the source of title, UTC start/end, and note. A completed plan links to exactly one existing `study_sessions` or `fitness_sessions` actual row through `activity_plan_id`, preserving legacy history and making retries idempotent. Planned rows do not count as progress; progress is derived from actual sessions with today/week/month comparisons and scheduled on-time consistency. Guard triggers keep identity, owner, kind, privacy, due-time edits, and cross-domain links safe. The activity tables and RPCs use default-deny RLS, no browser grants, service-role-only SECURITY INVOKER functions with an empty search path, and owner-scoped reads; PARENT and other members cannot read another owner's plans.
 
 The following academic-semester tables are future conceptual models, not part of Feature 3B.
 
@@ -671,6 +675,8 @@ All tables enable default-deny RLS without browser policies. PUBLIC/anon/authent
 
 `fitness_read` returns owner-only plans, days, goals, latest 20 sessions, and current-week summary. Monday–Sunday totals include all weekly sessions independently of that cap. Progress uses the active target, rounds and caps at 100%; without a target the percentage is null. Minutes sum known durations only and include a separate unknown-duration count. The next planned workout scans today through the following seven days and skips a matching plan day already completed on the candidate date. There is no stored derived progress, calendar event, notification, sharing rule, or exercise/set/rep/weight schema.
 
+Correction Batch C1 adds dated personal fitness plans through `personal_activity_plans`; those plans are separate from recurring `fitness_plans` templates, link to PERSONAL calendar events, and create an actual `fitness_sessions` row only when the owner completes a plan.
+
 ---
 
 # 10. Study Domain
@@ -688,7 +694,7 @@ Foreign-key deletion is RESTRICT: deleting a semester/course never cascades lear
 
 `study_read(actor, today)` returns only that active actor's own data and a Monday–Sunday summary: all weekly minutes/session count, per-course minutes (including unlinked self-study), and current-week course-filtered/all-course minutes for ACTIVE goals. Its latest-session list is limited to 50, but aggregates are not. `study_mutate` performs owner-scoped CRUD and atomically switches the active semester under a per-owner transaction lock. Foreign/missing record IDs return the same not-found error. Both RPCs are service_role-only SECURITY INVOKER with fixed empty search paths.
 
-All four tables enable RLS without browser policies; PUBLIC/anon/authenticated table/function privileges are revoked. Only server service_role has CRUD/RPC privileges. PARENT has no workspace or member Study access; ADMIN has no ownership bypass. Feature 4B adds the assessment table below; no sharing tables, notifications, or calendar sync are added. Home returns own Study summaries for ADMIN/MEMBER and omits Study for PARENT.
+All four tables enable RLS without browser policies; PUBLIC/anon/authenticated table/function privileges are revoked. Only server service_role has CRUD/RPC privileges. PARENT has no workspace or member Study access; ADMIN has no ownership bypass. Feature 4B adds the assessment table below; no sharing tables or notifications are added. Correction Batch C1 adds owner-only dated Study plans through `personal_activity_plans`; they remain private PERSONAL calendar entries and create an actual `study_sessions` row only after completion. Home returns own Study summaries and activity progress for ADMIN/MEMBER and omits Study and activity data for PARENT.
 
 ---
 

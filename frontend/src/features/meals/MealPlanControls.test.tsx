@@ -71,7 +71,9 @@ describe('whole meal plan controls', () => {
       await user.click(screen.getByRole('button', { name: 'Chỉnh sửa' }))
       expect(screen.queryByRole('button', { name: 'Thêm lựa chọn' })).toBeNull()
       expect(screen.queryByRole('combobox')).toBeNull()
-      expect(screen.getByLabelText('Hạn trả lời')).toBeTruthy()
+      // Recurring dinner uses the backend-enforced 01:00 cutoff; it is not
+      // an editable per-request deadline.
+      expect(screen.queryByLabelText('Hạn trả lời')).toBeNull()
       expect(
         getComputedStyle(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
           .minHeight,
