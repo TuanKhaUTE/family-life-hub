@@ -1,8 +1,5 @@
 export type BreakfastResponseState =
-  | 'NO_RESPONSE'
-  | 'SELECTED'
-  | 'CUSTOM'
-  | 'NOT_EATING'
+  'NO_RESPONSE' | 'SELECTED' | 'CUSTOM' | 'NOT_EATING'
 
 export interface BreakfastCatalogItem {
   id: string
@@ -25,6 +22,7 @@ export interface BreakfastDayResponse {
 
 export interface BreakfastDay {
   date: string
+  opensAt?: string
   deadlineAt: string
   timeZone: string
   isOpen: boolean
@@ -65,10 +63,10 @@ export async function fetchBreakfastCatalog(): Promise<BreakfastCatalogItem[]> {
   return items
 }
 
-export async function fetchBreakfastDay(
-  date = 'next',
-): Promise<BreakfastDay> {
-  const body = await requestJson(`/api/breakfast/days/${encodeURIComponent(date)}`)
+export async function fetchBreakfastDay(date = 'next'): Promise<BreakfastDay> {
+  const body = await requestJson(
+    `/api/breakfast/days/${encodeURIComponent(date)}`,
+  )
   if (!isObject(body) || !isBreakfastDay(body.day)) throw new Error(SAFE_ERROR)
   return body.day
 }

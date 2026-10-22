@@ -95,7 +95,7 @@ it('Lịch keeps chores separate and the existing notification panel refreshes a
   expect(await screen.findByLabelText('1 thông báo chưa đọc')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Thông báo' }))
   expect(await screen.findByText('Việc nhà đã cập nhật')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
+  expect(screen.queryByRole('button', { name: 'Đánh dấu đã đọc' })).toBeNull()
   expect(await screen.findByText('Đã đọc')).toBeTruthy()
   expect(screen.queryByLabelText('1 thông báo chưa đọc')).toBeNull()
 })

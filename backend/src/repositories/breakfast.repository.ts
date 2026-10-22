@@ -13,6 +13,7 @@ import type {
 } from '../services/breakfast.service.js'
 import type { FamilyMemberRole } from '../services/family-auth.service.js'
 import { isBreakfastDate } from '../time/family-calendar.js'
+import { BreakfastClosedError } from '../services/breakfast.service.js'
 
 interface CatalogRow {
   dish_id: string
@@ -235,6 +236,7 @@ export class SupabaseBreakfastRepository implements BreakfastRepository {
       .select(SELECTION_COLUMNS)
       .single()
 
+    if (error?.code === 'P1001') throw new BreakfastClosedError()
     if (error || !isSelectionRow(data)) {
       throw new BreakfastDataError()
     }
@@ -345,7 +347,11 @@ function hasPurchaseFields(value: Record<string, unknown>): boolean {
 }
 
 function isPurchaseRow(value: unknown): value is PurchaseRow {
-  if (!isObject(value) || !hasPurchaseFields(value) || !isObject(value.family_members)) {
+  if (
+    !isObject(value) ||
+    !hasPurchaseFields(value) ||
+    !isObject(value.family_members)
+  ) {
     return false
   }
   return (
@@ -388,9 +394,7 @@ function toSelectionRecord(row: SelectionRow): BreakfastSelectionRecord {
     breakfastDate: row.breakfast_date,
     state: row.selection_type,
     catalogItem:
-      row.dishes === null
-        ? null
-        : { id: row.dishes.id, name: row.dishes.name },
+      row.dishes === null ? null : { id: row.dishes.id, name: row.dishes.name },
     customText: row.custom_dish_name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

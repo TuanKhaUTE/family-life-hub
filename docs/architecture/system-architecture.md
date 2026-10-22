@@ -792,7 +792,7 @@ The implemented breakfast API is backend-only and session-protected:
 
 `PARENT` profiles receive active non-parent response statuses and do not submit a breakfast response for themselves. `ADMIN` and `MEMBER` profiles receive and change only their own response. Role alone never grants write access to another member's response.
 
-Breakfast dates and the midnight deadline are interpreted centrally in `Asia/Ho_Chi_Minh`; persisted timestamps remain UTC instants. The frontend consumes these endpoints through the Express API and does not query Supabase directly.
+Breakfast dates, D-1 18:00 opening and D 01:00 locking are interpreted centrally in `Asia/Ho_Chi_Minh`; persisted timestamps remain UTC instants. `next` resolves to today's breakfast until 18:00, then tomorrow's, never switching away at midnight. Service and database guards enforce the exact window and reject post-purchase edits. Selection and purchase guards share a per-date transaction lock. Frontend lifecycle helpers use family time, refresh on cycle boundaries/focus, and hide old controls after purchase. The frontend consumes Express only.
 
 Purchase confirmation uses one restricted database operation to upsert the date-level purchase and one notification per active `ADMIN` or `MEMBER`. The purchase/date identity and notification event key make repeated requests idempotent; editing Mom's message updates the existing purchase and notification text without changing read state.
 
@@ -813,6 +813,8 @@ OPTION_POLL
 OPEN_CHOICE allows Kha and Bin to propose dishes.
 
 OPTION_POLL allows Mom to define available choices.
+
+Correction Batch A stops exposing dinner modes/options in new UI flows: new DINNER creates use OPEN_CHOICE with a 14:00 family-time default; structured new dinner polls are rejected at the service boundary. Legacy polls stay readable and may accept CUSTOM dinner replies via the existing guarded response upsert. Metadata-only edits retain old options/responses. Explicit no-dinner phrases normalize to NOT_EATING; candidate derivation excludes them, without NLP. Existing ready locks and rating ownership/identities remain unchanged.
 
 Mom later confirms the actual final meal.
 
@@ -921,7 +923,9 @@ The implemented notification API is session-protected:
 - `GET /api/notifications` lists only the signed-in member's notifications, newest first;
 - `PATCH /api/notifications/:id/read` marks a notification read only when it belongs to the signed-in member.
 
-The authenticated header bell consumes these endpoints. The list response includes an exact owner-scoped `unreadCount` independently of its newest-50-item list. Notifications open in a dismissible sheet, with mark-read actions updating the badge; a zero count renders no badge. The frontend never queries notification tables directly.
+Opening the notification sheet automatically acknowledges only loaded/shown unread items. The unread badge changes only after successful acknowledgement; failures remain unread with a safe retry. Reads conditionally update `read_at IS NULL`, then return the same owner-scoped existing record on retries, preserving the first timestamp. No bulk marking of hidden/other-member items, push, or realtime is introduced.
+
+The authenticated header bell consumes these endpoints. The list response includes an exact owner-scoped `unreadCount` independently of its newest-50-item list. Notifications open in a dismissible sheet, with automatic read acknowledgements updating the badge; a zero count renders no badge. The frontend never queries notification tables directly.
 
 ---
 

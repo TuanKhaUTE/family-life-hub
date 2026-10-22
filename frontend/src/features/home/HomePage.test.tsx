@@ -54,6 +54,26 @@ function summary(): HomeSummary {
     },
   }
 }
+it.each([false, true])(
+  'Home shows the lifecycle copy and purchase message without exposing a meal editor: purchased=%s',
+  async (purchased) => {
+    const home = summary()
+    home.breakfast.purchased = purchased
+    home.breakfast.purchaseMessage = purchased
+      ? 'Nước cam trong tủ lạnh nhé'
+      : null
+    network(home)
+    render(<HomePage profile={profile} onNavigate={() => {}} />)
+    expect(
+      await screen.findByText(
+        purchased ? 'Mẹ đã mua bữa sáng' : 'Chọn bữa sáng trước 01:00',
+      ),
+    ).toBeTruthy()
+    if (purchased)
+      expect(screen.getByText('Nước cam trong tủ lạnh nhé')).toBeTruthy()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  },
+)
 function network(home = summary()) {
   const fetchMock = vi.fn(
     async (url: string) =>

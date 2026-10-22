@@ -44,24 +44,31 @@ const response = {
   updatedAt: null,
 }
 describe('daily kitchen', () => {
+  it('excludes explicit free-text no-dinner replies, without guessing arbitrary food preferences', () => {
+    expect(
+      deriveMealCandidates([
+        { ...response, customText: 'Hôm nay con không ăn tối' },
+        { ...response, customText: 'Không ăn bữa tối hôm nay' },
+        { ...response, customText: 'Con không ăn bún bò' },
+      ]),
+    ).toEqual([{ name: 'Con không ăn bún bò', chosenBy: [member.displayName] }])
+  })
   it('hydrates candidates only for the parent, keeping member views own-response only', async () => {
     const repository = {
       listCurrentRequests: vi.fn().mockResolvedValue([base]),
       listActiveMembers: vi.fn().mockResolvedValue([member]),
-      listResponses: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            id: profile.id,
-            requestId: base.id,
-            memberId: member.id,
-            responseType: 'CUSTOM',
-            option: null,
-            customText: 'Cơm gà rô ti',
-            createdAt: base.createdAt,
-            updatedAt: base.updatedAt,
-          },
-        ]),
+      listResponses: vi.fn().mockResolvedValue([
+        {
+          id: profile.id,
+          requestId: base.id,
+          memberId: member.id,
+          responseType: 'CUSTOM',
+          option: null,
+          customText: 'Cơm gà rô ti',
+          createdAt: base.createdAt,
+          updatedAt: base.updatedAt,
+        },
+      ]),
     } as unknown as MealRequestRepository
     const service = new MealRequestService(
       repository,

@@ -10,9 +10,7 @@ import {
 } from '../time/family-calendar.js'
 
 export type PersistedBreakfastState = 'SELECTED' | 'CUSTOM' | 'NOT_EATING'
-export type BreakfastResponseState =
-  | 'NO_RESPONSE'
-  | PersistedBreakfastState
+export type BreakfastResponseState = 'NO_RESPONSE' | PersistedBreakfastState
 
 export interface BreakfastCatalogItem {
   id: string
@@ -99,6 +97,7 @@ export interface BreakfastDayResponse {
 
 export interface BreakfastDay {
   date: string
+  opensAt: string
   deadlineAt: string
   timeZone: string
   isOpen: boolean
@@ -199,9 +198,10 @@ export class BreakfastService {
 
       return {
         date,
+        opensAt: timing.opensAt.toISOString(),
         deadlineAt: timing.deadlineAt.toISOString(),
         timeZone: FAMILY_TIME_ZONE,
-        isOpen: timing.isOpen,
+        isOpen: timing.isOpen && purchase === null,
         purchase,
         responses: members.map((member) =>
           toDayResponse(member, selectionsByMember.get(member.id)),
@@ -231,6 +231,13 @@ export class BreakfastService {
     }
 
     const response = normalizeResponse(input)
+    try {
+      if (await this.repository.findPurchase(requestedDate))
+        throw new BreakfastClosedError()
+    } catch (e) {
+      if (e instanceof BreakfastClosedError) throw e
+      throw new BreakfastUnavailableError()
+    }
     let catalogItem: BreakfastCatalogItem | null = null
 
     if (response.catalogItemId !== null) {
@@ -257,7 +264,8 @@ export class BreakfastService {
       })
 
       return toDayResponse(toBreakfastMember(profile), saved)
-    } catch {
+    } catch (e) {
+      if (e instanceof BreakfastClosedError) throw e
       throw new BreakfastUnavailableError()
     }
   }

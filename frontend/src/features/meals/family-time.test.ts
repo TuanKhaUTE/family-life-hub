@@ -22,10 +22,10 @@ describe('family meal time', () => {
 describe('daily dinner deadline', () => {
   it('uses family local time, never a tomorrow deadline hidden in a time input', () => {
     expect(defaultDinnerDeadline(new Date('2026-10-22T01:00:00Z'))).toBe(
-      '11:00',
+      '14:00',
     )
     expect(defaultDinnerDeadline(new Date('2026-10-22T15:00:00Z'))).toBe(
-      '23:59',
+      '14:00',
     )
     expect(localInputToUtc('2026-10-22T23:59')).toBe('2026-10-22T16:59:00.000Z')
   })

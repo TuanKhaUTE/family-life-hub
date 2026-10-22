@@ -28,11 +28,6 @@ export function MealPlanControls({
       ? toLocalDateTimeInput(new Date(request.deadlineAt)).slice(11)
       : defaultDinnerDeadline(),
   )
-  const [options, setOptions] = useState(
-    request.options.length
-      ? request.options.map((option) => option.label)
-      : ['', ''],
-  )
   const [message, setMessage] = useState(request.parentMessage ?? '')
   const [confirmation, setConfirmation] = useState<'reset' | 'cancel' | null>(
     null,
@@ -40,7 +35,7 @@ export function MealPlanControls({
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const guard = useRef(false)
-  const normalizedOptions = options.map((option) => option.trim())
+  const normalizedOptions = request.options.map((option) => option.label)
   const valid =
     mode !== 'OPTION_POLL' ||
     (normalizedOptions.length >= 2 &&
@@ -50,6 +45,7 @@ export function MealPlanControls({
         .size === normalizedOptions.length)
   const invalidatesResponses = request.responses.some(
     (response) =>
+      mode !== request.mode &&
       response.state !== 'NO_RESPONSE' &&
       (mode === 'SELF_SERVICE' ||
         (response.state === 'CUSTOM' && mode !== 'OPEN_CHOICE') ||
@@ -68,9 +64,7 @@ export function MealPlanControls({
       (mode !== 'SELF_SERVICE' &&
         (!deadlineAt || Date.parse(deadlineAt) <= Date.now()))
     ) {
-      setError(
-        'Mẹ chọn hạn trả lời trong tương lai và điền đủ các lựa chọn nhé.',
-      )
+      setError('Mẹ chọn hạn trả lời sau thời điểm hiện tại nhé.')
       return
     }
     if (invalidatesResponses && !confirmed) {
@@ -82,14 +76,23 @@ export function MealPlanControls({
     setError(null)
     try {
       onChanged(
-        await updateMealRequest(request.id, {
-          status: mode === 'SELF_SERVICE' ? 'SELF_SERVICE' : 'OPEN',
-          mode,
-          deadlineAt,
-          parentMessage: message.trim() || null,
-          options: mode === 'OPTION_POLL' ? normalizedOptions : [],
-          confirmResponseReset: confirmed,
-        }),
+        await updateMealRequest(
+          request.id,
+          mode === request.mode && request.status !== 'SELF_SERVICE'
+            ? {
+                status: 'OPEN',
+                deadlineAt,
+                parentMessage: message.trim() || null,
+              }
+            : {
+                status: mode === 'SELF_SERVICE' ? 'SELF_SERVICE' : 'OPEN',
+                mode,
+                deadlineAt,
+                parentMessage: message.trim() || null,
+                options: mode === 'OPTION_POLL' ? normalizedOptions : [],
+                confirmResponseReset: confirmed,
+              },
+        ),
       )
       setEditing(false)
       setConfirmation(null)
@@ -155,74 +158,34 @@ export function MealPlanControls({
         <form className="meal-composer" onSubmit={submit}>
           <fieldset disabled={pending || confirmation !== null}>
             <legend>Chỉnh sửa kế hoạch bữa ăn</legend>
-            <label>
-              Cách cả nhà trả lời
-              <select
-                value={mode}
-                onChange={(event) =>
-                  setMode(event.target.value as MealMode | 'SELF_SERVICE')
-                }
+            <p>Hôm nay mọi người muốn ăn gì?</p>
+            <div className="meal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                aria-pressed={mode !== 'SELF_SERVICE'}
+                onClick={() => setMode(request.mode ?? 'OPEN_CHOICE')}
               >
-                <option value="OPEN_CHOICE">Hỏi mọi người</option>
-                <option value="OPTION_POLL">Tạo lựa chọn</option>
-                <option value="SELF_SERVICE">Tự túc</option>
-              </select>
-            </label>
+                Hỏi cả nhà
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                aria-pressed={mode === 'SELF_SERVICE'}
+                onClick={() => setMode('SELF_SERVICE')}
+              >
+                Chuyển sang tự túc
+              </button>
+            </div>
             {mode !== 'SELF_SERVICE' && (
               <label>
                 Hạn trả lời
                 <input
                   type="time"
                   value={deadline}
-                  onChange={(event) => setDeadline(event.target.value)}
+                  onChange={(e) => setDeadline(e.target.value)}
                 />
               </label>
-            )}
-            {mode === 'OPTION_POLL' && (
-              <div className="poll-options">
-                <p>Các lựa chọn (2–5)</p>
-                {options.map((option, index) => (
-                  <div className="meal-option-input" key={index}>
-                    <label>
-                      Lựa chọn {index + 1}
-                      <input
-                        value={option}
-                        maxLength={120}
-                        onChange={(event) =>
-                          setOptions((current) =>
-                            current.map((value, i) =>
-                              i === index ? event.target.value : value,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                    {options.length > 2 && (
-                      <button
-                        type="button"
-                        className="text-button"
-                        aria-label={`Xóa lựa chọn ${index + 1}`}
-                        onClick={() =>
-                          setOptions((current) =>
-                            current.filter((_, i) => i !== index),
-                          )
-                        }
-                      >
-                        Xóa
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {options.length < 5 && (
-                  <button
-                    type="button"
-                    className="text-button add-meal-option"
-                    onClick={() => setOptions((current) => [...current, ''])}
-                  >
-                    Thêm lựa chọn
-                  </button>
-                )}
-              </div>
             )}
             <label>
               Lời nhắn cho cả nhà
@@ -263,7 +226,7 @@ export function MealPlanControls({
               setError(null)
             }}
           >
-            Chỉnh sửa
+            {request.status === 'SELF_SERVICE' ? 'Đổi kế hoạch' : 'Chỉnh sửa'}
           </button>
           {request.status !== 'CANCELLED' && (
             <button

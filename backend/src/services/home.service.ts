@@ -119,7 +119,7 @@ export class HomeService {
         ).length
       }
       const actions: { id: string; label: string }[] = []
-      if (breakfast.isOpen) {
+      if (breakfast.isOpen && !breakfast.purchase) {
         for (const response of breakfastResponses.filter(
           (r) => r.state === 'NO_RESPONSE',
         )) {
@@ -127,7 +127,7 @@ export class HomeService {
             id: parent ? `breakfast-${response.memberId}` : 'breakfast',
             label: parent
               ? `${response.displayName} chưa chọn bữa sáng`
-              : 'Chọn bữa sáng ngày mai',
+              : 'Chọn bữa sáng trước 01:00',
           })
         }
       }
@@ -139,7 +139,7 @@ export class HomeService {
             id: parent ? `dinner-${response.memberId}` : 'dinner-response',
             label: parent
               ? `${response.displayName} chưa trả lời bữa tối`
-              : 'Trả lời bữa tối',
+              : `Trả lời bữa tối trước ${new Intl.DateTimeFormat('vi-VN', { timeZone: FAMILY_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(plan.deadlineAt!))}`,
           })
         }
       }
@@ -161,6 +161,9 @@ export class HomeService {
         actions,
         breakfast: {
           date: breakfast.date,
+          opensAt: breakfast.opensAt,
+          deadlineAt: breakfast.deadlineAt,
+          purchaseMessage: breakfast.purchase?.message ?? null,
           isOpen: breakfast.isOpen,
           purchased: breakfast.purchase !== null,
           responses: breakfastResponses,

@@ -27,7 +27,9 @@ export function NotificationPanel() {
   const [items, setItems] = useState<AppNotification[]>([])
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [reloadKey, setReloadKey] = useState(0)
-  const [readingId, setReadingId] = useState<string | null>(null)
+  const attempted = useRef(new Set<string>())
+  const acknowledgements = useRef(new Map<string, AppNotification>())
+  const [readRetry, setReadRetry] = useState(0)
   const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -43,12 +45,24 @@ export function NotificationPanel() {
       .then(({ notifications, unreadCount }) => {
         if (!active) return
         setItems(
-          [...notifications].sort(
-            (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-          ),
+          notifications
+            .map((n) => ({
+              ...n,
+              readAt:
+                n.readAt ?? acknowledgements.current.get(n.id)?.readAt ?? null,
+            }))
+            .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
         )
         setState('ready')
-        setUnread(unreadCount)
+        setUnread(
+          Math.max(
+            0,
+            unreadCount -
+              notifications.filter(
+                (n) => n.readAt === null && acknowledgements.current.has(n.id),
+              ).length,
+          ),
+        )
       })
       .catch(() => {
         if (active) setState('error')
@@ -58,26 +72,38 @@ export function NotificationPanel() {
     }
   }, [reloadKey])
 
-  async function handleRead(id: string) {
-    if (readingId !== null) return
-    setReadingId(id)
-    setActionError(null)
-    try {
-      const updated = await markNotificationRead(id)
-      if (
-        items.some((item) => item.id === id && item.readAt === null) &&
-        updated.readAt !== null
-      )
-        setUnread((count) => Math.max(0, count - 1))
-      setItems((current) =>
-        current.map((item) => (item.id === id ? updated : item)),
-      )
-    } catch {
-      setActionError('Chưa thể đánh dấu thông báo đã đọc.')
-    } finally {
-      setReadingId(null)
+  useEffect(() => {
+    if (!open || state !== 'ready') return
+    for (const item of items) {
+      if (item.readAt !== null || attempted.current.has(item.id)) continue
+      attempted.current.add(item.id)
+      void markNotificationRead(item.id)
+        .then((updated) => {
+          if (updated.id !== item.id || updated.readAt === null)
+            throw new Error('Read acknowledgement missing')
+          if (!acknowledgements.current.has(item.id))
+            setUnread((count) => Math.max(0, count - 1))
+          acknowledgements.current.set(item.id, updated)
+          if (
+            items.every(
+              (n) => n.readAt !== null || acknowledgements.current.has(n.id),
+            )
+          )
+            setActionError(null)
+          setItems((current) =>
+            current.map((n) =>
+              n.id === item.id ? { ...n, readAt: updated.readAt } : n,
+            ),
+          )
+        })
+        .catch(() => {
+          if (!acknowledgements.current.has(item.id))
+            setActionError(
+              'Chưa thể xác nhận đã xem thông báo. Những mục này vẫn chưa được đánh dấu đã đọc.',
+            )
+        })
     }
-  }
+  }, [open, state, items, readRetry])
 
   return (
     <>
@@ -88,7 +114,11 @@ export function NotificationPanel() {
         aria-label="Thông báo"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          attempted.current.clear()
+          setActionError(null)
+          setOpen((value) => !value)
+        }}
       >
         <span aria-hidden="true">🔔</span>
         {state === 'ready' && unread > 0 && (
@@ -206,26 +236,24 @@ export function NotificationPanel() {
                             {formatDate(item.relatedDate)}
                           </time>
                         )}
-                        {item.readAt === null && (
-                          <button
-                            type="button"
-                            className="notification-read"
-                            disabled={readingId !== null}
-                            onClick={() => void handleRead(item.id)}
-                          >
-                            {readingId === item.id
-                              ? 'Đang đánh dấu…'
-                              : 'Đánh dấu đã đọc'}
-                          </button>
-                        )}
                       </li>
                     ))}
                   </ul>
                 )}
                 {actionError && (
-                  <p className="notification-action-error" role="alert">
-                    {actionError}
-                  </p>
+                  <div className="notification-action-error">
+                    <p role="alert">{actionError}</p>
+                    <button
+                      className="secondary-button"
+                      onClick={() => {
+                        attempted.current.clear()
+                        setActionError(null)
+                        setReadRetry((v) => v + 1)
+                      }}
+                    >
+                      Thử xác nhận đã xem
+                    </button>
+                  </div>
                 )}
               </section>
             </div>

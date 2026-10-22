@@ -225,9 +225,7 @@ The system automatically makes the next day's breakfast selection available.
 
 Kha and Bin independently select what they want for breakfast.
 
-Breakfast selection has a daily deadline of:
-
-00:00
+For breakfast date D, selection opens at D-1 18:00 and hard-locks at D 01:00, in family time (`Asia/Ho_Chi_Minh`). The same breakfast stays active across midnight and through its morning/day; the next cycle becomes active at the next 18:00 boundary. Before opening there is no editable chooser. After locking, responses are final; NO_RESPONSE remains absence, with calm “mẹ mua gì ăn đó” meaning and no penalty.
 
 The purpose of the deadline is so Mom can check the selections in the morning and know what food to buy.
 
@@ -285,6 +283,8 @@ After Mom buys breakfast, she can press a quick action:
 
 Mom may optionally attach a message.
 
+After purchase, member and parent active cards collapse to a compact purchased summary/message instead of retaining the old chooser or response-management controls. History remains stored. Mom may still edit the message without creating a duplicate event.
+
 Example:
 
 "Nước cam trong tủ lạnh nha hai đứa."
@@ -297,7 +297,7 @@ Kha and Bin should receive an in-app notification and, when supported, a push no
 
 Feature 2G limits the active Bếp flow to the next breakfast and today's dinner, interpreted in `Asia/Ho_Chi_Minh`. The family normally skips lunch. Lunch schema and historical data remain intact, but no lunch controls, arbitrary date pickers, future planning or history lists appear in the normal kitchen experience.
 
-Mom decides whether today's dinner needs a question, choices, or a self-service plan. Breakfast stays recurring and automatically uses the next relevant breakfast; neither Mom nor children choose a breakfast date.
+Mom uses one simple dinner question: “Hôm nay mọi người muốn ăn gì?”, an optional message, and an editable response deadline defaulting to 14:00 today in family time. Ingredient/options suggestions are written naturally in the message, not a poll builder. Self-service remains a separate plan action. Breakfast stays recurring and automatically uses the relevant cycle; neither Mom nor children choose a breakfast date.
 
 If no request is necessary, the system should not automatically create one.
 
@@ -323,9 +323,9 @@ Mom can review both requests before deciding the final meal.
 
 ---
 
-## 7.2 Option Poll
+## 7.2 Legacy Option Poll (read compatibility only)
 
-If Mom already has ingredients available, she may create a poll.
+New dinner requests use free-text OPEN_CHOICE only. Existing poll/options/selected responses are retained and safely readable. Active legacy dinner polls also accept free-text replies; editing message/deadline alone preserves their mode/options/responses. The following describes historical poll data, not a new user-facing flow.
 
 Example:
 
@@ -346,13 +346,7 @@ Kha and Bin select from the provided options.
 
 Today's dinner supports a same-day response deadline, entered as a time rather than an arbitrary calendar date. Technical APIs remain date-capable for compatibility; this does not expose date planning in the normal UI.
 
-Suggested presets:
-
-- 12:00 today
-- 3 hours after creation
-- Custom time
-
-If Mom creates a request in the morning, 12:00 is a useful default because she may need the responses before going to the market.
+The default is 14:00 today, family time. Mom may adjust it; a deadline already in the past must be changed, not silently moved to tomorrow. Response creation/updates lock at the exact deadline on the backend and in the active UI. Replies are free text, including explicit “Hôm nay con không ăn tối”; recognized explicit no-dinner phrases become NOT_EATING and never cooked-dish candidates. Other free-text replies themselves may be candidates; no NLP or AI parsing is introduced.
 
 The deadline must remain configurable.
 
@@ -374,7 +368,7 @@ Example:
 
 This should notify Kha and Bin.
 
-Mom may choose **Chỉnh sửa** on today's plan to edit the complete question/choices/self-service mode, deadline and note without a detour. Incompatible responses require a Vietnamese confirmation before removal; compatible responses are preserved. **Xóa kế hoạch** asks for confirmation and hides the plan from the active kitchen while retaining a CANCELLED record internally. It blocks further responses and updates its existing notification to non-actionable wording without resetting read state. The slot can be used again; discarding incompatible old responses on recreation also requires explicit confirmation. Deadline expiry is not cancellation.
+Mom may choose **Chỉnh sửa** on today's plan to edit its deadline and message. A separate **Chuyển sang tự túc** action retains confirmation before discarding incompatible responses; metadata-only edits preserve existing replies, including legacy poll data. **Đổi kế hoạch** on self-service returns to a simple free-text question. **Xóa kế hoạch** asks for confirmation and hides the plan from the active kitchen while retaining a CANCELLED record internally. It blocks further responses and updates its existing notification to non-actionable wording without resetting read state. The slot can be used again; discarding incompatible old responses on recreation also requires explicit confirmation. Deadline expiry is not cancellation.
 
 ---
 

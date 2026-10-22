@@ -1,6 +1,16 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-10-21T01:00:00Z'))
+})
 import type { FamilyProfile } from '../auth/auth-api'
 import { MealRequestSection } from './MealRequestSection'
 import type { MealRequest } from './meal-request-api'
@@ -107,31 +117,40 @@ function fetchFor(initial: MealRequest[]) {
   })
 }
 afterEach(() => {
+  vi.useRealTimers()
   cleanup()
   vi.unstubAllGlobals()
 })
 
-describe('member lunch and dinner flow', () => {
-  it('shows no response distinctly and submits an option', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal()])
-    vi.stubGlobal('fetch', fetchMock)
+describe('simplified dinner flow', () => {
+  it('accepts free text without mode or option controls, saves and allows editing before cutoff', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([meal()])
+    vi.stubGlobal('fetch', fetch)
     render(<MealRequestSection profile={member} />)
-    expect(await screen.findByRole('radio', { name: 'Rice' })).toBeTruthy()
-    expect(screen.getByText('Chưa trả lời')).toBeTruthy()
-    await user.click(screen.getByRole('radio', { name: 'Rice' }))
+    const field = await screen.findByLabelText('Bạn muốn ăn gì tối nay?')
+    expect(screen.queryByRole('radio')).toBeNull()
+    expect(screen.queryByRole('combobox')).toBeNull()
+    await user.type(field, 'Con ăn cơm gà')
     await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn' }))
-    expect(await screen.findByText('Đã lưu lựa chọn')).toBeTruthy()
-    expect(screen.getByText('Rice')).toBeTruthy()
-    const call = fetchMock.mock.calls.find(([url]) =>
-      url.endsWith('/response'),
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toEqual({
-      responseType: 'SELECTED_OPTION',
-      optionId,
-    })
+    await screen.findByText('Con ăn cơm gà')
+    await user.click(screen.getByRole('button', { name: 'Đổi lựa chọn' }))
+    expect(
+      (screen.getByLabelText('Bạn muốn ăn gì tối nay?') as HTMLTextAreaElement)
+        .value,
+    ).toBe('Con ăn cơm gà')
+    await user.clear(screen.getByLabelText('Bạn muốn ăn gì tối nay?'))
+    await user.type(
+      screen.getByLabelText('Bạn muốn ăn gì tối nay?'),
+      'Con ăn bún bò',
+    )
+    await user.click(screen.getByRole('button', { name: 'Cập nhật lựa chọn' }))
+    await screen.findByText('Con ăn bún bò')
+    expect(
+      fetch.mock.calls.filter((c) => c[0].endsWith('/response')),
+    ).toHaveLength(2)
   })
-  it('restores a persisted response collapsed and reopens it highlighted', async () => {
+  it('reads legacy poll choice safely and edits it as free text', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
       'fetch',
@@ -139,91 +158,250 @@ describe('member lunch and dinner flow', () => {
         meal({
           responses: [
             {
-              ...meal().responses[0]!,
+              ...meal().responses[0],
               state: 'SELECTED_OPTION',
               option: { id: optionId, label: 'Rice' },
-              updatedAt: '2026-10-21T08:00:00Z',
             },
           ],
         }),
       ]),
     )
     render(<MealRequestSection profile={member} />)
-    expect(await screen.findByText('Đã lưu lựa chọn')).toBeTruthy()
-    expect(screen.queryByRole('radio', { name: 'Rice' })).toBeNull()
+    await screen.findByText('Rice')
     await user.click(screen.getByRole('button', { name: 'Đổi lựa chọn' }))
     expect(
-      (screen.getByRole('radio', { name: 'Rice' }) as HTMLInputElement).checked,
-    ).toBe(true)
+      (screen.getByLabelText('Bạn muốn ăn gì tối nay?') as HTMLTextAreaElement)
+        .value,
+    ).toBe('Rice')
+    expect(screen.queryByRole('radio')).toBeNull()
   })
-  it('supports custom open choice and Not eating', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal({ mode: 'OPEN_CHOICE', options: [] })])
-    vi.stubGlobal('fetch', fetchMock)
+  it('retains explicit no-dinner server state after a text reply', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([meal()])
+    vi.stubGlobal('fetch', fetch)
     render(<MealRequestSection profile={member} />)
-    await user.click(await screen.findByRole('radio', { name: 'Món tự chọn' }))
-    await user.type(screen.getByLabelText('Món bạn muốn ăn'), '  Soup  ')
+    await user.type(
+      await screen.findByLabelText('Bạn muốn ăn gì tối nay?'),
+      'Hôm nay con không ăn tối',
+    )
+    fetch.mockResolvedValueOnce(
+      json({
+        response: { id: 'saved', responseType: 'NOT_EATING', customText: null },
+      }),
+    )
     await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn' }))
-    expect(await screen.findByText('Soup')).toBeTruthy()
+    await screen.findByText('Không ăn')
+    expect(screen.queryByLabelText('Bạn muốn ăn gì tối nay?')).toBeNull()
   })
-
-  it('saves Not eating as an explicit response', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal()])
-    vi.stubGlobal('fetch', fetchMock)
+  it('locks edits at the actual deadline even if loaded isOpen was true', async () => {
+    vi.setSystemTime(new Date('2026-10-21T12:00:00Z'))
+    vi.stubGlobal('fetch', fetchFor([meal()]))
     render(<MealRequestSection profile={member} />)
-    await user.click(await screen.findByRole('radio', { name: 'Không ăn' }))
-    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn' }))
-    expect(await screen.findByText('Đã lưu lựa chọn')).toBeTruthy()
-    expect(screen.getByText('Không ăn')).toBeTruthy()
+    await screen.findByText('Đã đóng phản hồi.')
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Đổi lựa chọn' })).toBeNull()
   })
-  it('shows self-service and closed states without editing', async () => {
+  it('refreshes deadline lock on returning from a background tab', async () => {
+    vi.stubGlobal('fetch', fetchFor([meal()]))
+    render(<MealRequestSection profile={member} />)
+    await screen.findByLabelText('Bạn muốn ăn gì tối nay?')
+    vi.setSystemTime(new Date('2026-10-21T12:00:00Z'))
+    fireEvent(window, new Event('focus'))
+    await screen.findByText('Đã đóng phản hồi.')
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+  it('keeps self-service noninteractive', async () => {
     vi.stubGlobal(
       'fetch',
       fetchFor([
         meal({
-          id: '66666666-6666-4666-8666-666666666666',
           status: 'SELF_SERVICE',
           mode: null,
           deadlineAt: null,
-          options: [],
           responses: [],
+          options: [],
         }),
-        meal({ status: 'CLOSED', isOpen: false }),
       ]),
     )
     render(<MealRequestSection profile={member} />)
-    expect(await screen.findByText('Không cần phản hồi.')).toBeTruthy()
-    expect(screen.getByText('Đã đóng phản hồi.')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Đổi lựa chọn' })).toBeNull()
+    await screen.findByText('Không cần phản hồi.')
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Chỉnh sửa' })).toBeNull()
   })
-  it('shows a safe save error', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal()])
-    fetchMock
-      .mockImplementationOnce(async () => json({ requests: [meal()] }))
-      .mockRejectedValueOnce(new Error('private detail'))
-    vi.stubGlobal('fetch', fetchMock)
+  it('shows safe response error and allows retry without losing text', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([meal()])
+    vi.stubGlobal('fetch', fetch)
     render(<MealRequestSection profile={member} />)
-    await user.click(await screen.findByRole('radio', { name: 'Rice' }))
+    await user.type(
+      await screen.findByLabelText('Bạn muốn ăn gì tối nay?'),
+      'Con ăn cơm gà',
+    )
+    fetch.mockRejectedValueOnce(new Error('private detail'))
     await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn' }))
-    expect(
-      await screen.findByText(
-        'Chưa thể lưu lựa chọn của bạn. Vui lòng thử lại.',
-      ),
-    ).toBeTruthy()
+    await screen.findByRole('alert')
     expect(screen.queryByText('private detail')).toBeNull()
+    expect(
+      (screen.getByLabelText('Bạn muốn ăn gì tối nay?') as HTMLTextAreaElement)
+        .value,
+    ).toBe('Con ăn cơm gà')
+    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn' }))
+    await screen.findByText('Con ăn cơm gà')
   })
-})
-
-describe('parent lunch and dinner flow', () => {
-  it('hides lunch, future and cancelled history and exposes no date planning', async () => {
+  it('creates one simple parent question with message and editable 14:00 deadline', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([])
+    vi.stubGlobal('fetch', fetch)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
+    )
+    expect(
+      screen.getByRole('heading', { name: 'Hôm nay mọi người muốn ăn gì?' }),
+    ).toBeTruthy()
+    expect(
+      (screen.getByLabelText('Hạn trả lời') as HTMLInputElement).value,
+    ).toBe('14:00')
+    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.queryByLabelText(/Lựa chọn 1/)).toBeNull()
+    await user.type(
+      screen.getByLabelText('Lời nhắn cho cả nhà'),
+      'Mẹ có cơm gà, bún bò hoặc phở, hai đứa nói mẹ biết nha',
+    )
+    await user.clear(screen.getByLabelText('Hạn trả lời'))
+    fireEvent.change(screen.getByLabelText('Hạn trả lời'), {
+      target: { value: '15:30' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Tạo yêu cầu' }))
+    await screen.findByRole('button', { name: 'Chỉnh sửa' })
+    const call = fetch.mock.calls.find((c) => c[1]?.method === 'POST')!
+    expect(JSON.parse(call[1]!.body as string)).toMatchObject({
+      mode: 'OPEN_CHOICE',
+      deadlineAt: '2026-10-21T08:30:00.000Z',
+      parentMessage: 'Mẹ có cơm gà, bún bò hoặc phở, hai đứa nói mẹ biết nha',
+    })
+    expect(screen.queryByLabelText('Hạn trả lời')).toBeNull()
+  })
+  it('edits legacy poll message/deadline without replacing its mode/options/responses', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([meal()])
+    vi.stubGlobal('fetch', fetch)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(await screen.findByRole('button', { name: 'Chỉnh sửa' }))
+    expect(screen.queryByRole('combobox')).toBeNull()
+    await user.type(
+      screen.getByLabelText('Lời nhắn cho cả nhà'),
+      ' thêm lời nhắn',
+    )
+    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
+    await screen.findByRole('button', { name: 'Chỉnh sửa' })
+    const body = JSON.parse(
+      fetch.mock.calls.find((c) => c[1]?.method === 'PATCH')![1]!
+        .body as string,
+    )
+    expect(body).toMatchObject({ status: 'OPEN' })
+    expect(body.mode).toBeUndefined()
+    expect(body.options).toBeUndefined()
+  })
+  it('returns self-service to a question using the same request', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([
+        meal({
+          status: 'SELF_SERVICE',
+          mode: null,
+          deadlineAt: null,
+          responses: [],
+          options: [],
+        }),
+      ])
+    vi.stubGlobal('fetch', fetch)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Đổi kế hoạch' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Hỏi cả nhà' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
+    await waitFor(() =>
+      expect(
+        fetch.mock.calls.some(
+          (c) =>
+            c[0] === '/api/meals/requests/' + requestId &&
+            c[1]?.method === 'PATCH',
+        ),
+      ).toBe(true),
+    )
+    expect(fetch.mock.calls.some((c) => c[1]?.method === 'POST')).toBe(false)
+  })
+  it('requires confirmation before self-service invalidates existing responses', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([
+        meal({
+          responses: [
+            {
+              ...meal().responses[0],
+              state: 'CUSTOM',
+              customText: 'Con ăn cơm gà',
+            },
+          ],
+        }),
+      ])
+    vi.stubGlobal('fetch', fetch)
+    render(<MealRequestSection profile={parent} />)
+    await screen.findByText('Con ăn cơm gà')
+    await user.click(screen.getByRole('button', { name: 'Chỉnh sửa' }))
+    await user.click(screen.getByRole('button', { name: 'Chuyển sang tự túc' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
+    await screen.findByRole('alertdialog')
+    expect(fetch.mock.calls.some((c) => c[1]?.method === 'PATCH')).toBe(false)
+    await user.click(
+      screen.getByRole('button', { name: 'Đồng ý, lưu kế hoạch' }),
+    )
+    await waitFor(() =>
+      expect(fetch.mock.calls.some((c) => c[1]?.method === 'PATCH')).toBe(true),
+    )
+  })
+  it('requires confirmation to cancel, then makes the slot available again', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([meal()])
+    vi.stubGlobal('fetch', fetch)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Xóa kế hoạch' }),
+    )
+    expect(fetch.mock.calls.some((c) => c[1]?.method === 'PATCH')).toBe(false)
+    await user.click(
+      screen.getByRole('button', { name: 'Đồng ý, xóa kế hoạch' }),
+    )
+    await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' })
+  })
+  it('recreation requires explicit confirmation and conflicts guide Mom to the existing plan', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([])
+    vi.stubGlobal('fetch', fetch)
+    render(<MealRequestSection profile={parent} />)
+    await user.click(
+      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
+    )
+    fetch.mockResolvedValueOnce(
+      json({ error: { code: 'MEAL_RESPONSE_RESET_REQUIRED' } }, 409),
+    )
+    await user.click(screen.getByRole('button', { name: 'Tạo yêu cầu' }))
+    await screen.findByRole('alertdialog')
+    fetch.mockResolvedValueOnce(json({ error: { code: 'MEAL_CONFLICT' } }, 409))
+    await user.click(
+      screen.getByRole('button', { name: 'Đồng ý, tạo lại kế hoạch' }),
+    )
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Chỉnh sửa',
+    )
+  })
+  it('does not expose lunch, cancelled or future plans/date planning', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
       'fetch',
       fetchFor([
         meal({ mealType: 'LUNCH' }),
-        meal({ mealDate: '2099-05-01' }),
+        meal({ mealDate: '2099-01-01' }),
         meal({ status: 'CANCELLED' }),
       ]),
     )
@@ -232,317 +410,18 @@ describe('parent lunch and dinner flow', () => {
       await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
     )
     expect(
-      container.querySelector(
-        'input[type="date"],input[type="datetime-local"]',
-      ),
+      container.querySelector('input[type=date],input[type=datetime-local]'),
     ).toBeNull()
     expect(screen.queryByText('Kế hoạch đã hủy')).toBeNull()
-    expect(screen.queryByText('Bữa trưa')).toBeNull()
   })
-  it('removes a mistaken plan only after confirmation and makes its slot available again', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal()])
-    vi.stubGlobal('fetch', fetchMock)
+  it('offers safe load retry', async () => {
+    const user = userEvent.setup(),
+      fetch = fetchFor([])
+    fetch.mockRejectedValueOnce(new Error('private detail'))
+    vi.stubGlobal('fetch', fetch)
     render(<MealRequestSection profile={parent} />)
-    await user.click(
-      await screen.findByRole('button', { name: 'Xóa kế hoạch' }),
-    )
-    expect(screen.getByRole('button', { name: 'Chỉnh sửa' })).toBeTruthy()
-    await user.click(
-      screen.getByRole('button', { name: 'Đồng ý, xóa kế hoạch' }),
-    )
-    expect(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    ).toBeTruthy()
-    expect(screen.queryByText('Kế hoạch đã hủy')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Chỉnh sửa' })).toBeNull()
-  })
-  it('requires explicit confirmation when recreating a slot would discard old incompatible responses', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    await user.click(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    )
-    fetchMock.mockResolvedValueOnce(
-      json({ error: { code: 'MEAL_RESPONSE_RESET_REQUIRED' } }, 409),
-    )
-    await user.click(screen.getByRole('button', { name: 'Tạo yêu cầu' }))
-    expect(await screen.findByRole('alertdialog')).toBeTruthy()
-    await user.click(
-      screen.getByRole('button', { name: 'Đồng ý, tạo lại kế hoạch' }),
-    )
-    const saves = fetchMock.mock.calls.filter(
-      ([, init]) => init?.method === 'POST',
-    )
-    expect(JSON.parse(saves[1]![1]!.body as string).confirmResponseReset).toBe(
-      true,
-    )
-  })
-  it('changes self service to open choice through the existing request', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([
-      meal({
-        status: 'SELF_SERVICE',
-        mode: null,
-        deadlineAt: null,
-        options: [],
-        responses: [],
-      }),
-    ])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-
-    await user.click(await screen.findByRole('button', { name: 'Chỉnh sửa' }))
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'OPEN_CHOICE',
-    )
-    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
-
-    const call = fetchMock.mock.calls.find(
-      ([url, init]) =>
-        url === `/api/meals/requests/${requestId}` && init?.method === 'PATCH',
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toMatchObject({
-      status: 'OPEN',
-      mode: 'OPEN_CHOICE',
-      options: [],
-    })
-  })
-
-  it('changes self service to an option poll through the existing request', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([
-      meal({
-        status: 'SELF_SERVICE',
-        mode: null,
-        deadlineAt: null,
-        options: [],
-        responses: [],
-      }),
-    ])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-
-    await user.click(await screen.findByRole('button', { name: 'Chỉnh sửa' }))
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'OPTION_POLL',
-    )
-    const inputs = screen.getAllByLabelText(/Lựa chọn \d/)
-    await user.type(inputs[0]!, 'Cơm')
-    await user.type(inputs[1]!, 'Bún')
-    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
-
-    const call = fetchMock.mock.calls.find(
-      ([url, init]) =>
-        url === `/api/meals/requests/${requestId}` && init?.method === 'PATCH',
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toMatchObject({
-      status: 'OPEN',
-      mode: 'OPTION_POLL',
-      options: ['Cơm', 'Bún'],
-    })
-  })
-
-  it('guides Mom to the existing plan when a meal slot conflicts', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([])
-    fetchMock.mockImplementationOnce(async () => json({ requests: [] }))
-    fetchMock.mockImplementationOnce(async () =>
-      json(
-        { error: { code: 'MEAL_CONFLICT', message: 'private detail' } },
-        409,
-      ),
-    )
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-
-    await user.click(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    )
-    await user.click(screen.getByRole('button', { name: 'Tạo yêu cầu' }))
-
-    expect(
-      await screen.findByText(
-        'Bữa ăn này đã có kế hoạch. Hãy chọn “Chỉnh sửa” trong thẻ hiện có.',
-      ),
-    ).toBeTruthy()
+    await user.click(await screen.findByRole('button', { name: 'Thử tải lại' }))
+    await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' })
     expect(screen.queryByText('private detail')).toBeNull()
-  })
-
-  it('creates a self-service meal without a response form', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    await user.click(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    )
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'SELF_SERVICE',
-    )
-    await user.click(screen.getByRole('button', { name: 'Xác nhận tự túc' }))
-    expect(
-      await screen.findByText('Mọi người tự sắp xếp bữa ăn này nhé.'),
-    ).toBeTruthy()
-    const call = fetchMock.mock.calls.find(
-      ([url, init]) => url === '/api/meals/requests' && init?.method === 'POST',
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toMatchObject({
-      mode: 'SELF_SERVICE',
-      mealType: 'DINNER',
-    })
-  })
-  it('offers deadline presets and creates a 2-option poll', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    await user.click(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    )
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'OPTION_POLL',
-    )
-    const inputs = screen.getAllByLabelText(/Lựa chọn \d/)
-    await user.type(inputs[0]!, 'Rice')
-    await user.type(inputs[1]!, 'Noodles')
-    await user.click(screen.getByRole('button', { name: 'Sau 3 giờ' }))
-    await user.click(screen.getByRole('button', { name: 'Tạo bình chọn' }))
-    const call = fetchMock.mock.calls.find(
-      ([url, init]) => url === '/api/meals/requests' && init?.method === 'POST',
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toMatchObject({
-      mode: 'OPTION_POLL',
-      options: ['Rice', 'Noodles'],
-    })
-  })
-
-  it('creates an open-choice request', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    await user.click(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    )
-    await user.type(screen.getByLabelText('Lời nhắn cho cả nhà'), 'Ideas?')
-    await user.click(screen.getByRole('button', { name: 'Tạo yêu cầu' }))
-    const call = fetchMock.mock.calls.find(
-      ([url, init]) => url === '/api/meals/requests' && init?.method === 'POST',
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toMatchObject({
-      mode: 'OPEN_CHOICE',
-      parentMessage: 'Ideas?',
-    })
-  })
-
-  it('adds and removes optional poll inputs while keeping the minimum two', async () => {
-    const user = userEvent.setup()
-    vi.stubGlobal('fetch', fetchFor([]))
-    render(<MealRequestSection profile={parent} />)
-    await user.click(
-      await screen.findByRole('button', { name: 'Lên kế hoạch bữa ăn' }),
-    )
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'OPTION_POLL',
-    )
-    expect(
-      (
-        screen.getByRole('button', {
-          name: 'Tạo bình chọn',
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true)
-    await user.click(screen.getByRole('button', { name: 'Thêm lựa chọn' }))
-    expect(screen.getAllByLabelText(/Lựa chọn \d/)).toHaveLength(3)
-    await user.click(screen.getByRole('button', { name: 'Xóa lựa chọn 3' }))
-    expect(screen.getAllByLabelText(/Lựa chọn \d/)).toHaveLength(2)
-  })
-  it('shows each family response status and parent controls', async () => {
-    vi.stubGlobal(
-      'fetch',
-      fetchFor([
-        meal({
-          responses: [
-            meal().responses[0]!,
-            {
-              member: {
-                id: '77777777-7777-4777-8777-777777777777',
-                displayName: 'Other Member',
-                avatarType: null,
-                avatarValue: null,
-              },
-              state: 'NOT_EATING',
-              option: null,
-              customText: null,
-              updatedAt: '2026-10-21T08:00:00Z',
-            },
-          ],
-        }),
-      ]),
-    )
-    render(<MealRequestSection profile={parent} />)
-    expect(await screen.findByText('Chưa trả lời')).toBeTruthy()
-    expect(screen.getByText('Không ăn')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Chỉnh sửa' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Lưu lựa chọn' })).toBeNull()
-  })
-  it('switches an open request to self service directly in the full editor', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal()])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    await user.click(await screen.findByRole('button', { name: 'Chỉnh sửa' }))
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'SELF_SERVICE',
-    )
-    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
-    expect(
-      await screen.findByText('Mọi người tự sắp xếp bữa ăn này nhé.'),
-    ).toBeTruthy()
-  })
-
-  it('edits an open request deadline and message', async () => {
-    const user = userEvent.setup()
-    const fetchMock = fetchFor([meal()])
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    await user.click(await screen.findByRole('button', { name: 'Chỉnh sửa' }))
-    const note = screen.getByLabelText('Lời nhắn cho cả nhà')
-    await user.clear(note)
-    await user.type(note, 'Updated note')
-    await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
-    const call = fetchMock.mock.calls.find(
-      ([url, init]) =>
-        url === `/api/meals/requests/${requestId}` && init?.method === 'PATCH',
-    )!
-    expect(JSON.parse(call[1]?.body as string)).toMatchObject({
-      status: 'OPEN',
-      parentMessage: 'Updated note',
-    })
-  })
-  it('shows a retryable safe load error', async () => {
-    const user = userEvent.setup()
-    const fetchMock = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('private'))
-      .mockResolvedValueOnce(json({ requests: [] }))
-    vi.stubGlobal('fetch', fetchMock)
-    render(<MealRequestSection profile={parent} />)
-    expect(
-      await screen.findByText('Hiện chưa thể tải kế hoạch bữa tối hôm nay.'),
-    ).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Thử tải lại' }))
-    expect(
-      await screen.findByText('Chưa có kế hoạch bữa tối hôm nay.'),
-    ).toBeTruthy()
   })
 })

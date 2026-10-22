@@ -61,6 +61,9 @@ export interface HomeSummary {
   }
   breakfast: {
     date: string
+    opensAt?: string
+    deadlineAt?: string
+    purchaseMessage?: string | null
     isOpen: boolean
     purchased: boolean
     responses: ResponseSummary[]

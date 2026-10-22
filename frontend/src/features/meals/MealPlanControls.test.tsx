@@ -45,7 +45,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('whole meal plan controls', () => {
-  it('keeps mobile option actions spaced and touch targets at least 44px', async () => {
+  it('keeps simplified mobile actions usable and does not expose legacy option builders', async () => {
     const style = document.createElement('style')
     style.textContent = mealsCss
     document.head.appendChild(style)
@@ -69,9 +69,9 @@ describe('whole meal plan controls', () => {
         />,
       )
       await user.click(screen.getByRole('button', { name: 'Chỉnh sửa' }))
-      const add = screen.getByRole('button', { name: 'Thêm lựa chọn' })
-      expect(getComputedStyle(add).marginTop).not.toBe('0px')
-      expect(getComputedStyle(add.parentElement!).gap).toBe('1rem')
+      expect(screen.queryByRole('button', { name: 'Thêm lựa chọn' })).toBeNull()
+      expect(screen.queryByRole('combobox')).toBeNull()
+      expect(screen.getByLabelText('Hạn trả lời')).toBeTruthy()
       expect(
         getComputedStyle(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
           .minHeight,
@@ -80,11 +80,23 @@ describe('whole meal plan controls', () => {
       style.remove()
     }
   })
-  it('directly changes mode with explicit incompatible-response confirmation', async () => {
+  it('switches to self-service with explicit incompatible-response confirmation', async () => {
     const user = userEvent.setup()
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(json({ request: { ...request, mode: 'OPTION_POLL' } }))
+      .mockResolvedValue(
+        json({
+          request: {
+            ...request,
+            mode: null,
+            status: 'SELF_SERVICE',
+            deadlineAt: null,
+            options: [],
+            responses: [],
+            isOpen: false,
+          },
+        }),
+      )
     vi.stubGlobal('fetch', fetchMock)
     render(<MealPlanControls request={request} onChanged={() => {}} />)
     expect(screen.getAllByRole('button', { name: 'Chỉnh sửa' })).toHaveLength(1)
@@ -92,12 +104,7 @@ describe('whole meal plan controls', () => {
       screen.queryByRole('button', { name: 'Chuyển sang tự túc' }),
     ).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Chỉnh sửa' }))
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'OPTION_POLL',
-    )
-    await user.type(screen.getByLabelText('Lựa chọn 1'), 'Cơm')
-    await user.type(screen.getByLabelText('Lựa chọn 2'), 'Bún')
+    await user.click(screen.getByRole('button', { name: 'Chuyển sang tự túc' }))
     await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
     expect(screen.getByRole('alertdialog').textContent).toContain(
       'Chỉ các phản hồi không còn phù hợp sẽ bị xóa',
@@ -107,9 +114,9 @@ describe('whole meal plan controls', () => {
       screen.getByRole('button', { name: 'Đồng ý, lưu kế hoạch' }),
     )
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
-      mode: 'OPTION_POLL',
+      mode: 'SELF_SERVICE',
       confirmResponseReset: true,
-      options: ['Cơm', 'Bún'],
+      options: [],
     })
   })
   it('confirms cancellation, retains the row identity, and can back out', async () => {
@@ -155,10 +162,7 @@ describe('whole meal plan controls', () => {
       />,
     )
     await user.click(screen.getByRole('button', { name: 'Chỉnh sửa' }))
-    await user.selectOptions(
-      screen.getByLabelText('Cách cả nhà trả lời'),
-      'SELF_SERVICE',
-    )
+    await user.click(screen.getByRole('button', { name: 'Chuyển sang tự túc' }))
     await user.click(screen.getByRole('button', { name: 'Lưu kế hoạch' }))
     expect(await screen.findByRole('alertdialog')).toBeTruthy()
     expect(

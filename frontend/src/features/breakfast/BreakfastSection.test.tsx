@@ -1,6 +1,46 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-10-21T12:00:00Z'))
+})
+it('shows pre-open without editable controls', async () => {
+  vi.setSystemTime(new Date('2026-10-21T10:59:59Z'))
+  vi.stubGlobal('fetch', successfulFetch(day({ isOpen: false })))
+  render(<BreakfastSection profile={member} />)
+  await screen.findByText(/Bữa sáng ngày mai chưa mở/)
+  expect(screen.queryByRole('radio')).toBeNull()
+})
+it('continues editing after local midnight until 01:00', async () => {
+  vi.setSystemTime(new Date('2026-10-21T17:30:00Z'))
+  vi.stubGlobal('fetch', successfulFetch())
+  render(<BreakfastSection profile={member} />)
+  await screen.findByRole('radio', { name: 'Phở' })
+  expect(screen.queryByText(/Đã hết/)).toBeNull()
+})
+it('replaces old chooser and saved choice with only compact purchase/message', async () => {
+  vi.stubGlobal(
+    'fetch',
+    successfulFetch(
+      day({
+        purchase,
+        responses: [
+          response({
+            state: 'SELECTED',
+            catalogItem: { id: catalog[0].id, name: 'Phở' },
+          }),
+        ],
+      }),
+    ),
+  )
+  render(<BreakfastSection profile={member} />)
+  await screen.findByText(/Mẹ đã mua bữa sáng/)
+  expect(screen.getByText(purchase.message!)).toBeTruthy()
+  expect(screen.queryByRole('radio')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Đổi lựa chọn' })).toBeNull()
+  expect(screen.queryByText('Đã lưu bữa sáng')).toBeNull()
+})
 
 import type { FamilyProfile } from '../auth/auth-api'
 import { BreakfastSection } from './BreakfastSection'
@@ -58,7 +98,8 @@ function response(
 function day(overrides: Partial<BreakfastDay> = {}): BreakfastDay {
   return {
     date: '2026-10-22',
-    deadlineAt: '2026-10-21T17:00:00.000Z',
+    opensAt: '2026-10-21T11:00:00.000Z',
+    deadlineAt: '2026-10-21T18:00:00.000Z',
     timeZone: 'Asia/Ho_Chi_Minh',
     isOpen: true,
     purchase: null,
@@ -66,6 +107,43 @@ function day(overrides: Partial<BreakfastDay> = {}): BreakfastDay {
     ...overrides,
   }
 }
+it('locks an already-open chooser at exact 01:00 on tab resume', async () => {
+  vi.setSystemTime(new Date('2026-10-21T17:59:59Z'))
+  vi.stubGlobal('fetch', successfulFetch())
+  render(<BreakfastSection profile={member} />)
+  await screen.findByRole('radio', { name: 'Phở' })
+  vi.setSystemTime(new Date('2026-10-21T18:00:00Z'))
+  fireEvent(window, new Event('focus'))
+  await screen.findByText('Đã hết thời gian chọn bữa sáng')
+  expect(screen.queryByRole('radio')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Đổi lựa chọn' })).toBeNull()
+})
+it('opens a new cycle at 18:00 without keeping the previous purchased card', async () => {
+  vi.setSystemTime(new Date('2026-10-22T10:59:59Z'))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) =>
+      url.includes('/catalog')
+        ? jsonResponse({ items: catalog })
+        : jsonResponse({
+            day:
+              Date.now() < Date.parse('2026-10-22T11:00:00Z')
+                ? day({ isOpen: false, purchase })
+                : day({
+                    date: '2026-10-23',
+                    opensAt: '2026-10-22T11:00:00Z',
+                    deadlineAt: '2026-10-22T18:00:00Z',
+                  }),
+          }),
+    ),
+  )
+  render(<BreakfastSection profile={member} />)
+  await screen.findByText(/Mẹ đã mua bữa sáng/)
+  vi.setSystemTime(new Date('2026-10-22T11:00:00Z'))
+  fireEvent(window, new Event('focus'))
+  await screen.findByRole('radio', { name: 'Phở' })
+  expect(screen.queryByText(/Mẹ đã mua bữa sáng/)).toBeNull()
+})
 
 const purchase: BreakfastPurchase = {
   id: '88888888-8888-4888-8888-888888888888',
@@ -120,6 +198,7 @@ function successfulFetch(initialDay = day()) {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -162,7 +241,9 @@ describe('member breakfast flow', () => {
     ).toBe(true)
 
     await user.click(screen.getByRole('radio', { name: 'Bánh mì' }))
-    await user.click(screen.getByRole('button', { name: 'Cập nhật lựa chọn bữa sáng' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Cập nhật lựa chọn bữa sáng' }),
+    )
 
     expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
     expect(screen.getByText('Bánh mì')).toBeTruthy()
@@ -185,11 +266,15 @@ describe('member breakfast flow', () => {
     await screen.findByRole('radio', { name: 'Món khác / tự nhập' })
     await user.click(screen.getByRole('radio', { name: 'Món khác / tự nhập' }))
     await user.type(screen.getByLabelText('Món ăn sáng của bạn'), '  Cháo gà  ')
-    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }),
+    )
 
     expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
     expect(screen.getByText('Cháo gà')).toBeTruthy()
-    expect(screen.queryByRole('radio', { name: 'Món khác / tự nhập' })).toBeNull()
+    expect(
+      screen.queryByRole('radio', { name: 'Món khác / tự nhập' }),
+    ).toBeNull()
     const saveCall = fetchMock.mock.calls.find(
       ([url]) => url === '/api/breakfast/days/2026-10-22/response',
     )
@@ -207,7 +292,9 @@ describe('member breakfast flow', () => {
 
     await screen.findByRole('radio', { name: 'Không ăn' })
     await user.click(screen.getByRole('radio', { name: 'Không ăn' }))
-    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }),
+    )
 
     expect(await screen.findByText('Đã lưu bữa sáng')).toBeTruthy()
     expect(screen.getByText('Không ăn')).toBeTruthy()
@@ -218,8 +305,12 @@ describe('member breakfast flow', () => {
 
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('Đã hết giờ chọn bữa sáng')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Lưu lựa chọn bữa sáng' })).toBeNull()
+    expect(
+      await screen.findByText('Đã hết thời gian chọn bữa sáng'),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Lưu lựa chọn bữa sáng' }),
+    ).toBeNull()
     expect(screen.queryByRole('button', { name: 'Đổi lựa chọn' })).toBeNull()
   })
 
@@ -238,7 +329,8 @@ describe('member breakfast flow', () => {
           409,
         )
       }
-      if (url === '/api/breakfast/days/next') return jsonResponse({ day: day() })
+      if (url === '/api/breakfast/days/next')
+        return jsonResponse({ day: day() })
       return jsonResponse({ items: catalog })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -246,9 +338,13 @@ describe('member breakfast flow', () => {
 
     await screen.findByRole('radio', { name: 'Không ăn' })
     await user.click(screen.getByRole('radio', { name: 'Không ăn' }))
-    await user.click(screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }),
+    )
 
-    expect(await screen.findByText('Đã hết giờ chọn bữa sáng')).toBeTruthy()
+    expect(
+      await screen.findByText('Đã hết thời gian chọn bữa sáng'),
+    ).toBeTruthy()
     expect(screen.queryByText('internal deadline wording')).toBeNull()
   })
 
@@ -259,8 +355,10 @@ describe('member breakfast flow', () => {
     })
     const fetchMock = successfulFetch()
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
-      if (url.endsWith('/response') && init?.method === 'PUT') return pendingSave
-      if (url === '/api/breakfast/days/next') return jsonResponse({ day: day() })
+      if (url.endsWith('/response') && init?.method === 'PUT')
+        return pendingSave
+      if (url === '/api/breakfast/days/next')
+        return jsonResponse({ day: day() })
       return jsonResponse({ items: catalog })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -268,16 +366,16 @@ describe('member breakfast flow', () => {
 
     await screen.findByRole('radio', { name: 'Không ăn' })
     fireEvent.click(screen.getByRole('radio', { name: 'Không ăn' }))
-    const form = screen.getByRole('button', { name: 'Lưu lựa chọn bữa sáng' }).closest('form')!
+    const form = screen
+      .getByRole('button', { name: 'Lưu lựa chọn bữa sáng' })
+      .closest('form')!
     fireEvent.submit(form)
     fireEvent.submit(form)
 
     expect(
       fetchMock.mock.calls.filter(([url]) => url.endsWith('/response')),
     ).toHaveLength(1)
-    resolveSave?.(
-      jsonResponse({ response: response({ state: 'NOT_EATING' }) }),
-    )
+    resolveSave?.(jsonResponse({ response: response({ state: 'NOT_EATING' }) }))
     await screen.findByText('Đã lưu bữa sáng')
   })
 
@@ -293,9 +391,13 @@ describe('member breakfast flow', () => {
 
     render(<BreakfastSection profile={member} />)
 
-    expect(await screen.findByText('Hiện chưa thể tải thông tin bữa sáng.')).toBeTruthy()
+    expect(
+      await screen.findByText('Hiện chưa thể tải thông tin bữa sáng.'),
+    ).toBeTruthy()
     expect(screen.queryByText('private network detail')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Thử tải lại bữa sáng' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Thử tải lại bữa sáng' }),
+    )
 
     expect(await screen.findByRole('radio', { name: 'Phở' })).toBeTruthy()
   })
@@ -310,25 +412,41 @@ describe('member breakfast flow', () => {
 })
 
 describe('parent breakfast view', () => {
+  beforeEach(() => vi.setSystemTime(new Date('2026-10-21T18:00:00Z')))
   it('shows each child status distinctly and no choice form', async () => {
     const statuses: BreakfastDayResponse[] = [
-      response({ state: 'SELECTED', catalogItem: { id: catalog[0].id, name: 'Phở' } }),
       response({
-        member: { ...response().member, id: '55555555-5555-4555-8555-555555555555', displayName: 'Custom child' },
+        state: 'SELECTED',
+        catalogItem: { id: catalog[0].id, name: 'Phở' },
+      }),
+      response({
+        member: {
+          ...response().member,
+          id: '55555555-5555-4555-8555-555555555555',
+          displayName: 'Custom child',
+        },
         state: 'CUSTOM',
         customText: 'Cháo gà',
       }),
       response({
-        member: { ...response().member, id: '66666666-6666-4666-8666-666666666666', displayName: 'Not eating child' },
+        member: {
+          ...response().member,
+          id: '66666666-6666-4666-8666-666666666666',
+          displayName: 'Not eating child',
+        },
         state: 'NOT_EATING',
       }),
       response({
-        member: { ...response().member, id: '77777777-7777-4777-8777-777777777777', displayName: 'No response child' },
+        member: {
+          ...response().member,
+          id: '77777777-7777-4777-8777-777777777777',
+          displayName: 'No response child',
+        },
       }),
     ]
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ day: day({ responses: statuses }) }),
-    )
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ day: day({ responses: statuses }) }))
     vi.stubGlobal('fetch', fetchMock)
 
     render(<BreakfastSection profile={parent} />)
@@ -337,7 +455,9 @@ describe('parent breakfast view', () => {
     expect(screen.getByText('Món tự chọn · Cháo gà')).toBeTruthy()
     expect(screen.getByText('Không ăn')).toBeTruthy()
     expect(screen.getByText('Chưa trả lời')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Lưu lựa chọn bữa sáng' })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Lưu lựa chọn bữa sáng' }),
+    ).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -345,10 +465,15 @@ describe('parent breakfast view', () => {
     const user = userEvent.setup()
     const initial = day()
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url === '/api/breakfast/days/next') return jsonResponse({ day: initial })
+      if (url === '/api/breakfast/days/next')
+        return jsonResponse({ day: initial })
       if (url.endsWith('/purchase') && init?.method === 'PUT') {
-        const body = JSON.parse(init.body as string) as { message: string | null }
-        return jsonResponse({ purchase: { ...purchase, message: body.message } })
+        const body = JSON.parse(init.body as string) as {
+          message: string | null
+        }
+        return jsonResponse({
+          purchase: { ...purchase, message: body.message },
+        })
       }
       throw new Error(`Unexpected URL: ${url}`)
     })
@@ -359,19 +484,22 @@ describe('parent breakfast view', () => {
     await user.type(input, '  Nước cam trong tủ lạnh nha  ')
     await user.click(screen.getByRole('button', { name: 'Xác nhận đã mua' }))
 
-    expect(await screen.findByText('Đã mua bữa sáng ✓')).toBeTruthy()
+    expect(await screen.findByText('Mẹ đã mua bữa sáng ✓')).toBeTruthy()
     expect(screen.getByText('Nước cam trong tủ lạnh nha')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Sửa lời nhắn' }))
-    expect(screen.getByRole('button', { name: 'Cập nhật lời nhắn' })).toBeTruthy()
-    expect((screen.getByLabelText('Lời nhắn cho cả nhà') as HTMLInputElement).value).toBe(
-      'Nước cam trong tủ lạnh nha',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Cập nhật lời nhắn' }),
+    ).toBeTruthy()
+    expect(
+      (screen.getByLabelText('Lời nhắn cho cả nhà') as HTMLInputElement).value,
+    ).toBe('Nước cam trong tủ lạnh nha')
   })
 
   it('shows a safe purchase error without exposing network details', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url === '/api/breakfast/days/next') return jsonResponse({ day: day() })
+      if (url === '/api/breakfast/days/next')
+        return jsonResponse({ day: day() })
       if (url.endsWith('/purchase') && init?.method === 'PUT') {
         throw new Error('private network detail')
       }
@@ -382,7 +510,11 @@ describe('parent breakfast view', () => {
 
     await screen.findByRole('button', { name: 'Xác nhận đã mua' })
     await user.click(screen.getByRole('button', { name: 'Xác nhận đã mua' }))
-    expect(await screen.findByText('Chưa thể xác nhận mua bữa sáng. Vui lòng thử lại.')).toBeTruthy()
+    expect(
+      await screen.findByText(
+        'Chưa thể xác nhận mua bữa sáng. Vui lòng thử lại.',
+      ),
+    ).toBeTruthy()
     expect(screen.queryByText('private network detail')).toBeNull()
   })
 })

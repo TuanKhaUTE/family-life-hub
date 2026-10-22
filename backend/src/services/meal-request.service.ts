@@ -6,6 +6,7 @@ import {
   FAMILY_TIME_ZONE,
   getFamilyDate,
   isFamilyDate,
+  familyDateTimeToUtc,
 } from '../time/family-calendar.js'
 
 export type MealType = 'LUNCH' | 'DINNER'
@@ -163,6 +164,24 @@ export class MealRequestService {
     input: unknown,
   ): Promise<MealRequestView> {
     requireParent(profile)
+    if (isObject(input) && input.mealType === 'DINNER') {
+      if (
+        input.mode === 'OPTION_POLL' ||
+        (Array.isArray(input.options) && input.options.length)
+      )
+        bad('New dinner requests use free text')
+      input = {
+        ...input,
+        mode: input.mode ?? 'OPEN_CHOICE',
+        ...(input.mode !== 'SELF_SERVICE' &&
+        input.deadlineAt === undefined &&
+        isFamilyDate(input.mealDate)
+          ? {
+              deadlineAt: familyDateTimeToUtc(input.mealDate, 14).toISOString(),
+            }
+          : {}),
+      }
+    }
     const normalized = normalizeCreate(input, this.clock())
     try {
       const id = await this.repository.createRequest({
@@ -409,7 +428,7 @@ export function deriveMealCandidates(responses: MealRequestView['responses']) {
           ? response.customText
           : null
     const name = value?.normalize('NFC').trim().replace(/\s+/g, ' ')
-    if (!name) continue
+    if (!name || isNoDinnerText(name)) continue
     const key = name.toLocaleLowerCase('vi-VN')
     const existing = candidates.get(key)
     if (existing) existing.chosenBy.push(response.member.displayName)
@@ -529,11 +548,18 @@ function normalizeResponse(
       customText: null,
     }
   }
-  if (request.mode === 'OPEN_CHOICE' && input.responseType === 'CUSTOM') {
+  if (
+    (request.mode === 'OPEN_CHOICE' || request.mealType === 'DINNER') &&
+    input.responseType === 'CUSTOM'
+  ) {
+    if (input.optionId != null) bad()
+    const customText = requiredText(input.customText, 120)
+    if (request.mealType === 'DINNER' && isNoDinnerText(customText))
+      return { responseType: 'NOT_EATING', optionId: null, customText: null }
     return {
       responseType: input.responseType,
       optionId: null,
-      customText: requiredText(input.customText, 120),
+      customText,
     }
   }
   if (
@@ -562,6 +588,11 @@ function normalizeOptions(value: unknown): string[] {
   )
     bad('Meal options must be unique')
   return values
+}
+function isNoDinnerText(value: string) {
+  return /^(?:hôm nay\s+)?(?:(?:con|em|mình)\s+)?không ăn(?:\s+(?:bữa\s+)?tối)?(?:\s+hôm nay)?[.!]?$/iu.test(
+    value.normalize('NFC').trim(),
+  )
 }
 
 function effectiveStatus(

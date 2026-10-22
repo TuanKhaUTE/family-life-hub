@@ -2,6 +2,7 @@ export const FAMILY_TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 export interface BreakfastTiming {
   date: string
+  opensAt: Date
   deadlineAt: Date
   isOpen: boolean
 }
@@ -50,7 +51,13 @@ export function getFamilyDate(now: Date): string {
 
 export function getNextBreakfastDate(now: Date): string {
   const local = getZonedParts(now)
-  const next = new Date(Date.UTC(local.year, local.month - 1, local.day + 1))
+  const next = new Date(
+    Date.UTC(
+      local.year,
+      local.month - 1,
+      local.day + (local.hour >= 18 ? 1 : 0),
+    ),
+  )
 
   return formatDate(
     next.getUTCFullYear(),
@@ -59,31 +66,33 @@ export function getNextBreakfastDate(now: Date): string {
   )
 }
 
-export function getBreakfastTiming(
-  date: string,
-  now: Date,
-): BreakfastTiming {
+export function getBreakfastTiming(date: string, now: Date): BreakfastTiming {
   if (!isBreakfastDate(date)) {
     throw new RangeError('Invalid breakfast date')
   }
 
-  const deadlineAt = localMidnightToUtc(date)
+  const deadlineAt = familyDateTimeToUtc(date, 1)
+  const previous = new Date(`${date}T12:00:00Z`)
+  previous.setUTCDate(previous.getUTCDate() - 1)
+  const opensAt = familyDateTimeToUtc(previous.toISOString().slice(0, 10), 18)
 
   return {
     date,
+    opensAt,
     deadlineAt,
     isOpen:
-      date === getNextBreakfastDate(now) && now.getTime() < deadlineAt.getTime(),
+      now.getTime() >= opensAt.getTime() &&
+      now.getTime() < deadlineAt.getTime(),
   }
 }
 
-function localMidnightToUtc(date: string): Date {
+export function familyDateTimeToUtc(date: string, hour = 0, minute = 0): Date {
   const [year, month, day] = date.split('-').map(Number) as [
     number,
     number,
     number,
   ]
-  const targetAsUtc = Date.UTC(year, month - 1, day)
+  const targetAsUtc = Date.UTC(year, month - 1, day, hour, minute)
   let candidate = targetAsUtc
 
   // Iterating the timezone offset keeps all family-day logic in one place and

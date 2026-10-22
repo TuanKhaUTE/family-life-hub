@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,7 +40,143 @@ afterEach(() => {
 })
 
 describe('NotificationPanel', () => {
-  it('shows only the bell initially, closes outside and with Escape, and restores focus', async () => {
+  it('does not acknowledge hidden items; opening automatically reads only shown unread items and updates badge', async () => {
+    const user = userEvent.setup(),
+      read = { ...notification, readAt: '2026-10-22T01:00:00Z' },
+      older = {
+        ...notification,
+        id: '33333333-3333-4333-8333-333333333333',
+        title: 'Older read item',
+        createdAt: '2026-10-20T00:00:00Z',
+        readAt: '2026-10-20T01:00:00Z',
+      }
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        json({ notifications: [older, notification], unreadCount: 3 }),
+      )
+      .mockResolvedValueOnce(json({ notification: read }))
+    vi.stubGlobal('fetch', fetch)
+    render(<NotificationPanel />)
+    await screen.findByLabelText('3 thông báo chưa đọc')
+    expect(fetch).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'Thông báo' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText('2 thông báo chưa đọc')).toBeTruthy(),
+    )
+    expect(screen.getAllByRole('listitem')[0].textContent).toContain(
+      notification.title,
+    )
+    expect(screen.queryByRole('button', { name: 'Đánh dấu đã đọc' })).toBeNull()
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/notifications/' + notification.id + '/read',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Đóng thông báo' }))
+    await user.click(screen.getByRole('button', { name: 'Thông báo' }))
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+  it('removes the badge only after acknowledgement succeeds', async () => {
+    const user = userEvent.setup()
+    let acknowledge!: (r: Response) => void
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(json({ notifications: [notification] }))
+        .mockImplementationOnce(
+          () => new Promise<Response>((r) => (acknowledge = r)),
+        ),
+    )
+    renderPanel()
+    await screen.findByText(notification.message)
+    expect(screen.getByLabelText('1 thông báo chưa đọc')).toBeTruthy()
+    acknowledge(
+      json({
+        notification: { ...notification, readAt: '2026-10-22T00:00:00Z' },
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByLabelText(/thông báo chưa đọc/)).toBeNull(),
+    )
+    await user.keyboard('{Escape}')
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Thông báo' }),
+    )
+  })
+  it('keeps failed acknowledgements unread and provides safe retry', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(json({ notifications: [notification] }))
+        .mockRejectedValueOnce(new Error('private detail'))
+        .mockResolvedValueOnce(
+          json({
+            notification: { ...notification, readAt: '2026-10-22T00:00:00Z' },
+          }),
+        ),
+    )
+    renderPanel()
+    await screen.findByRole('alert')
+    expect(screen.getByLabelText('1 thông báo chưa đọc')).toBeTruthy()
+    expect(screen.getByText('Mới')).toBeTruthy()
+    expect(screen.queryByText('private detail')).toBeNull()
+    await user.click(
+      screen.getByRole('button', { name: 'Thử xác nhận đã xem' }),
+    )
+    await screen.findByText('Đã đọc')
+    expect(screen.queryByLabelText(/thông báo chưa đọc/)).toBeNull()
+  })
+  it('auto-reads newly loaded items while open without rereading previous items', async () => {
+    const user = userEvent.setup(),
+      read = { ...notification, readAt: '2026-10-22T00:00:00Z' },
+      next = {
+        ...notification,
+        id: '33333333-3333-4333-8333-333333333333',
+        title: 'Bữa tối đã sẵn sàng',
+      }
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(json({ notifications: [notification] }))
+      .mockResolvedValueOnce(json({ notification: read }))
+      .mockResolvedValueOnce(
+        json({
+          notifications: [{ ...read, message: 'Lời nhắn đã cập nhật' }, next],
+        }),
+      )
+      .mockResolvedValueOnce(
+        json({ notification: { ...next, readAt: '2026-10-22T01:00:00Z' } }),
+      )
+    vi.stubGlobal('fetch', fetch)
+    renderPanel()
+    await screen.findByText('Đã đọc')
+    fireEvent(window, new Event('family-notifications-changed'))
+    await screen.findByText(next.title)
+    await screen.findByText('Lời nhắn đã cập nhật')
+    await waitFor(() => expect(screen.getAllByText('Đã đọc')).toHaveLength(2))
+    await user.click(screen.getByRole('button', { name: 'Đóng thông báo' }))
+    expect(
+      fetch.mock.calls.filter((c) => c[1]?.method === 'PATCH'),
+    ).toHaveLength(2)
+  })
+  it('shows loading and a safe fetch failure with retry', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockRejectedValueOnce(new Error('private detail'))
+        .mockResolvedValueOnce(json({ notifications: [] })),
+    )
+    renderPanel()
+    expect(screen.getByRole('status').textContent).toContain('Đang tải')
+    await user.click(await screen.findByRole('button', { name: 'Thử tải lại' }))
+    await screen.findByText('Hiện chưa có thông báo nào.')
+    expect(screen.queryByText('private detail')).toBeNull()
+  })
+  it('closes outside and with Escape and restores keyboard focus', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
       'fetch',
@@ -42,149 +184,12 @@ describe('NotificationPanel', () => {
     )
     render(<NotificationPanel />)
     const bell = screen.getByRole('button', { name: 'Thông báo' })
-    expect(screen.queryByRole('heading', { name: 'Thông báo' })).toBeNull()
-    expect(screen.queryByLabelText(/thông báo chưa đọc/)).toBeNull()
     await user.click(bell)
-    expect(screen.getByRole('dialog', { name: 'Thông báo' })).toBeTruthy()
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(document.activeElement).toBe(bell)
     await user.click(bell)
     fireEvent.click(screen.getByRole('dialog').parentElement!)
     expect(screen.queryByRole('dialog')).toBeNull()
-  })
-  it('sorts newest first and removes the badge after the final unread item is read', async () => {
-    const user = userEvent.setup()
-    const newer = {
-      ...notification,
-      id: '33333333-3333-4333-8333-333333333333',
-      title: 'Thông báo mới',
-      readAt: '2099-01-01T00:00:00Z',
-      createdAt: '2099-01-01T00:00:00Z',
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce(json({ notifications: [notification, newer] }))
-        .mockResolvedValueOnce(
-          json({
-            notification: { ...notification, readAt: '2099-01-01T00:00:00Z' },
-          }),
-        ),
-    )
-    render(<NotificationPanel />)
-    expect(await screen.findByLabelText('1 thông báo chưa đọc')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Thông báo' }))
-    expect(screen.getAllByRole('listitem')[0].textContent).toContain(
-      'Thông báo mới',
-    )
-    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
-    await screen.findAllByText('Đã đọc')
-    expect(screen.queryByLabelText(/thông báo chưa đọc/)).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Đóng thông báo' }))
-    expect(screen.queryByRole('dialog')).toBeNull()
-  })
-  it('refreshes and displays meal-ready notifications with the existing read action', async () => {
-    const user = userEvent.setup()
-    const readyNotification = {
-      ...notification,
-      type: 'MEAL_READY',
-      title: 'Bữa tối đã sẵn sàng ✓',
-      message: 'Canh ở trong nồi nhé',
-      relatedResourceType: 'FINAL_MEAL',
-    }
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(json({ notifications: [] }))
-      .mockResolvedValueOnce(json({ notifications: [readyNotification] }))
-      .mockResolvedValueOnce(
-        json({
-          notification: {
-            ...readyNotification,
-            readAt: '2099-05-01T12:00:00Z',
-          },
-        }),
-      )
-    vi.stubGlobal('fetch', fetchMock)
-    renderPanel()
-    await screen.findByText('Hiện chưa có thông báo nào.')
-    fireEvent(window, new Event('family-notifications-changed'))
-    expect(await screen.findByText('Bữa tối đã sẵn sàng ✓')).toBeTruthy()
-    expect(screen.getByText('Canh ở trong nồi nhé')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
-    expect(await screen.findByText('Đã đọc')).toBeTruthy()
-  })
-  it('uses Vietnamese notification labels', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(json({ notifications: [notification] })),
-    )
-    renderPanel()
-
-    expect(
-      await screen.findByRole('heading', { name: 'Thông báo' }),
-    ).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Đánh dấu đã đọc' })).toBeTruthy()
-  })
-  it('shows a calm loading state while notifications are pending', () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => new Promise<Response>(() => undefined)),
-    )
-    renderPanel()
-    expect(screen.getByRole('status').textContent).toContain(
-      'Đang tải thông báo',
-    )
-  })
-
-  it('shows unread notifications and marks one read', async () => {
-    const user = userEvent.setup()
-    const read = { ...notification, readAt: '2026-10-21T13:00:00.000Z' }
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(json({ notifications: [notification] }))
-      .mockResolvedValueOnce(json({ notification: read }))
-    vi.stubGlobal('fetch', fetchMock)
-
-    renderPanel()
-
-    expect(await screen.findByText('Breakfast is ready')).toBeTruthy()
-    expect(screen.getByText('Mới')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
-    expect(await screen.findByText('Đã đọc')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Đánh dấu đã đọc' })).toBeNull()
-  })
-
-  it('shows a safe error and retries', async () => {
-    const user = userEvent.setup()
-    const fetchMock = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('private detail'))
-      .mockResolvedValueOnce(json({ notifications: [] }))
-    vi.stubGlobal('fetch', fetchMock)
-    renderPanel()
-
-    expect(await screen.findByText('Hiện chưa thể tải thông báo.')).toBeTruthy()
-    expect(screen.queryByText('private detail')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Thử tải lại' }))
-    expect(await screen.findByText('Hiện chưa có thông báo nào.')).toBeTruthy()
-  })
-
-  it('keeps a failed mark-read action retryable', async () => {
-    const user = userEvent.setup()
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(json({ notifications: [notification] }))
-      .mockRejectedValueOnce(new Error('private detail'))
-    vi.stubGlobal('fetch', fetchMock)
-    renderPanel()
-
-    await screen.findByText('Breakfast is ready')
-    await user.click(screen.getByRole('button', { name: 'Đánh dấu đã đọc' }))
-    expect(
-      await screen.findByText('Chưa thể đánh dấu thông báo đã đọc.'),
-    ).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Đánh dấu đã đọc' })).toBeTruthy()
   })
 })

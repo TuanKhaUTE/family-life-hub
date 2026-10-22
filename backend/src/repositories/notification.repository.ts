@@ -76,11 +76,23 @@ export class SupabaseNotificationRepository implements NotificationRepository {
       .update({ read_at: readAt.toISOString() })
       .eq('id', id)
       .eq('recipient_member_id', recipientMemberId)
+      .is('read_at', null)
       .select(COLUMNS)
       .maybeSingle()
 
     if (error) throw new NotificationDataError()
-    if (data === null) return null
+    if (data === null) {
+      const existing = await this.getClient()
+        .from('notifications')
+        .select(COLUMNS)
+        .eq('id', id)
+        .eq('recipient_member_id', recipientMemberId)
+        .maybeSingle()
+      if (existing.error) throw new NotificationDataError()
+      if (existing.data === null) return null
+      if (!isNotificationRow(existing.data)) throw new NotificationDataError()
+      return toNotification(existing.data)
+    }
     if (!isNotificationRow(data)) throw new NotificationDataError()
     return toNotification(data)
   }

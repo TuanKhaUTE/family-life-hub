@@ -471,6 +471,8 @@ These should remain visually clear and distinct from normal dishes.
 
 # 16. Meal Request UI
 
+Correction Batch A simplifies dinner to “Hôm nay mọi người muốn ăn gì?”, optional family message, and a time-only deadline defaulting to 14:00. Do not show mode selectors, structured poll cards or option builders. Children use one focused text reply; saved replies collapse and deadline-expired replies are read-only. Preserve response-derived finalization and the secondary “Thêm món khác”. Breakfast uses 18:00–01:00 family-time editing, calm locked/no-response states, and only a compact purchased summary/message after confirmation; never leave the large old chooser underneath. Notification sheets acknowledge visible unread items automatically, with no normal mark-read button and truthful retry feedback.
+
 Feature 2G uses three distinct daily regions: peach **Bữa sáng tiếp theo**, sage **Bữa tối hôm nay**, and warm yellow/cream **Bữa tối đã chốt**. Do not show lunch, calendar date pickers, future planning, or cancelled/history cards in normal Bếp. Dinner deadlines use time-only controls. Parent finalization starts with **Món hai đứa đã chọn** candidates; **Thêm món khác** stays secondary. Category controls are optional, not mandatory setup. **Xóa kế hoạch** confirms removal from the active view while history remains internal.
 
 Parent-created meal requests should feel conversational.
@@ -479,7 +481,7 @@ Example:
 
 "Mẹ có gà rồi, hai đứa muốn ăn món nào?"
 
-Option cards appear below.
+Children answer with one free-text field. Legacy option labels remain readable in saved responses; no new option-card builder is exposed.
 
 Deadline should be visible but secondary.
 

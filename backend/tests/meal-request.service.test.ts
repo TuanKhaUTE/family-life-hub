@@ -164,6 +164,52 @@ describe('MealRequestService', () => {
     repository = new FakeRepository()
     service = new MealRequestService(repository, () => now)
   })
+  it('defaults new dinner to free-text and 14:00 family time', async () => {
+    const morning = new MealRequestService(
+      repository,
+      () => new Date('2026-10-21T01:00:00Z'),
+    )
+    await morning.create(parent, {
+      mealDate: '2026-10-21',
+      mealType: 'DINNER',
+      parentMessage: 'Mẹ có cơm gà',
+    })
+    expect(repository.createdInputs[0]).toMatchObject({
+      mode: 'OPEN_CHOICE',
+      options: [],
+      deadlineAt: '2026-10-21T07:00:00.000Z',
+    })
+  })
+  it('rejects new structured dinner polls without touching history', async () => {
+    await expect(
+      service.create(parent, {
+        mealDate: '2026-10-21',
+        mealType: 'DINNER',
+        mode: 'OPTION_POLL',
+        deadlineAt: '2026-10-21T12:00:00Z',
+        options: ['A', 'B'],
+      }),
+    ).rejects.toBeInstanceOf(MealRequestValidationError)
+    expect(repository.requests[0]).toEqual(record)
+  })
+  it('accepts free text for a legacy dinner poll and maps explicit no-dinner text to NOT_EATING', async () => {
+    await service.saveResponse(member, requestId, {
+      responseType: 'CUSTOM',
+      customText: 'Con ăn cơm gà',
+    })
+    expect(repository.savedInputs[0]).toMatchObject({
+      responseType: 'CUSTOM',
+      customText: 'Con ăn cơm gà',
+    })
+    await service.saveResponse(member, requestId, {
+      responseType: 'CUSTOM',
+      customText: 'Hôm nay con không ăn tối',
+    })
+    expect(repository.savedInputs[1]).toMatchObject({
+      responseType: 'NOT_EATING',
+      customText: null,
+    })
+  })
   it('forwards explicit confirmation when recreating a cancelled slot', async () => {
     await service.create(parent, {
       mealDate: '2026-10-21',
@@ -214,10 +260,10 @@ describe('MealRequestService', () => {
     })
   })
 
-  it('allows a parent to create an option poll', async () => {
+  it('retains the legacy lunch poll API', async () => {
     await service.create(parent, {
       mealDate: '2026-10-21',
-      mealType: 'DINNER',
+      mealType: 'LUNCH',
       mode: 'OPTION_POLL',
       deadlineAt: '2026-10-21T12:00:00Z',
       parentMessage: ' Choose ',
@@ -227,7 +273,7 @@ describe('MealRequestService', () => {
       {
         actorMemberId: parent.id,
         mealDate: '2026-10-21',
-        mealType: 'DINNER',
+        mealType: 'LUNCH',
         mode: 'OPTION_POLL',
         deadlineAt: '2026-10-21T12:00:00.000Z',
         parentMessage: 'Choose',
@@ -414,7 +460,7 @@ describe('MealRequestService', () => {
   })
 
   it.each([
-    { responseType: 'CUSTOM', customText: 'Soup' },
+    { responseType: 'CUSTOM', customText: 'Soup', optionId },
     {
       responseType: 'SELECTED_OPTION',
       optionId: '77777777-7777-4777-8777-777777777777',

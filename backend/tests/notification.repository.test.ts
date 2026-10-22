@@ -6,26 +6,59 @@ import {
   SupabaseNotificationRepository,
 } from '../src/repositories/notification.repository.js'
 
-interface Result { data: unknown; error: unknown }
-type Method = 'select' | 'eq' | 'order' | 'limit' | 'update' | 'maybeSingle'
-interface Operation { method: Method; arguments: unknown[] }
+interface Result {
+  data: unknown
+  error: unknown
+}
+type Method =
+  'select' | 'eq' | 'is' | 'order' | 'limit' | 'update' | 'maybeSingle'
+interface Operation {
+  method: Method
+  arguments: unknown[]
+}
 
 class Builder {
+  is(column: string, value: unknown): this {
+    this.operations.push({ method: 'is', arguments: [column, value] })
+    return this
+  }
   operations: Operation[] = []
   constructor(private readonly result: Result) {}
-  select(value: string): this { this.operations.push({ method: 'select', arguments: [value] }); return this }
-  eq(column: string, value: unknown): this { this.operations.push({ method: 'eq', arguments: [column, value] }); return this }
-  order(column: string, options: unknown): this { this.operations.push({ method: 'order', arguments: [column, options] }); return this }
-  limit(value: number): Promise<Result> { this.operations.push({ method: 'limit', arguments: [value] }); return Promise.resolve(this.result) }
-  update(value: unknown): this { this.operations.push({ method: 'update', arguments: [value] }); return this }
-  maybeSingle(): Promise<Result> { this.operations.push({ method: 'maybeSingle', arguments: [] }); return Promise.resolve(this.result) }
+  select(value: string): this {
+    this.operations.push({ method: 'select', arguments: [value] })
+    return this
+  }
+  eq(column: string, value: unknown): this {
+    this.operations.push({ method: 'eq', arguments: [column, value] })
+    return this
+  }
+  order(column: string, options: unknown): this {
+    this.operations.push({ method: 'order', arguments: [column, options] })
+    return this
+  }
+  limit(value: number): Promise<Result> {
+    this.operations.push({ method: 'limit', arguments: [value] })
+    return Promise.resolve(this.result)
+  }
+  update(value: unknown): this {
+    this.operations.push({ method: 'update', arguments: [value] })
+    return this
+  }
+  maybeSingle(): Promise<Result> {
+    this.operations.push({ method: 'maybeSingle', arguments: [] })
+    return Promise.resolve(this.result)
+  }
 }
 
 class Client {
+  sequence: Result[] = []
   queries: Array<{ table: string; builder: Builder }> = []
   results = new Map<string, Result>()
   from(table: string): Builder {
-    const builder = new Builder(this.results.get(table) ?? { data: [], error: null })
+    const builder = new Builder(
+      this.sequence.shift() ??
+        this.results.get(table) ?? { data: [], error: null },
+    )
     this.queries.push({ table, builder })
     return builder
   }
@@ -57,6 +90,33 @@ function harness() {
 }
 
 describe('SupabaseNotificationRepository', () => {
+  it('does not overwrite an already-read timestamp and scopes the fallback to the same recipient', async () => {
+    const { client, repository } = harness()
+    client.sequence = [
+      { data: null, error: null },
+      { data: { ...row, read_at: '2026-10-21T13:00:00Z' }, error: null },
+    ]
+    expect(
+      (
+        await repository.markRead(
+          notificationId,
+          memberId,
+          new Date('2026-10-22T00:00:00Z'),
+        )
+      )?.readAt,
+    ).toBe('2026-10-21T13:00:00Z')
+    expect(client.queries[0]!.builder.operations).toContainEqual({
+      method: 'is',
+      arguments: ['read_at', null],
+    })
+    expect(client.queries[1]!.builder.operations).toContainEqual({
+      method: 'eq',
+      arguments: ['recipient_member_id', memberId],
+    })
+    expect(
+      client.queries[1]!.builder.operations.some((o) => o.method === 'update'),
+    ).toBe(false)
+  })
   it('lists safe notifications newest first for one recipient', async () => {
     const { client, repository } = harness()
     client.results.set('notifications', { data: [row], error: null })
@@ -75,10 +135,12 @@ describe('SupabaseNotificationRepository', () => {
       },
     ])
     expect(client.queries[0]!.builder.operations).toContainEqual({
-      method: 'eq', arguments: ['recipient_member_id', memberId],
+      method: 'eq',
+      arguments: ['recipient_member_id', memberId],
     })
     expect(client.queries[0]!.builder.operations).toContainEqual({
-      method: 'order', arguments: ['created_at', { ascending: false }],
+      method: 'order',
+      arguments: ['created_at', { ascending: false }],
     })
   })
 
@@ -86,30 +148,39 @@ describe('SupabaseNotificationRepository', () => {
     const { client, repository } = harness()
     const readAt = new Date('2026-10-21T13:00:00.000Z')
     client.results.set('notifications', {
-      data: { ...row, read_at: readAt.toISOString() }, error: null,
+      data: { ...row, read_at: readAt.toISOString() },
+      error: null,
     })
 
-    await expect(repository.markRead(notificationId, memberId, readAt)).resolves.toMatchObject({
-      id: notificationId, readAt: readAt.toISOString(),
+    await expect(
+      repository.markRead(notificationId, memberId, readAt),
+    ).resolves.toMatchObject({
+      id: notificationId,
+      readAt: readAt.toISOString(),
     })
     expect(client.queries[0]!.builder.operations).toContainEqual({
-      method: 'eq', arguments: ['id', notificationId],
+      method: 'eq',
+      arguments: ['id', notificationId],
     })
     expect(client.queries[0]!.builder.operations).toContainEqual({
-      method: 'eq', arguments: ['recipient_member_id', memberId],
+      method: 'eq',
+      arguments: ['recipient_member_id', memberId],
     })
   })
 
   it('returns null for a missing or foreign notification', async () => {
     const { client, repository } = harness()
     client.results.set('notifications', { data: null, error: null })
-    await expect(repository.markRead(notificationId, memberId, new Date())).resolves.toBeNull()
+    await expect(
+      repository.markRead(notificationId, memberId, new Date()),
+    ).resolves.toBeNull()
   })
 
   it('rejects malformed data without exposing upstream details', async () => {
     const { client, repository } = harness()
     client.results.set('notifications', {
-      data: [{ ...row, id: 'bad' }], error: { message: 'secret upstream detail' },
+      data: [{ ...row, id: 'bad' }],
+      error: { message: 'secret upstream detail' },
     })
     const result = repository.listForRecipient(memberId)
     await expect(result).rejects.toBeInstanceOf(NotificationDataError)

@@ -14,6 +14,12 @@ import '../expenses/expenses.css'
 import '../fitness/fitness.css'
 import '../study/study.css'
 import './home.css'
+import {
+  breakfastLifecycle,
+  relevantBreakfastDate,
+  familyDate,
+} from '../meals/family-time'
+import { useFamilyClock } from '../meals/use-family-clock'
 
 export type HomeDestination =
   | 'Trang chủ'
@@ -51,7 +57,15 @@ export function HomePage({
   const [data, setData] = useState<HomeSummary | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [retry, setRetry] = useState(0)
-  const [now] = useState(() => new Date())
+  const now = useFamilyClock(),
+    breakfastCycle = relevantBreakfastDate(now),
+    phase = breakfastLifecycle(breakfastCycle, now).phase,
+    todayKey = familyDate(now)
+  useEffect(() => {
+    const refresh = () => setRetry((v) => v + 1)
+    window.addEventListener('focus', refresh)
+    return () => window.removeEventListener('focus', refresh)
+  }, [])
   useEffect(() => {
     const controller = new AbortController()
     void fetchHome(controller.signal)
@@ -65,7 +79,7 @@ export function HomePage({
         if (!controller.signal.aborted) setState('error')
       })
     return () => controller.abort()
-  }, [retry])
+  }, [retry, breakfastCycle, phase, todayKey])
   const today = new Intl.DateTimeFormat('vi-VN', {
     timeZone: FAMILY_TIME_ZONE,
     weekday: 'long',
@@ -256,11 +270,17 @@ export function HomePage({
                 )}
                 <p className="home-meta">
                   {data.breakfast.purchased
-                    ? 'Đã mua bữa sáng'
+                    ? 'Mẹ đã mua bữa sáng'
                     : data.breakfast.isOpen
-                      ? 'Cả nhà vẫn có thể đổi lựa chọn'
-                      : 'Đã hết giờ chọn món'}
+                      ? 'Chọn bữa sáng trước 01:00'
+                      : data.breakfast.opensAt &&
+                          Date.parse(data.breakfast.opensAt) > now.getTime()
+                        ? 'Bữa sáng ngày mai chưa mở · mở lúc 18:00'
+                        : 'Đã hết thời gian chọn bữa sáng · bữa tiếp theo mở lúc 18:00'}
                 </p>
+                {data.breakfast.purchased && data.breakfast.purchaseMessage && (
+                  <p className="home-meta">{data.breakfast.purchaseMessage}</p>
+                )}
                 <button className="home-link" onClick={() => onNavigate('Bếp')}>
                   {!parent && data.actions.some((a) => a.id === 'breakfast')
                     ? 'Chọn bữa sáng'

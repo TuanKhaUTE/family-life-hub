@@ -23,6 +23,49 @@ const parentId = '33333333-3333-4333-8333-333333333333'
 const dishId = '44444444-4444-4444-8444-444444444444'
 const breakfastDate = '2026-10-22'
 const now = new Date('2026-10-21T12:00:00.000Z')
+it.each([
+  ['2026-10-21T10:59:59.999Z', false],
+  ['2026-10-21T11:00:00Z', true],
+  ['2026-10-21T17:30:00Z', true],
+  ['2026-10-21T18:00:00Z', false],
+])('service enforces breakfast boundary %s', async (instant, allowed) => {
+  const repository = new FakeBreakfastRepository(),
+    service = new BreakfastService(repository, () => new Date(instant))
+  const result = service.saveResponse(memberProfile, breakfastDate, {
+    state: 'NOT_EATING',
+  })
+  if (allowed) {
+    await expect(result).resolves.toMatchObject({ state: 'NOT_EATING' })
+    await service.saveResponse(memberProfile, breakfastDate, {
+      state: 'CUSTOM',
+      customText: 'Changed before cutoff',
+    })
+    expect(repository.upsertCalls).toHaveLength(2)
+  } else {
+    await expect(result).rejects.toBeInstanceOf(BreakfastClosedError)
+    expect(repository.upsertCalls).toHaveLength(0)
+  }
+})
+it('purchase locks editing even before cutoff without deleting saved history', async () => {
+  const repository = new FakeBreakfastRepository(),
+    service = new BreakfastService(repository, () => now)
+  await service.saveResponse(memberProfile, breakfastDate, {
+    state: 'NOT_EATING',
+  })
+  await service.confirmPurchase(parentProfile, breakfastDate, {
+    message: 'Synthetic message',
+  })
+  await expect(
+    service.saveResponse(memberProfile, breakfastDate, {
+      state: 'CUSTOM',
+      customText: 'Too late',
+    }),
+  ).rejects.toBeInstanceOf(BreakfastClosedError)
+  expect(repository.upsertCalls).toHaveLength(1)
+  expect((await service.getDay(memberProfile, breakfastDate)).isOpen).toBe(
+    false,
+  )
+})
 
 const memberProfile: SafeFamilyProfile = {
   id: memberId,
@@ -96,7 +139,9 @@ class FakeBreakfastRepository implements BreakfastRepository {
     )
   }
 
-  async findActiveCatalogItem(id: string): Promise<BreakfastCatalogItem | null> {
+  async findActiveCatalogItem(
+    id: string,
+  ): Promise<BreakfastCatalogItem | null> {
     if (this.error) throw this.error
     return this.catalog.find((item) => item.id === id) ?? null
   }
@@ -136,7 +181,9 @@ class FakeBreakfastRepository implements BreakfastRepository {
         input.dishId === null
           ? null
           : (() => {
-              const item = this.catalog.find((entry) => entry.id === input.dishId)
+              const item = this.catalog.find(
+                (entry) => entry.id === input.dishId,
+              )
               return item ? { id: item.id, name: item.name } : null
             })(),
       customText: input.customText,
@@ -172,7 +219,8 @@ describe('BreakfastService catalog and day views', () => {
 
     await expect(service.getDay(memberProfile, 'next')).resolves.toEqual({
       date: breakfastDate,
-      deadlineAt: '2026-10-21T17:00:00.000Z',
+      opensAt: '2026-10-21T11:00:00.000Z',
+      deadlineAt: '2026-10-21T18:00:00.000Z',
       timeZone: 'Asia/Ho_Chi_Minh',
       isOpen: true,
       purchase: null,
@@ -259,7 +307,7 @@ describe('BreakfastService catalog and day views', () => {
 
     expect(day.date).toBe('2026-10-21')
     expect(day.isOpen).toBe(false)
-    expect(day.deadlineAt).toBe('2026-10-20T17:00:00.000Z')
+    expect(day.deadlineAt).toBe('2026-10-20T18:00:00.000Z')
   })
 
   it('redacts repository failures', async () => {
@@ -278,9 +326,13 @@ describe('BreakfastService purchase confirmation', () => {
   it('lets a parent confirm purchase with a trimmed optional message', async () => {
     const { repository, service } = createHarness()
 
-    const purchase = await service.confirmPurchase(parentProfile, breakfastDate, {
-      message: '  Breakfast is ready  ',
-    })
+    const purchase = await service.confirmPurchase(
+      parentProfile,
+      breakfastDate,
+      {
+        message: '  Breakfast is ready  ',
+      },
+    )
 
     expect(purchase.message).toBe('Breakfast is ready')
     expect(repository.purchaseCalls).toEqual([
@@ -418,7 +470,10 @@ describe('BreakfastService response writes', () => {
       label: 'selected with custom text',
     },
     { input: { state: 'SELECTED' }, label: 'selected without a catalog ID' },
-    { input: { state: 'CUSTOM', customText: '   ' }, label: 'blank custom text' },
+    {
+      input: { state: 'CUSTOM', customText: '   ' },
+      label: 'blank custom text',
+    },
     {
       input: { state: 'CUSTOM', customText: 'dish', catalogItemId: dishId },
       label: 'custom with a catalog ID',
@@ -467,7 +522,7 @@ describe('BreakfastService response writes', () => {
     const repository = new FakeBreakfastRepository()
     const service = new BreakfastService(
       repository,
-      () => new Date('2026-10-21T17:00:00.000Z'),
+      () => new Date('2026-10-21T18:00:00.000Z'),
     )
 
     await expect(

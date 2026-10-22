@@ -9,6 +9,24 @@ import {
 } from '../src/time/family-calendar.js'
 
 describe('family breakfast calendar', () => {
+  it.each([
+    ['2026-10-22T10:59:59.999Z', false, '2026-10-22'],
+    ['2026-10-22T11:00:00.000Z', true, '2026-10-23'],
+    ['2026-10-22T17:00:00.000Z', true, '2026-10-23'],
+    ['2026-10-22T17:59:59.999Z', true, '2026-10-23'],
+    ['2026-10-22T18:00:00.000Z', false, '2026-10-23'],
+    ['2026-10-23T11:00:00.000Z', false, '2026-10-24'],
+  ])(
+    'uses exact 18:00/01:00 family boundaries at %s',
+    (instant, open, active) => {
+      const now = new Date(instant)
+      expect(getBreakfastTiming('2026-10-23', now).isOpen).toBe(open)
+      expect(
+        getBreakfastTiming('2026-10-23', now).deadlineAt.toISOString(),
+      ).toBe('2026-10-22T18:00:00.000Z')
+      expect(getNextBreakfastDate(now)).toBe(active)
+    },
+  )
   it('uses the configured Vietnam family timezone', () => {
     expect(FAMILY_TIME_ZONE).toBe('Asia/Ho_Chi_Minh')
   })
@@ -22,26 +40,28 @@ describe('family breakfast calendar', () => {
     )
   })
 
-  it('returns the next local date and its UTC midnight deadline', () => {
+  it('returns the evening cycle and its UTC 01:00 deadline', () => {
     const now = new Date('2026-10-21T16:59:59.000Z')
 
     expect(getNextBreakfastDate(now)).toBe('2026-10-22')
     expect(getBreakfastTiming('2026-10-22', now)).toEqual({
       date: '2026-10-22',
-      deadlineAt: new Date('2026-10-21T17:00:00.000Z'),
+      opensAt: new Date('2026-10-21T11:00:00.000Z'),
+      deadlineAt: new Date('2026-10-21T18:00:00.000Z'),
       isOpen: true,
     })
   })
 
-  it('moves to the following breakfast exactly at local midnight', () => {
+  it('keeps the same breakfast across midnight, not the following day', () => {
     const now = new Date('2026-10-21T17:00:00.000Z')
 
-    expect(getNextBreakfastDate(now)).toBe('2026-10-23')
-    expect(getBreakfastTiming('2026-10-22', now).isOpen).toBe(false)
+    expect(getNextBreakfastDate(now)).toBe('2026-10-22')
+    expect(getBreakfastTiming('2026-10-22', now).isOpen).toBe(true)
     expect(getBreakfastTiming('2026-10-23', now)).toEqual({
       date: '2026-10-23',
-      deadlineAt: new Date('2026-10-22T17:00:00.000Z'),
-      isOpen: true,
+      opensAt: new Date('2026-10-22T11:00:00.000Z'),
+      deadlineAt: new Date('2026-10-22T18:00:00.000Z'),
+      isOpen: false,
     })
   })
 

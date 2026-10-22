@@ -240,6 +240,8 @@ No database row may represent NO_RESPONSE.
 
 NO_RESPONSE is determined by absence of a response.
 
+Correction Batch A adds service-only SECURITY INVOKER guards for the family-time window D-1 18:00 through (exclusive) D 01:00, active non-parent ownership and post-purchase locking. Selection/purchase writes serialize by breakfast date. The purchase/UI lifecycle never deletes selection history.
+
 ---
 
 ## breakfast_purchases
@@ -325,6 +327,8 @@ Feature 2G excludes CANCELLED, lunch and non-today plans from active kitchen loo
 ## meal_request_options
 
 Used for OPTION_POLL.
+
+Retained for legacy compatibility; new dinner UI/API creation uses free-text OPEN_CHOICE, not new poll options. Active historical dinner polls can accept CUSTOM responses without removing old option rows.
 
 Implemented fields:
 
@@ -593,6 +597,8 @@ read_at
 Notifications use an event identity across recipient, type, related resource type, and related resource ID. Breakfast purchase retries reuse their event identity. Lunch and dinner request states use the stable `MEAL_REQUEST_STATUS` type, so mode and status changes update one current notification per recipient and request while preserving `read_at`. A null `read_at` means unread.
 
 The implemented tables use default-deny RLS and are available only through the backend service role. The Express API enforces recipient ownership.
+
+Notification viewing acknowledges shown items through an owner-scoped `read_at IS NULL` conditional update; retries preserve the first non-null read timestamp and unread totals include hidden rows.
 
 ---
 

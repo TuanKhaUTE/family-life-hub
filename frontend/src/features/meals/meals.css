@@ -45,6 +45,7 @@
 .meal-composer select,
 .meal-composer textarea,
 .meal-response-form input,
+.meal-response-form textarea,
 .self-service textarea {
   min-height: 2.75rem;
   padding: 0.65rem 0.75rem;
@@ -55,8 +56,15 @@
   color: inherit;
 }
 .meal-composer textarea,
+.meal-response-form textarea,
 .self-service textarea {
   min-height: 5rem;
+  resize: vertical;
+}
+.meal-response-form textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   resize: vertical;
 }
 .meal-form-grid {
