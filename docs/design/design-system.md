@@ -303,7 +303,7 @@ The implemented mobile shell uses role-aware destinations. PARENT:
 - Chi tiêu
 - Cá nhân
 
-ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Personal spending will live under Cá nhân later. Features 4A–4C replace Học tập and Rèn luyện placeholders with private functional workspaces and grades, without fake numbers or charts.
+ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân instead. Feature 5A exposes Chi tiêu cá nhân from Cá nhân without adding a sixth navigation item. Features 4A–4C replace Học tập and Rèn luyện placeholders with private functional workspaces and grades, without fake numbers or charts.
 
 Use a persistent bottom navigation with simple icons, short Vietnamese labels, comfortable touch targets, and bottom safe-area spacing. Bếp contains the meal workflows. Unimplemented modules remain warm placeholders. Navigation is not a substitute for backend authorization.
 
@@ -630,6 +630,12 @@ Study visuals should use the same family design system rather than turning into 
 ---
 
 # 23. Expense Design
+
+Feature 5A uses cream rounded cards with sage totals, peach actions, and muted-blue category bars. Mom's Chi tiêu has keyboard-accessible Cá nhân and Tiền ăn gia đình tabs. The latter is a polished Sắp có explanation only, without fake values. ADMIN/MEMBER's Cá nhân contains one clear “Mở chi tiêu cá nhân” entry; the full experience is a separate focused subview, with Cá nhân remaining highlighted in the five-item bottom navigation.
+
+Use natural Vietnamese, a centralized exact VND formatter (“120.000 đ”), labelled month/date/category/note inputs, 44px controls, and layouts comfortable at 320px/390px. Add/edit forms collapse on success and switch to the saved record's month; deletion requires confirmation. Historical totals are labelled with their actual selected month rather than “Tháng này”. Recent rows are paginated; non-zero category bars and whole-month totals use real data only.
+
+Comparisons are neutral “Tăng”/“Giảm”, never red/green spending judgments. Zero prior month explains that no percentage is calculated. Home has a compact own-only “Chi tiêu cá nhân tháng này” card, clearly separate from future family food spending and without notes/history. Cá nhân is functional and must no longer carry a Sắp có badge; Tiền ăn gia đình remains Sắp có.
 
 Financial data should remain calm and neutral.
 

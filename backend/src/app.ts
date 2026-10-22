@@ -15,6 +15,7 @@ import choreRouter from './routes/chore.routes.js'
 import studyRouter from './routes/study.routes.js'
 import fitnessRouter from './routes/fitness.routes.js'
 import wellnessRouter from './routes/wellness.routes.js'
+import personalExpenseRouter from './routes/personal-expense.routes.js'
 
 const app = express()
 
@@ -32,6 +33,7 @@ app.use('/api/chores', choreRouter)
 app.use('/api/study', studyRouter)
 app.use('/api/fitness', fitnessRouter)
 app.use('/api/wellness', wellnessRouter)
+app.use('/api/expenses/personal', personalExpenseRouter)
 app.use('/api/breakfast', breakfastRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/meals/requests', mealRequestRouter)

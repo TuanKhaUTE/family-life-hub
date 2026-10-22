@@ -93,6 +93,18 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
       })),
     },
     recent: { listRecent: vi.fn(async () => []) },
+    expenses: {
+      summary: vi.fn(async () => ({
+        month: '2099-05',
+        currency: 'VND' as const,
+        currentTotal: '120000',
+        previousMonth: '2099-04',
+        previousTotal: '100000',
+        differenceAmount: '20000',
+        percentageChange: 20,
+        expenses: [{ note: 'expense notes' }],
+      })),
+    },
     fitness: {
       summary: vi.fn(async () => ({
         weekStart: '2099-04-27',
@@ -200,6 +212,24 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
 }
 
 describe('role-aware home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'includes only %s own compact personal-spending summary',
+    async (role) => {
+      const s = setup(role)
+      const result = await s.service.get(s.profile)
+      expect(s.dependencies.expenses.summary).toHaveBeenCalledWith(s.profile)
+      expect(result).toHaveProperty('personalExpenses', {
+        month: '2099-05',
+        currency: 'VND',
+        currentTotal: '120000',
+        previousMonth: '2099-04',
+        previousTotal: '100000',
+        differenceAmount: '20000',
+        percentageChange: 20,
+      })
+      expect(JSON.stringify(result)).not.toContain('expense notes')
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'keeps %s Fitness Home summary private and compact',
     async (role) => {

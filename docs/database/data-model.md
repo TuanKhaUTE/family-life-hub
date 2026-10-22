@@ -748,43 +748,15 @@ Mom is the normal creator of these records.
 
 ## personal_expenses
 
-Suggested fields:
+Feature 5A migration: `20261022130000_create_private_personal_expenses.sql`.
 
-id
+UUID `id`; required `owner_member_id` FK to `family_members` with RESTRICT; bigint `amount` (1–1,000,000,000 whole VND); completed family-local `spent_on` date (2000–2199, not future); category FOOD/TRANSPORT/SHOPPING/ENTERTAINMENT/STUDY/FITNESS/BILLS/OTHER; optional trimmed `note` (1–1000 characters); UTC `created_at`/`updated_at`. Currency is fixed VND, not a per-record browser choice. Owner/date/creation/id index supports scoped chronological month reads. Repeated same-date expenses are allowed; each is a separate intentional record.
 
-owner_id
+Default-deny RLS has no browser policies. PUBLIC/anon/authenticated grants are revoked; backend service_role alone receives CRUD and RPC execute. Triggers require active owners of any current family role, immutable row/owner identities, and maintain timestamps. Neither ADMIN nor PARENT bypasses ownership.
 
-expense_date
+SECURITY INVOKER functions `personal_expense_read(actor, month, page)` and `personal_expense_mutate(actor, id, input, remove)` have fixed empty search paths and qualified relations. Session actor identity scopes every query/mutation; client owner fields cannot select a different owner. Foreign/missing IDs have the same error. Per-owner transaction advisory locks serialize writes.
 
-amount
-
-currency
-
-category
-
-note
-
-created_at
-
-updated_at
-
-Possible categories:
-
-FOOD
-
-TRANSPORT
-
-SHOPPING
-
-ENTERTAINMENT
-
-EDUCATION
-
-BILLS
-
-OTHER
-
-These records are private by default.
+Read RPC returns 20-row month pages, whole-month count/totals, previous-calendar-month total, and non-zero category totals. Money is cast to canonical text in JSON to avoid JavaScript precision loss. The service uses BigInt for signed difference and rounded percentage ratios; no derived money summary is stored. Home explicitly projects only own month/currency/totals/comparison, not expense records or notes. Rollback-only verification: `database/tests/personal-expense.rollback.sql`. No shared food-expense tables or sharing policies are created.
 
 ---
 

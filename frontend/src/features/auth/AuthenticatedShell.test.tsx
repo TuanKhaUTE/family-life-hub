@@ -67,7 +67,7 @@ describe('mobile family shell', () => {
       )
       expect(
         screen.getByRole('heading', {
-          name: role === 'PARENT' ? 'Góc chi tiêu' : 'Học tập & Rèn luyện',
+          name: role === 'PARENT' ? 'Chi tiêu' : 'Học tập & Rèn luyện',
         }),
       ).toBeTruthy()
       await user.click(within(nav).getByRole('button', { name: 'Cá nhân' }))

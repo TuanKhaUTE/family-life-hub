@@ -12,7 +12,7 @@ The application should feel warm, cozy, friendly, playful, and family-oriented r
 
 The primary end-user UI language is Vietnamese.
 
-The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; future personal spending belongs under Cá nhân. Bếp contains the implemented meal workflows. Features 4A–4C make Học tập, grades, and Rèn luyện functional and private, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
+The mobile app shell is role-aware. PARENT uses Trang chủ, Bếp, Lịch, Chi tiêu, and Cá nhân. ADMIN/MEMBER uses Trang chủ, Bếp, Lịch, Học & Luyện, and Cá nhân; Feature 5A exposes private personal spending through Cá nhân, without a sixth bottom-navigation item. Bếp contains the implemented meal workflows. Features 4A–4C make Học tập, grades, and Rèn luyện functional and private, without invented records or progress. Notifications open from a header bell with a positive unread-count badge, rather than an always-expanded list.
 
 Trang chủ is a compact “Hôm nay nhà mình có gì?” overview, not a second meal editor. Greeting and date use family time. PARENT sees family meal attention items; ADMIN/MEMBER sees only their own outstanding actions. It summarizes the next breakfast and today's dinner, with links to Bếp. Recent dishes show at most three ready dinner dish instances ordered by served date (then dish order); PARENT sees rated dishes with family average/count, while ADMIN/MEMBER also sees unrated dishes and their own score. Individual feedback from other members is not exposed here. Future-module cards contain no fake schedules, money, goals, or private-module data.
 
@@ -902,6 +902,20 @@ The system should present the result neutrally rather than judge the family's sp
 ---
 
 # 24. Personal Expense Tracking
+
+## Implemented foundation (Feature 5A)
+
+Every active family member, including PARENT, manages only their own personal expenses. Neither ADMIN nor PARENT bypasses ownership. No sharing exists. Household food spending is a separate future domain, not a personal-expense category or authorization exception.
+
+PARENT's Chi tiêu workspace has a functional Cá nhân tab and a separate Tiền ăn gia đình — Sắp có tab with no invented prices/totals. ADMIN/MEMBER open Chi tiêu cá nhân from Cá nhân and keep the approved five-item bottom navigation. Home may show only the signed-in member's own compact current-month total/comparison, clearly labelled personal; no notes, records, category detail, or other members' spending are returned there.
+
+Expenses store positive whole VND, from 1 to 1,000,000,000 đồng per record. The API uses canonical integer strings, storage uses bigint, and monetary sums/differences use exact integer arithmetic, never floating-point money. Dates are completed family-local dates from 2000–2199, not future; notes are optional, trimmed, and limited to 1000 characters. Categories are FOOD, TRANSPORT, SHOPPING, ENTERTAINMENT, STUDY, FITNESS, BILLS, OTHER. They describe personal spending only.
+
+Owners can add/edit/delete with confirmation and filter by calendar month. Saving closes the form, selects the saved record's month, and refreshes totals. Recent records use 20-row pages; whole-month totals/category breakdown do not depend on the page. Comparisons use the preceding calendar month, including January rollover. Signed difference is exact; percentage is rounded to one decimal using integer ratio arithmetic. A zero prior total produces no percentage; an unrepresentably large ratio is also omitted rather than becoming infinite. Categories show actual non-zero totals only, with neutral wording rather than overspending judgments.
+
+No shared food-expense schema, budgets, recurring bills, conversion, bank sync, OCR, notifications, or gamification are introduced.
+
+## Longer-term direction
 
 Each member may privately track their own personal expenses.
 

@@ -1,0 +1,30 @@
+import type { FamilyProfile } from '../auth/auth-api'
+import { ProfileAvatar } from '../auth/ProfileSelector'
+import '../expenses/expenses.css'
+export function PersonalPage({
+  profile,
+  onExpenses,
+}: {
+  profile: FamilyProfile
+  onExpenses: () => void
+}) {
+  return (
+    <section className="personal-page">
+      <header className="expense-hero">
+        <ProfileAvatar profile={profile} />
+        <h1>Góc của bạn</h1>
+        <p>{profile.displayName}, đây là không gian dành riêng cho bạn.</p>
+      </header>
+      <section className="expense-card">
+        <h2>Chi tiêu cá nhân</h2>
+        <p>
+          Ghi lại và xem các khoản chi của chính bạn. Không chia sẻ với thành
+          viên khác.
+        </p>
+        <button className="expense-primary" onClick={onExpenses}>
+          Mở chi tiêu cá nhân
+        </button>
+      </section>
+    </section>
+  )
+}

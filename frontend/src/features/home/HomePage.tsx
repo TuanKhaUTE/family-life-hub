@@ -9,6 +9,8 @@ import { HomeChoresSummary } from './HomeChoresSummary'
 import { StudyProgress } from '../study/StudyProgress'
 import { gradeScore } from '../study/grade-display'
 import { FitnessSummary } from '../fitness/FitnessSummary'
+import { formatVnd, expenseComparisonText } from '../expenses/expense-display'
+import '../expenses/expenses.css'
 import '../fitness/fitness.css'
 import '../study/study.css'
 import './home.css'
@@ -18,6 +20,8 @@ export type HomeDestination =
   | 'Bếp'
   | 'Lịch'
   | 'Chi tiêu'
+  | 'Chi tiêu cá nhân'
+  | 'Tiền ăn gia đình'
   | 'Học & Luyện'
   | 'Cá nhân'
 
@@ -70,9 +74,9 @@ export function HomePage({
   const future = parent
     ? [
         {
-          title: 'Chi tiêu gia đình',
+          title: 'Tiền ăn gia đình',
           icon: '🌱',
-          destination: 'Chi tiêu' as const,
+          destination: 'Tiền ăn gia đình' as const,
         },
       ]
     : [{ title: 'Cá nhân', icon: '☀', destination: 'Cá nhân' as const }]
@@ -182,6 +186,29 @@ export function HomePage({
                 onClick={() => onNavigate('Học & Luyện')}
               >
                 Xem Học &amp; Luyện
+              </button>
+            </section>
+          )}
+          {data.personalExpenses && (
+            <section
+              className="home-card home-personal-expenses"
+              aria-label="Chi tiêu cá nhân tháng này"
+            >
+              <h2>Chi tiêu cá nhân tháng này</h2>
+              <p className="fitness-total">
+                {formatVnd(data.personalExpenses.currentTotal)}
+              </p>
+              <p>{expenseComparisonText(data.personalExpenses)}</p>
+              <p className="home-meta">
+                Chỉ những khoản chi của bạn, không phải tiền ăn gia đình.
+              </p>
+              <button
+                className="home-link"
+                onClick={() =>
+                  onNavigate(parent ? 'Chi tiêu' : 'Chi tiêu cá nhân')
+                }
+              >
+                Xem chi tiêu cá nhân
               </button>
             </section>
           )}
@@ -310,12 +337,12 @@ export function HomePage({
           </section>
         </>
       )}
-      <section aria-label="Những góc nhỏ sắp có" className="home-future">
+      <section aria-label="Góc riêng và tiện ích" className="home-future">
         {future.map((card) => (
           <article className="home-card" key={card.title}>
             <span aria-hidden="true">{card.icon}</span>
             <h2>{card.title}</h2>
-            <span className="coming-soon">Sắp có</span>
+            {parent && <span className="coming-soon">Sắp có</span>}
             <button
               className="home-link"
               onClick={() => onNavigate(card.destination)}

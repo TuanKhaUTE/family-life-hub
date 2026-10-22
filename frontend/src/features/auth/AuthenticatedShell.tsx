@@ -1,12 +1,13 @@
 import type { FamilyProfile } from './auth-api'
 import { useState } from 'react'
-import { ProfileAvatar } from './ProfileSelector'
 import { BreakfastSection } from '../breakfast/BreakfastSection'
 import { NotificationPanel } from '../notifications/NotificationPanel'
 import { MealRequestSection } from '../meals/MealRequestSection'
 import { HomePage, type HomeDestination } from '../home/HomePage'
 import { StudyPage } from '../study/StudyPage'
 import { CalendarPage } from '../calendar/CalendarPage'
+import { ExpensePage } from '../expenses/ExpensePage'
+import { PersonalPage } from '../personal/PersonalPage'
 import './shell.css'
 
 interface AuthenticatedShellProps {
@@ -79,22 +80,27 @@ export function AuthenticatedShell({
           </>
         )}
         {destination === 'Lịch' && <CalendarPage profile={profile} />}
-        {destination === 'Chi tiêu' && (
-          <section className="shell-placeholder">
-            <span aria-hidden="true">🌱</span>
-            <h1>Góc chi tiêu</h1>
-            <p>Một góc nhỏ để chăm chút chuyện chi tiêu, sẽ có sau nhé.</p>
-          </section>
+        {destination === 'Chi tiêu' && profile.role === 'PARENT' && (
+          <ExpensePage parent />
+        )}
+        {destination === 'Tiền ăn gia đình' && profile.role === 'PARENT' && (
+          <ExpensePage parent initialTab="family" />
+        )}
+        {destination === 'Chi tiêu cá nhân' && profile.role !== 'PARENT' && (
+          <ExpensePage
+            parent={false}
+            onBack={() => setDestination('Cá nhân')}
+          />
         )}
         {destination === 'Cá nhân' && (
-          <section className="shell-placeholder">
-            <ProfileAvatar profile={profile} />
-            <h1>Góc của bạn</h1>
-            <p>
-              {profile.displayName}, đây là không gian dành riêng cho bạn. Những
-              tiện ích cá nhân sẽ được thêm sau.
-            </p>
-          </section>
+          <PersonalPage
+            profile={profile}
+            onExpenses={() =>
+              setDestination(
+                profile.role === 'PARENT' ? 'Chi tiêu' : 'Chi tiêu cá nhân',
+              )
+            }
+          />
         )}
       </main>
       <nav className="bottom-nav" aria-label="Điều hướng chính">
@@ -102,7 +108,13 @@ export function AuthenticatedShell({
           <button
             type="button"
             key={label}
-            aria-current={destination === label ? 'page' : undefined}
+            aria-current={
+              destination === label ||
+              (destination === 'Chi tiêu cá nhân' && label === 'Cá nhân') ||
+              (destination === 'Tiền ăn gia đình' && label === 'Chi tiêu')
+                ? 'page'
+                : undefined
+            }
             onClick={() => setDestination(label)}
           >
             <span aria-hidden="true">{icon}</span>

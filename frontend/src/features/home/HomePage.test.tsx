@@ -112,6 +112,40 @@ afterEach(() => {
 
 describe('warm role-aware Home', () => {
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'shows only a compact personal-spending summary for %s',
+    async (role) => {
+      const home = summary()
+      Object.assign(home, {
+        personalExpenses: {
+          month: '2099-05',
+          currency: 'VND',
+          currentTotal: '120000',
+          previousMonth: '2099-04',
+          previousTotal: '100000',
+          differenceAmount: '20000',
+          percentageChange: 20,
+        },
+      })
+      network(home)
+      const navigate = vi.fn()
+      render(<HomePage profile={{ ...profile, role }} onNavigate={navigate} />)
+      const card = within(
+        await screen.findByRole('region', {
+          name: 'Chi tiêu cá nhân tháng này',
+        }),
+      )
+      expect(card.getByText('120.000 đ')).toBeTruthy()
+      expect(card.getByText('Tăng 20.000 đ · 20%')).toBeTruthy()
+      expect(card.queryByRole('button', { name: 'Thêm chi tiêu' })).toBeNull()
+      await userEvent.click(
+        card.getByRole('button', { name: 'Xem chi tiêu cá nhân' }),
+      )
+      expect(navigate).toHaveBeenCalledWith(
+        role === 'PARENT' ? 'Chi tiêu' : 'Chi tiêu cá nhân',
+      )
+    },
+  )
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'does not fetch or display Wellness on %s Home',
     async (role) => {
       const fetch = network()
@@ -390,9 +424,11 @@ describe('warm role-aware Home', () => {
         }),
       ).toBeTruthy()
       expect(
-        screen.getByText(role === 'PARENT' ? 'Chi tiêu gia đình' : 'Cá nhân'),
+        screen.getByText(role === 'PARENT' ? 'Tiền ăn gia đình' : 'Cá nhân'),
       ).toBeTruthy()
-      expect(screen.getAllByText('Sắp có')).toHaveLength(1)
+      expect(screen.queryAllByText('Sắp có')).toHaveLength(
+        role === 'PARENT' ? 1 : 0,
+      )
     },
   )
   it('shows action and recent aggregate without exposing technical identifiers', async () => {
@@ -593,11 +629,9 @@ describe('warm role-aware Home', () => {
         ).toBe('page')
       } else {
         await userEvent.click(
-          screen.getByRole('button', { name: 'Xem Chi tiêu gia đình' }),
+          screen.getByRole('button', { name: 'Xem Tiền ăn gia đình' }),
         )
-        expect(
-          screen.getByRole('heading', { name: 'Góc chi tiêu' }),
-        ).toBeTruthy()
+        expect(screen.getByRole('heading', { name: 'Chi tiêu' })).toBeTruthy()
       }
     },
   )

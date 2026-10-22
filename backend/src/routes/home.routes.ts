@@ -24,6 +24,8 @@ import { StudyService } from '../services/study.service.js'
 import { SupabaseStudyRepository } from '../repositories/study.repository.js'
 import { FitnessService } from '../services/fitness.service.js'
 import { SupabaseFitnessRepository } from '../repositories/fitness.repository.js'
+import { PersonalExpenseService } from '../services/personal-expense.service.js'
+import { SupabasePersonalExpenseRepository } from '../repositories/personal-expense.repository.js'
 
 export function createHomeRouter(
   service: HomeService,
@@ -44,6 +46,9 @@ export default createHomeRouter(
     chores: new ChoreService(new SupabaseChoreRepository()),
     study: new StudyService(new SupabaseStudyRepository()),
     fitness: new FitnessService(new SupabaseFitnessRepository()),
+    expenses: new PersonalExpenseService(
+      new SupabasePersonalExpenseRepository(),
+    ),
   }),
   new FamilySessionService(new SupabaseAuthSessionRepository()),
 )

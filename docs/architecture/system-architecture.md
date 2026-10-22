@@ -712,13 +712,13 @@ Grades
 
 ## Expenses
 
-Household food expenses
+Feature 5A follows Route → Controller → PersonalExpenseService → SupabasePersonalExpenseRepository → restricted SECURITY INVOKER RPCs. Existing session middleware protects `GET/POST /api/expenses/personal` and `PUT/DELETE /api/expenses/personal/:id`. GET accepts optional `month=YYYY-MM` (default family-local current month) and `page` (default 1, 20 rows/page); month/page and all mutation fields are validated server-side. There is no owner selector, and the backend session actor alone authorizes access for all three roles. No ADMIN/PARENT bypass or sharing exists.
 
-Personal expenses
+One personal-expenses table uses bigint VND, immutable owner FK, constraints, default-deny RLS, and backend-only grants. RPCs independently check active ownership, serialize mutations with per-owner advisory locks, and return identical missing/foreign-ID errors. Monthly/previous-month sums and category totals are calculated across all matching records independently of pagination. Currency travels as canonical integer strings; monetary arithmetic uses BigInt. Only the rounded dimensionless percentage is converted to Number, with null for a zero baseline or unrepresentable ratio.
 
-Expense categories
+Home calls the personal-expense service with the signed-in profile for every role and explicitly projects only own month/currency/totals/comparison. It never includes expense records, notes, categories, or another member's spending. Feature-oriented frontend ExpensePage/PersonalExpenses owns the forms and API calls. Mom's Chi tiêu has Cá nhân plus a strictly placeholder Tiền ăn gia đình tab; other members enter from Cá nhân. Internal subviews preserve the approved five-item navigation. The Home food-area shortcut opens only Mom's placeholder, not personal totals presented as family spending.
 
-Visibility settings
+Household food expenses remain a separate future domain. Feature 5A creates no shared food records, conversion, budgets, bank integration, notification, or background job.
 
 ---
 

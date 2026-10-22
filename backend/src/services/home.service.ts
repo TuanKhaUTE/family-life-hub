@@ -9,6 +9,7 @@ import type { CalendarService } from './calendar.service.js'
 import type { ChoreService } from './chore.service.js'
 import type { StudyService } from './study.service.js'
 import type { FitnessService } from './fitness.service.js'
+import type { PersonalExpenseService } from './personal-expense.service.js'
 
 export interface RecentHomeDish {
   id: string
@@ -35,6 +36,7 @@ interface HomeDependencies {
   chores: Pick<ChoreService, 'list'>
   study: Pick<StudyService, 'summary'>
   fitness: Pick<FitnessService, 'summary'>
+  expenses: Pick<PersonalExpenseService, 'summary'>
 }
 
 export class HomeService {
@@ -58,6 +60,7 @@ export class HomeService {
         chores,
         study,
         fitness,
+        expenses,
       } = this.dependencies
       const [
         breakfast,
@@ -68,6 +71,7 @@ export class HomeService {
         choreView,
         studySummary,
         fitnessSummary,
+        expenseSummary,
       ] = await Promise.all([
         breakfastService.getDay(profile, 'next'),
         requests.listCurrent(profile),
@@ -77,6 +81,7 @@ export class HomeService {
         chores.list(profile, date, date, parent ? undefined : profile.id),
         parent ? Promise.resolve(null) : study.summary(profile),
         parent ? Promise.resolve(null) : fitness.summary(profile),
+        expenses.summary(profile),
       ])
       const plan = plans.find(
         (p) =>
@@ -173,6 +178,15 @@ export class HomeService {
             : null,
         },
         recentDishes,
+        personalExpenses: {
+          month: expenseSummary.month,
+          currency: expenseSummary.currency,
+          currentTotal: expenseSummary.currentTotal,
+          previousMonth: expenseSummary.previousMonth,
+          previousTotal: expenseSummary.previousTotal,
+          differenceAmount: expenseSummary.differenceAmount,
+          percentageChange: expenseSummary.percentageChange,
+        },
         ...(!parent && fitnessSummary
           ? {
               fitness: {
