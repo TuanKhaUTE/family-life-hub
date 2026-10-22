@@ -17,6 +17,7 @@ import fitnessRouter from './routes/fitness.routes.js'
 import wellnessRouter from './routes/wellness.routes.js'
 import personalExpenseRouter from './routes/personal-expense.routes.js'
 import familyFoodRouter from './routes/family-food.routes.js'
+import shareRouter from './routes/share.routes.js'
 
 const app = express()
 
@@ -36,6 +37,7 @@ app.use('/api/fitness', fitnessRouter)
 app.use('/api/wellness', wellnessRouter)
 app.use('/api/expenses/personal', personalExpenseRouter)
 app.use('/api/expenses/family-food', familyFoodRouter)
+app.use('/api/shares', shareRouter)
 app.use('/api/breakfast', breakfastRouter)
 app.use('/api/notifications', notificationRouter)
 app.use('/api/meals/requests', mealRequestRouter)

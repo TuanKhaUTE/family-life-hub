@@ -19,6 +19,15 @@ const profile = {
 }
 const id = profile.id,
   other = '22222222-2222-4222-8222-222222222222'
+it('offers intentional per-assessment sharing without sharing the Study workspace', async () => {
+  network()
+  render(<StudyGrades onClose={() => {}} />)
+  await screen.findByRole('heading', { name: 'Bài tổng hợp' })
+  expect(
+    screen.getByRole('button', { name: 'Chia sẻ Bài tổng hợp' }),
+  ).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Chia sẻ toàn bộ' })).toBeNull()
+})
 const assessment: Assessment = {
   id,
   courseId: id,

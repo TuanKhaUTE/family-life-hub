@@ -1,0 +1,171 @@
+.assessment-sharing,
+.received-shares {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(60 48 40 / 35%);
+  padding: 1rem;
+}
+.share-sheet {
+  width: min(100%, 36rem);
+  max-height: 90dvh;
+  overflow: auto;
+  padding: 1.2rem;
+  padding-bottom: max(1.2rem, env(safe-area-inset-bottom));
+  border-radius: 1.4rem;
+  background: #fffaf2;
+  color: #51473f;
+  display: grid;
+  gap: 1rem;
+  box-shadow: 0 8px 32px #584a3426;
+}
+.share-sheet header,
+.share-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.share-sheet header {
+  justify-content: space-between;
+}
+.share-sheet h2,
+.share-sheet h3,
+.share-sheet p {
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.share-sheet button,
+.received-shares button {
+  min-height: 44px;
+  font: inherit;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #d9c6b2;
+  border-radius: 0.85rem;
+  background: #fffbf5;
+  color: #635246;
+  cursor: pointer;
+}
+.share-sheet .share-primary {
+  background: #dce7d6;
+  font-weight: 700;
+}
+.share-sheet button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.share-sheet button:focus-visible,
+.share-sheet input:focus-visible,
+.received-shares button:focus-visible {
+  outline: 3px solid #a96b49;
+  outline-offset: 3px;
+}
+.share-sheet fieldset {
+  border: 1px solid #e4d9ca;
+  border-radius: 1rem;
+  padding: 0.85rem;
+  min-width: 0;
+  display: grid;
+  gap: 0.8rem;
+}
+.share-recipient {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 64px;
+  padding: 0.6rem;
+  border: 1px solid #e4d9ca;
+  border-radius: 1rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.share-recipient input {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  accent-color: #749875;
+}
+.share-recipient:has(input:checked) {
+  background: #e6eddc;
+  border-color: #99ad8a;
+}
+.share-recipient .profile-avatar,
+.share-owner .profile-avatar,
+.share-people .profile-avatar {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  font-size: 1.1rem;
+}
+.share-people,
+.share-cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+.share-people li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.share-people li > div {
+  min-width: 0;
+}
+.share-muted {
+  color: #786d60;
+  font-size: 0.88rem;
+}
+.share-private {
+  background: #ede8f2;
+  border-radius: 0.85rem;
+  padding: 0.8rem;
+}
+.received-shares {
+  padding: 1.1rem;
+  border: 1px solid #e4d9ca;
+  border-radius: 1.3rem;
+  background: #fffdf8;
+}
+.received-shares header {
+  display: grid;
+  gap: 0.8rem;
+}
+.received-share {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  background: #f1e9f1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.shared-score {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.share-pages {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.share-sheet [role='alert'],
+.received-shares [role='alert'] {
+  color: #963e37;
+}
+@media (min-width: 600px) {
+  .share-overlay {
+    align-items: center;
+  }
+}

@@ -1,6 +1,7 @@
 import type { FamilyProfile } from '../auth/auth-api'
 import { ProfileAvatar } from '../auth/ProfileSelector'
 import '../expenses/expenses.css'
+import { ReceivedShares } from '../sharing/ReceivedShares'
 export function PersonalPage({
   profile,
   onExpenses,
@@ -29,6 +30,7 @@ export function PersonalPage({
           Mở chi tiêu cá nhân
         </button>
       </section>
+      <ReceivedShares />
     </section>
   )
 }

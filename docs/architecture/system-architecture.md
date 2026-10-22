@@ -537,6 +537,10 @@ Only me
 
 ## Record Override
 
+Feature 6A implements explicit record sharing through a separate Route → Controller → ShareService → SupabaseShareRepository → restricted SECURITY INVOKER RPC boundary. Existing session middleware protects GET `/api/shares?resourceType=STUDY_ASSESSMENT&resourceId=UUID` (owner's eligible recipients/current grants), POST `/api/shares` (resourceType/resourceId/recipientMemberId only), DELETE `/api/shares/:id` (owner revoke), and GET `/api/shares/received?page=1` (session recipient only, 20 rows/page). Actor IDs never come from request payloads. Private Study, Fitness, Wellness and personal-expense services/RPCs remain unchanged; received records cannot be used to access a source workspace.
+
+Sharing has a typed source FK with ownership and cascade deletion, idempotent uniqueness, default-deny RLS and backend-only SELECT/INSERT/DELETE grants. Create/revoke reuse Study's per-owner lock. Dedicated reads project only owner display/avatar, course name and assessment result/date/share timestamp, with derived percentage; source IDs, notes, weights and unrelated records are excluded. Repository and frontend reconstruct whitelisted DTOs. Responses and requests use no-store. Active status is checked on every read; revoked/deleted sources disappear on next refresh. Frontend sharing lives in its own feature, invoked from assessment cards and Cá nhân, not Home. No public lookup, generic unrestricted resource reader, notifications or future resource types are added.
+
 A specific record may override the module default.
 
 Example:

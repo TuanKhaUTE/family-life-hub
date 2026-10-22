@@ -14,6 +14,7 @@ import {
 } from './grade-display'
 import { AssessmentForm } from './AssessmentForm'
 import './study.css'
+import { AssessmentSharing } from '../sharing/AssessmentSharing'
 export function StudyGrades({ onClose }: { onClose: () => void }) {
   const [data, setData] = useState<GradeView | null>(null),
     [course, setCourse] = useState<string | null>(null),
@@ -239,6 +240,7 @@ export function StudyGrades({ onClose }: { onClose: () => void }) {
                         </time>
                       )}
                       {a.note && <p className="study-note">{a.note}</p>}
+                      <AssessmentSharing assessmentId={a.id} title={a.title} />
                       <div className="study-actions">
                         <button
                           aria-label={`Chỉnh sửa ${a.title}`}

@@ -92,6 +92,8 @@ created_at
 
 ## module_privacy_settings
 
+Future conceptual model only; Feature 6A does not create or enable module-wide privacy settings.
+
 Stores default sharing preferences for private modules.
 
 Suggested fields:
@@ -122,29 +124,15 @@ PERSONAL_EXPENSES
 
 ---
 
-## record_shares
+## private_record_shares (Feature 6A)
 
-Allows specific records to override module-level privacy.
+Migration: `20261022150000_create_private_record_shares.sql`. UUID `id`; owner_member_id FK (RESTRICT); recipient_member_id FK (CASCADE); resource_type (only STUDY_ASSESSMENT); resource_id UUID; UTC created_at. Self-sharing is forbidden; owner/recipient/type/resource is unique. Receipt/date/id and owner/type/resource indexes support bounded reads. Permissions are always read-only; there is no arbitrary permission column.
 
-Suggested fields:
+A conditional generated assessment_id equals resource_id only for STUDY_ASSESSMENT. Its composite FK (owner_member_id, assessment_id) references a new unique (owner_member_id,id) constraint on study_assessments, with CASCADE deletion. This enforces real source ownership and removes shares safely when the source is deleted. Future resource types require explicit migration, typed source references and safe projection code; no future types are enabled now.
 
-id
+Default-deny RLS has no browser policies. PUBLIC/anon/authenticated have no table/RPC privileges; service_role has SELECT/INSERT/DELETE only (not UPDATE). The guard requires an active ADMIN/MEMBER owner and a different active recipient. SECURITY INVOKER RPCs have fixed empty search paths and qualified tables: private_share_create/owner/revoke/received. Writes reuse the per-owner Study transaction lock and never weaken private Study reads. Duplicate create preserves share identity/timestamp. Foreign/missing sources or revoke targets have identical not-found responses.
 
-owner_id
-
-resource_type
-
-resource_id
-
-shared_with_member_id
-
-permission
-
-created_at
-
-Initial permission:
-
-READ
+Received reads join only the session recipient's explicit shares to active owners and owned assessments/courses. They return 20-row pages plus total count and only the approved safe projection, excluding notes, weight, source/course/owner IDs and unrelated private data. The service derives percentage. Revocation is visible on the next request; no stale server/client caching. Owner reads return eligible active family profiles and existing recipient grants for that single owned source, including inactive former recipients so owners can revoke them. Verification: `database/tests/private-shares.rollback.sql`.
 
 ---
 

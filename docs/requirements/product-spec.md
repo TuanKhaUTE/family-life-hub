@@ -725,7 +725,7 @@ The database should be designed so that this expansion remains possible later.
 
 ## Implemented foundation (Feature 4A)
 
-Active ADMIN/MEMBER each manage only their own semesters, courses, goals, and study sessions. ADMIN never bypasses ownership. PARENT has no Study workspace or access to member Study data in this feature. Sharing is not implemented.
+Active ADMIN/MEMBER each manage only their own semesters, courses, goals, and study sessions. ADMIN never bypasses ownership. PARENT has no Study workspace or access to member Study data in this feature. Feature 6A supports only explicit per-assessment sharing through separate APIs; these workspace APIs remain owner-only.
 
 Semesters have inclusive start/end dates and at most one active semester per owner. Courses belong to one semester of the same owner. Goals and sessions may optionally reference a course of the same owner; a course is not required to record self-study. Deletion of a referenced semester/course is refused rather than silently deleting learning history; unlink or delete dependent records explicitly first.
 
@@ -733,7 +733,7 @@ Sessions record a family-local study date, 1–1440 minutes, and an optional not
 
 The current week is Monday–Sunday in the family timezone. Weekly totals and course breakdown include all sessions in that week, independently of the recent-list limit of 50. An ACTIVE goal's time progress uses this week's minutes for its course, or all courses when unlinked; text-only goals are completed manually. Targets remain active until the owner changes their status; target dates are informational, not automatic expiry.
 
-Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms, beside the private Rèn luyện foundation from Feature 4C. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Feature 4B adds private assessments below; sharing and cross-week analytics remain future work.
+Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms, beside the private Rèn luyện foundation from Feature 4C. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Feature 4B adds private assessments below; cross-week analytics remain future work; Feature 6A adds separate per-assessment sharing.
 
 The following examples describe the longer-term Study direction, not additional Feature 4A capabilities.
 
@@ -780,7 +780,7 @@ Progress charts may compare study time between weeks.
 
 ## Implemented private assessments (Feature 4B)
 
-Active ADMIN/MEMBER manage only their own course assessments; ADMIN has no privacy bypass and PARENT has no grade access. There is no sharing. An assessment must reference a course of the same owner. Course deletion is refused while assessments reference it, preventing silent loss of grade history.
+Active ADMIN/MEMBER manage only their own course assessments; ADMIN has no privacy bypass and PARENT has no private grade workspace/API access. Feature 6A adds only explicit, read-only per-assessment sharing through dedicated share APIs, not access to the Study workspace. An assessment must reference a course of the same owner. Course deletion is refused while assessments reference it, preventing silent loss of grade history.
 
 Types: QUIZ, ASSIGNMENT, MIDTERM, FINAL, PROJECT, PRESENTATION, OTHER. Title is trimmed/nonblank (up to 160 characters); optional letter grade is up to 20 characters and optional note up to 1000. Numeric values allow up to four decimal places. Score is 0–1,000,000 and cannot exceed a positive maximum (up to 1,000,000). An unscored assessment may retain a positive maximum; letter-only or pending assessments are allowed. Optional weight is 0–100%; optional assessment date is a valid family-local date (2000–2199), including future planned dates.
 
@@ -813,6 +813,14 @@ Users should be able to view their own academic progress over time.
 ---
 
 # 22. Privacy and Sharing
+
+## Implemented record-level sharing (Feature 6A)
+
+All private modules remain private by default. An active ADMIN/MEMBER may explicitly share one owned STUDY_ASSESSMENT with another active family member of any role, including PARENT. Neither role bypasses ownership. Sharing is idempotent per owner/recipient/resource; recipients cannot reshare, edit, delete or comment. An owner may revoke at any time; the next recipient request/refresh loses access. Deleting an assessment cascades only its shares, leaving unrelated shares intact. Inactive owners/recipients cannot expose or read shared records.
+
+Dedicated shared reads expose only the owner's display name/avatar, course name, assessment title/type, score/maximum, derived percentage, optional letter grade, assessment date and share timestamp. No private note, weight, course ID/metadata, other grades, sessions or goals is included. A share ID identifies the UI card; source IDs are not returned to recipients. The projection reflects current source values, not a frozen snapshot.
+
+Học & Luyện → Điểm & bài kiểm tra provides “Chia sẻ” on each owned result. A focused sheet lists eligible active recipients, requires deliberate selection/confirmation, shows “Đã chia sẻ với …” and allows “Ngừng chia sẻ”. All roles find their read-only received results in Cá nhân → “Được chia sẻ với bạn”, with refresh and bounded pagination. No child grade appears on Mom's Home. No module-wide, Wellness, Fitness or personal-expense sharing, public links, notifications or permission inheritance is enabled. Module-wide privacy settings remain future work.
 
 Personal information is private by default.
 
