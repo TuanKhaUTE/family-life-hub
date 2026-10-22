@@ -1,0 +1,19 @@
+{
+  "name": "Family Life Hub",
+  "short_name": "Family Hub",
+  "description": "Một góc ấm áp cho nhịp sống gia đình mỗi ngày.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fff9f3",
+  "theme_color": "#405c40",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

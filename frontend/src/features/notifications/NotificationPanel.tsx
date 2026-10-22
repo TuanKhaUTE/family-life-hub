@@ -7,6 +7,7 @@ import {
   type AppNotification,
 } from './notification-api'
 import './notifications.css'
+import { FAMILY_TIME_ZONE } from '../meals/family-time'
 
 export function NotificationPanel() {
   const [unread, setUnread] = useState(0)
@@ -231,9 +232,12 @@ export function NotificationPanel() {
                           <span>{item.readAt === null ? 'Mới' : 'Đã đọc'}</span>
                         </div>
                         <p>{item.message}</p>
+                        <time dateTime={item.createdAt}>
+                          {formatTimestamp(item.createdAt)}
+                        </time>
                         {item.relatedDate && (
                           <time dateTime={item.relatedDate}>
-                            {formatDate(item.relatedDate)}
+                            {formatRelatedDate(item.relatedDate)}
                           </time>
                         )}
                       </li>
@@ -264,8 +268,20 @@ export function NotificationPanel() {
   )
 }
 
-function formatDate(value: string): string {
+function formatTimestamp(value: string): string {
   return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: FAMILY_TIME_ZONE,
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(value))
+}
+
+function formatRelatedDate(value: string): string {
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: FAMILY_TIME_ZONE,
     month: 'short',
     day: 'numeric',
   }).format(new Date(`${value}T12:00:00Z`))

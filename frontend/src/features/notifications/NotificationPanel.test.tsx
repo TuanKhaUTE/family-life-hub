@@ -67,6 +67,7 @@ describe('NotificationPanel', () => {
     expect(screen.getAllByRole('listitem')[0].textContent).toContain(
       notification.title,
     )
+    expect(screen.getByText(/19:00/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Đánh dấu đã đọc' })).toBeNull()
     expect(fetch).toHaveBeenCalledWith(
       '/api/notifications/' + notification.id + '/read',

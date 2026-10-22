@@ -13,6 +13,21 @@
   z-index: 1;
 }
 
+.offline-banner {
+  position: sticky;
+  z-index: 150;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: calc(0.55rem + env(safe-area-inset-top)) 1rem 0.55rem;
+  color: #493b32;
+  background: #fff3dc;
+  border-bottom: 1px solid #ebdbb9;
+  text-align: center;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .ambient-shape {
   position: absolute;
   z-index: 0;

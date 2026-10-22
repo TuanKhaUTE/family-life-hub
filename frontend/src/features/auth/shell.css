@@ -1,5 +1,6 @@
 .home-shell {
   width: 100%;
+  padding-top: max(6px, env(safe-area-inset-top));
   padding-bottom: calc(92px + env(safe-area-inset-bottom));
 }
 .home-header {

@@ -4,6 +4,7 @@ import '../expenses/expenses.css'
 import { ReceivedShares } from '../sharing/ReceivedShares'
 import { ProfileSettings } from './ProfileSettings'
 import { PinSettings } from './PinSettings'
+import { InstallHelp } from './InstallHelp'
 import './personal.css'
 export function PersonalPage({
   profile,
@@ -31,6 +32,7 @@ export function PersonalPage({
       </header>
       <ProfileSettings profile={profile} onUpdated={onProfileUpdated} />
       <PinSettings onSessionEnded={onSessionEnded} />
+      <InstallHelp />
       <section className="expense-card personal-privacy">
         <h2>Quyền riêng tư</h2>
         <p>
