@@ -165,7 +165,7 @@ export async function fetchStudy(signal: AbortSignal): Promise<StudyWorkspace> {
   }
 }
 export async function saveStudy(
-  kind: StudyKind,
+  kind: StudyKind | 'assessments',
   id: string | null,
   input: unknown,
 ) {
@@ -174,9 +174,10 @@ export async function saveStudy(
     body: JSON.stringify(input),
   })
 }
-export async function deleteStudy(kind: StudyKind, id: string) {
+export async function deleteStudy(kind: StudyKind | 'assessments', id: string) {
   await request(`/${kind}/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
+export { request as studyRequest }
 export function studyError(error: unknown) {
   if (error instanceof StudyApiError) {
     if (error.code === 'STUDY_IN_USE')

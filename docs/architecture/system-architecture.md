@@ -694,6 +694,8 @@ Existing session middleware rejects inactive/expired sessions. StudyService reje
 
 Session `studied_at` is a family-local date, not an automatic calendar event. Created/updated timestamps are UTC. The backend supplies today's date from centralized family time; weekly totals run Monday–Sunday and do not depend on the bounded recent-session list. Goal time progress uses current-week minutes, course-filtered when linked. Home calls StudyService only for ADMIN/MEMBER and explicitly projects own totals/active goals, omitting Study entirely for PARENT. There is no Study notification, background job, chart dependency, or calendar write.
 
+Feature 4B extends these same Study boundaries: `GET /api/study/assessments?courseId=UUID` lists own grades, courses, and derived course summaries; the course filter is optional and cannot select a foreign course. `POST /api/study/assessments`, `PUT /api/study/assessments/:id`, and `DELETE /api/study/assessments/:id` reuse the Study controller/service/repository with separate restricted assessment RPCs. Mutation bodies cannot supply ownership or a stored percentage. The service validates scores/weights and computes honest averages/weighted coverage; the database rechecks role, ownership, composite course FK, and constraints. Missing/foreign IDs have the same error response. Home's existing own-only Study projection adds one compact latest result without notes/history; PARENT does not invoke the Study/grade reads. The frontend grades view is feature-owned and uses Express only, with no heavy chart library or new notifications.
+
 Academic semesters
 
 Subjects

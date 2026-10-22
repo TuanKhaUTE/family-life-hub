@@ -597,6 +597,8 @@ Feature 4A uses “Học tập & Rèn luyện”, with peach/orange study cards 
 
 Keep controls at least 44px and forms comfortable at 320px/390px. Course, semester, and goal names must wrap safely. Study is personal, not family-readable: no member switcher, family comparison, or parent overview. Home shows only the signed-in ADMIN/MEMBER's own weekly summary; PARENT receives no Study card. Rèn luyện remains polished “Sắp có”; no grades or fitness charts in this foundation.
 
+Feature 4B adds a separate “Điểm & bài kiểm tra” entry with “Xem điểm”, opening a focused peach/lavender view. Use a course selector and rounded cards rather than a gradebook table. “Thêm điểm” and “Chỉnh sửa” forms collapse after saving; “Xóa” requires confirmation. Show numeric scores, derived percentages, optional letter/weight/date, and real course summaries with honest weighted coverage. Empty states say “Chưa có điểm nào” and explain that results appear when added. Keep low results neutral: no red alarms, judgmental labels, comparisons, or ranks. Home may show only the signed-in member's latest result subtly; Mom sees no grade data. No GPA or final-grade claim.
+
 Study tracking should make progress easy to understand.
 
 Useful cards:

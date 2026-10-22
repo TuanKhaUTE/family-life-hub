@@ -2,6 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseServerClient } from '../config/supabase.js'
 import { ApiError } from '../errors/api-error.js'
 import {
+  normalizeAssessment,
+  type AssessmentData,
+} from '../services/study-assessment.js'
+import {
   normalizeStudy,
   studyId,
   type StudyKind,
@@ -58,13 +62,55 @@ export class SupabaseStudyRepository implements StudyRepository {
     input: StudyInput | null,
     remove: boolean,
   ) {
-    await this.rpc('study_mutate', {
+    await this.rpc(
+      kind === 'assessments' ? 'study_assessment_mutate' : 'study_mutate',
+      {
+        p_actor_member_id: actorId,
+        ...(kind === 'assessments' ? {} : { p_kind: kind }),
+        p_id: id,
+        p_input: input,
+        p_remove: remove,
+      },
+    )
+  }
+  async readAssessments(
+    actorId: string,
+    courseId: string | null,
+  ): Promise<AssessmentData> {
+    const data = await this.rpc('study_assessment_read', {
       p_actor_member_id: actorId,
-      p_kind: kind,
-      p_id: id,
-      p_input: input,
-      p_remove: remove,
+      p_course_id: courseId,
     })
+    try {
+      if (
+        !object(data) ||
+        !Array.isArray(data.courses) ||
+        !Array.isArray(data.assessments)
+      )
+        throw new Error()
+      return {
+        courses: data.courses.map((c) => {
+          if (!object(c) || typeof c.name !== 'string') throw new Error()
+          studyId(c.id)
+          return { id: c.id, name: c.name }
+        }),
+        assessments: data.assessments.map((a) => {
+          if (
+            !object(a) ||
+            typeof a.createdAt !== 'string' ||
+            typeof a.updatedAt !== 'string' ||
+            !Number.isFinite(Date.parse(a.createdAt)) ||
+            !Number.isFinite(Date.parse(a.updatedAt))
+          )
+            throw new Error()
+          studyId(a.id)
+          const { id, createdAt, updatedAt, ...input } = a
+          return { ...normalizeAssessment(input), id, createdAt, updatedAt }
+        }),
+      }
+    } catch {
+      throw new Error('Invalid assessment storage response')
+    }
   }
 }
 export function parseStudyWorkspace(
@@ -72,7 +118,7 @@ export function parseStudyWorkspace(
   today: string,
 ): StudyWorkspace {
   if (!object(value)) throw new Error('Invalid Study response')
-  const records = (kind: StudyKind) => {
+  const records = (kind: Exclude<StudyKind, 'assessments'>) => {
     const list = value[kind]
     if (!Array.isArray(list)) throw new Error('Invalid Study response')
     return list.map((row) => {

@@ -12,6 +12,14 @@ export function createStudyController(service: StudyService) {
       }
     }
   return {
+    assessments: handle(async (req, res) => {
+      res.json({
+        grades: await service.assessments(
+          req.auth!.profile,
+          req.query.courseId,
+        ),
+      })
+    }),
     read: handle(async (req, res) => {
       res.json({ study: await service.read(req.auth!.profile) })
     }),

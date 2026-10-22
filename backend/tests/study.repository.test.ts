@@ -22,6 +22,43 @@ function setup(body: unknown, status = 200) {
   return { repository: new SupabaseStudyRepository(() => client), calls }
 }
 describe('Study repository privacy boundary', () => {
+  it('reads assessments only with the session actor and projects safe courses', async () => {
+    const s = setup({
+      courses: [{ id, name: 'Synthetic', owner_member_id: 'private' }],
+      assessments: [
+        {
+          id,
+          courseId: id,
+          title: 'Synthetic',
+          assessmentType: 'MIDTERM',
+          score: 8.7,
+          maxScore: 10,
+          letterGrade: null,
+          weightPercent: 30,
+          assessedAt: null,
+          note: null,
+          createdAt: '2026-10-22T00:00:00Z',
+          updatedAt: '2026-10-22T00:00:00Z',
+        },
+      ],
+    })
+    const data = await s.repository.readAssessments(id, id)
+    expect(s.calls[0]!.url).toContain('/rpc/study_assessment_read')
+    expect(s.calls[0]!.body).toEqual({ p_actor_member_id: id, p_course_id: id })
+    expect(JSON.stringify(data)).not.toContain('owner_member_id')
+    expect(data.assessments[0]!.score).toBe(8.7)
+  })
+  it('writes assessments through the scoped atomic RPC, not a client owner', async () => {
+    const s = setup(null)
+    await s.repository.mutate(id, 'assessments', id, null, true)
+    expect(s.calls[0]!.url).toContain('/rpc/study_assessment_mutate')
+    expect(s.calls[0]!.body).toEqual({
+      p_actor_member_id: id,
+      p_id: id,
+      p_input: null,
+      p_remove: true,
+    })
+  })
   it('requests only the session actor and strips unexpected private fields', async () => {
     const s = setup({
       semesters: [

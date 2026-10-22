@@ -1,3 +1,47 @@
+.grades-filter {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  width: 100%;
+}
+.grades-filter select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem;
+  font: inherit;
+  color: #493b32;
+  background: #fffdfa;
+  border: 1px solid #d8c6b8;
+  border-radius: 0.8rem;
+}
+.grades-filter select:focus-visible {
+  outline: 3px solid #aa5b40;
+  outline-offset: 3px;
+}
+.grades-list,
+.grades-summaries {
+  display: grid;
+  gap: 1rem;
+}
+.grade-summary,
+.grades-entry {
+  background: #f3eef8 !important;
+  border-color: #ddd1e8 !important;
+}
+.grade-assessment h2,
+.grade-summary h2 {
+  font-size: 1.1rem;
+}
+.grade-score {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.grade-type {
+  padding: 0.3rem 0.7rem;
+  border-radius: 1rem;
+  background: #f0e8f6;
+  font-size: 0.85rem;
+}
 .study-page {
   display: grid;
   gap: 1rem;

@@ -705,7 +705,7 @@ Sessions record a family-local study date, 1–1440 minutes, and an optional not
 
 The current week is Monday–Sunday in the family timezone. Weekly totals and course breakdown include all sessions in that week, independently of the recent-list limit of 50. An ACTIVE goal's time progress uses this week's minutes for its course, or all courses when unlinked; text-only goals are completed manually. Targets remain active until the owner changes their status; target dates are informational, not automatic expiry.
 
-Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms; Rèn luyện remains “Sắp có”. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Grades, assessments, fitness, sharing, and cross-week analytics remain future work.
+Học & Luyện provides a peach/orange Học tập section with real weekly totals, goals, courses, recent sessions, and management forms; Rèn luyện remains “Sắp có”. ADMIN/MEMBER Home displays only their own study time and active goal progress with “Xem Học & Luyện”. PARENT Home neither queries nor returns course names, goals, sessions, or study durations. No Study notifications or calendar auto-sync are introduced. Feature 4B adds private assessments below; fitness, sharing, and cross-week analytics remain future work.
 
 The following examples describe the longer-term Study direction, not additional Feature 4A capabilities.
 
@@ -749,6 +749,16 @@ Progress charts may compare study time between weeks.
 ---
 
 # 21. Grades
+
+## Implemented private assessments (Feature 4B)
+
+Active ADMIN/MEMBER manage only their own course assessments; ADMIN has no privacy bypass and PARENT has no grade access. There is no sharing. An assessment must reference a course of the same owner. Course deletion is refused while assessments reference it, preventing silent loss of grade history.
+
+Types: QUIZ, ASSIGNMENT, MIDTERM, FINAL, PROJECT, PRESENTATION, OTHER. Title is trimmed/nonblank (up to 160 characters); optional letter grade is up to 20 characters and optional note up to 1000. Numeric values allow up to four decimal places. Score is 0–1,000,000 and cannot exceed a positive maximum (up to 1,000,000). An unscored assessment may retain a positive maximum; letter-only or pending assessments are allowed. Optional weight is 0–100%; optional assessment date is a valid family-local date (2000–2199), including future planned dates.
+
+Percentage is derived, never stored. A course's simple average is the arithmetic mean of its numeric assessment percentages, not pooled points; missing scores and letter grades are not converted. Weighted earned percentage points are the sum of `(score / max_score) × weight_percent`, using only rows with numeric score and weight. Display the corresponding scored weight coverage explicitly, without normalizing partial coverage into a final grade. Zero coverage yields no weighted result; coverage below 100% is incomplete, and above 100% is flagged with the weighted result withheld. Even 100% refers only to recorded weights, not an official final grade. Percentages/averages/earned points round to two decimal places for display; coverage retains four-decimal precision so incomplete coverage is not presented as 100%.
+
+“Điểm & bài kiểm tra” is a separate calm Study area opened by “Xem điểm”. It supports course filtering, real course summaries, add/edit forms that close after saving, confirmed deletion, and friendly empty/error states. Home may show the signed-in ADMIN/MEMBER's latest assessment result, projected without notes or grade history. PARENT `/api/home` omits Study and all grade data entirely. No GPA, ranking, grade-based gamification, sharing, calendar sync, or notifications are added.
 
 Users may record university assessment results.
 

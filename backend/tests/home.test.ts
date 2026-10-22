@@ -99,6 +99,23 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
         weekEnd: '2099-05-03',
         totalMinutes: 90,
         sessionCount: 1,
+        latestAssessment: {
+          courseName: 'Synthetic grade course',
+          assessment: {
+            id: member.id,
+            courseId: member.id,
+            title: 'Synthetic grade result',
+            assessmentType: 'MIDTERM' as const,
+            score: 8.7,
+            maxScore: 10,
+            letterGrade: null,
+            weightPercent: 30,
+            assessedAt: null,
+            note: 'not needed on Home',
+            createdAt: '2099-05-01T00:00:00Z',
+            updatedAt: '2099-05-01T00:00:00Z',
+          },
+        },
         goals: [
           {
             id: member.id,
@@ -175,6 +192,7 @@ describe('role-aware home', () => {
         expect(result).not.toHaveProperty('study')
         expect(s.dependencies.study.summary).not.toHaveBeenCalled()
         expect(JSON.stringify(result)).not.toContain('Synthetic private')
+        expect(JSON.stringify(result)).not.toContain('Synthetic grade')
       } else {
         expect(result).toHaveProperty('study')
         expect(
@@ -182,6 +200,13 @@ describe('role-aware home', () => {
             .totalMinutes,
         ).toBe(90)
         expect(s.dependencies.study.summary).toHaveBeenCalledWith(s.profile)
+        expect(result.study!.latestAssessment).toEqual({
+          courseName: 'Synthetic grade course',
+          title: 'Synthetic grade result',
+          score: 8.7,
+          maxScore: 10,
+          letterGrade: null,
+        })
         expect(
           JSON.stringify((result as unknown as { study: unknown }).study),
         ).not.toContain('Synthetic private course')

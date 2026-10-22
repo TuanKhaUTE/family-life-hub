@@ -175,6 +175,19 @@ export class HomeService {
                 weekEnd: studySummary.weekEnd,
                 totalMinutes: studySummary.totalMinutes,
                 sessionCount: studySummary.sessionCount,
+                ...(studySummary.latestAssessment
+                  ? {
+                      latestAssessment: {
+                        courseName: studySummary.latestAssessment.courseName,
+                        title: studySummary.latestAssessment.assessment.title,
+                        score: studySummary.latestAssessment.assessment.score,
+                        maxScore:
+                          studySummary.latestAssessment.assessment.maxScore,
+                        letterGrade:
+                          studySummary.latestAssessment.assessment.letterGrade,
+                      },
+                    }
+                  : {}),
                 goals: studySummary.goals.map((g) => ({
                   id: g.id,
                   title: g.title,

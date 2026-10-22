@@ -781,35 +781,19 @@ Foreign-key deletion is RESTRICT: deleting a semester/course never cascades lear
 
 `study_read(actor, today)` returns only that active actor's own data and a Monday–Sunday summary: all weekly minutes/session count, per-course minutes (including unlinked self-study), and current-week course-filtered/all-course minutes for ACTIVE goals. Its latest-session list is limited to 50, but aggregates are not. `study_mutate` performs owner-scoped CRUD and atomically switches the active semester under a per-owner transaction lock. Foreign/missing record IDs return the same not-found error. Both RPCs are service_role-only SECURITY INVOKER with fixed empty search paths.
 
-All four tables enable RLS without browser policies; PUBLIC/anon/authenticated table/function privileges are revoked. Only server service_role has CRUD/RPC privileges. PARENT has no workspace or member Study access; ADMIN has no ownership bypass. No sharing tables, grades, assessments, notifications, or calendar sync are added. Home returns only own weekly totals/active goals for ADMIN/MEMBER and omits Study for PARENT.
+All four tables enable RLS without browser policies; PUBLIC/anon/authenticated table/function privileges are revoked. Only server service_role has CRUD/RPC privileges. PARENT has no workspace or member Study access; ADMIN has no ownership bypass. Feature 4B adds the assessment table below; no sharing tables, notifications, or calendar sync are added. Home returns own Study summaries for ADMIN/MEMBER and omits Study for PARENT.
 
 ---
 
-## assessments
+## study_assessments (Feature 4B)
 
-Future conceptual fields (not implemented in Feature 4A):
+UUID `id`; immutable `owner_member_id`; required `course_id` with a composite owner/course FK to study_courses (RESTRICT deletion); trimmed `title` (1–160); `assessment_type` QUIZ/ASSIGNMENT/MIDTERM/FINAL/PROJECT/PRESENTATION/OTHER; nullable numeric `score`/`max_score`; nullable `letter_grade` (1–20); nullable numeric `weight_percent`; nullable DATE `assessed_at`; nullable `note` (1–1000); UTC `created_at`/`updated_at`.
 
-id
+Numeric fields have at most four decimal places. Score is 0–1,000,000; a supplied score requires maximum > 0 and score <= maximum. Maximum alone is allowed for pending work; maximum is at most 1,000,000. Weight is independently 0–100, including zero. Dates are 2000–2199; optional dates may be future plans. No redundant percentage column is stored.
 
-owner_id
+Owner/course/date indexing supports private lists. The existing Study owner guard enforces active ADMIN/MEMBER and immutable identity. `study_assessment_read(actor, course?)` scopes courses/rows to the actor and returns the same not-found error for foreign/missing course filters. `study_assessment_mutate` scopes updates/deletes to the actor and shares the existing per-owner Study transaction lock. Both are SECURITY INVOKER, fixed empty search path, service_role-only. RLS is enabled with no browser policies; PUBLIC/anon/authenticated privileges are revoked.
 
-course_id
-
-name
-
-assessment_date
-
-score
-
-max_score
-
-letter_grade
-
-notes
-
-created_at
-
-updated_at
+StudyService derives numeric percentages, arithmetic mean percentages, scored-weight coverage, and weighted earned percentage points. Missing/letter-only scores are excluded; partial coverage is labelled, oversubscribed coverage withholds the weighted result, and no GPA/final grade is inferred. Home projects only the actor's latest result (course/title/score/max/letter), never notes/history; PARENT receives no grade data.
 
 ---
 

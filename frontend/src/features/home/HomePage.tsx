@@ -7,6 +7,7 @@ import { greeting } from './home-time'
 import { HomeCalendarSummary } from './HomeCalendarSummary'
 import { HomeChoresSummary } from './HomeChoresSummary'
 import { StudyProgress } from '../study/StudyProgress'
+import { gradeScore } from '../study/grade-display'
 import '../study/study.css'
 import './home.css'
 
@@ -152,6 +153,13 @@ export function HomePage({
             >
               <h2>📚 Học tập tuần này</h2>
               <StudyProgress summary={data.study} compact />
+              {data.study.latestAssessment && (
+                <p className="home-meta">
+                  {data.study.latestAssessment.courseName} ·{' '}
+                  {data.study.latestAssessment.title}:{' '}
+                  {gradeScore(data.study.latestAssessment)}
+                </p>
+              )}
               <button
                 className="home-link"
                 onClick={() => onNavigate('Học & Luyện')}

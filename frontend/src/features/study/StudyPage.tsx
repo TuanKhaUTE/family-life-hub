@@ -12,6 +12,7 @@ import {
 import { StudyForm } from './StudyForm'
 import { StudyProgress, studyDuration } from './StudyProgress'
 import { StudyRecords, recordName } from './StudyRecords'
+import { StudyGrades } from './StudyGrades'
 import './study.css'
 export function StudyPage({ profile }: { profile: FamilyProfile }) {
   return profile.role === 'PARENT' ? (
@@ -21,6 +22,7 @@ export function StudyPage({ profile }: { profile: FamilyProfile }) {
   )
 }
 function MemberStudyPage() {
+  const [gradesOpen, setGradesOpen] = useState(false)
   const [data, setData] = useState<StudyWorkspace | null>(null),
     [state, setState] = useState<'loading' | 'ready' | 'error'>('loading'),
     [version, setVersion] = useState(0),
@@ -90,6 +92,7 @@ function MemberStudyPage() {
       )
     }
   }
+  if (gradesOpen) return <StudyGrades onClose={() => setGradesOpen(false)} />
   return (
     <div className="study-page">
       <header className="study-hero">
@@ -244,6 +247,13 @@ function MemberStudyPage() {
                   Chưa có môn trong học kỳ đang học.
                 </p>
               )}
+            </section>
+            <section className="study-card grades-entry">
+              <h3>Điểm &amp; bài kiểm tra</h3>
+              <p className="study-muted">
+                Xem lại kết quả từng môn trong góc riêng của bạn.
+              </p>
+              <button onClick={() => setGradesOpen(true)}>Xem điểm</button>
             </section>
             {manage && (
               <section className="study-card" aria-label="Quản lý môn học">

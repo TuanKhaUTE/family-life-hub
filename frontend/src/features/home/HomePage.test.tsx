@@ -80,6 +80,13 @@ describe('warm role-aware Home', () => {
     async (role) => {
       const home = summary()
       home.study = {
+        latestAssessment: {
+          courseName: 'Môn riêng thử nghiệm',
+          title: 'Bài riêng thử nghiệm',
+          score: 8.7,
+          maxScore: 10,
+          letterGrade: null,
+        },
         weekStart: '2099-04-27',
         weekEnd: '2099-05-03',
         totalMinutes: 90,
@@ -103,8 +110,14 @@ describe('warm role-aware Home', () => {
           screen.queryByRole('region', { name: 'Học tập tuần này' }),
         ).toBeNull()
         expect(screen.queryByText('Mục tiêu riêng thử nghiệm')).toBeNull()
+        expect(screen.queryByText(/Bài riêng thử nghiệm/)).toBeNull()
       } else {
         const region = screen.getByRole('region', { name: 'Học tập tuần này' })
+        expect(
+          within(region).getByText(
+            'Môn riêng thử nghiệm · Bài riêng thử nghiệm: 8,7/10',
+          ),
+        ).toBeTruthy()
         expect(within(region).getByText('1 giờ 30 phút')).toBeTruthy()
         expect(
           within(region).getByRole('progressbar').getAttribute('value'),

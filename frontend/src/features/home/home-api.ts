@@ -12,7 +12,15 @@ interface ResponseSummary {
   choice: string | null
 }
 export interface HomeSummary {
-  study?: Omit<StudySummary, 'courses'>
+  study?: Omit<StudySummary, 'courses'> & {
+    latestAssessment?: {
+      courseName: string
+      title: string
+      score: number | null
+      maxScore: number | null
+      letterGrade: string | null
+    }
+  }
   date: string
   timeZone: string
   actions: { id: string; label: string }[]
@@ -129,6 +137,24 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (object(value.study) && value.study.latestAssessment !== undefined) {
+    const a = value.study.latestAssessment
+    if (
+      !object(a) ||
+      !text(a.courseName) ||
+      !text(a.title) ||
+      !(
+        a.score === null ||
+        (typeof a.score === 'number' && Number.isFinite(a.score))
+      ) ||
+      !(
+        a.maxScore === null ||
+        (typeof a.maxScore === 'number' && Number.isFinite(a.maxScore))
+      ) ||
+      !nullableText(a.letterGrade)
+    )
+      return false
+  }
   if (
     value.study !== undefined &&
     (!object(value.study) || !validSummary({ ...value.study, courses: [] }))

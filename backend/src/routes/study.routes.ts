@@ -16,6 +16,7 @@ export function createStudyRouter(
     c = createStudyController(service)
   router.use(createRequireAuth(sessions))
   router.get('/', c.read)
+  router.get('/assessments', c.assessments)
   router.post('/:kind', c.save)
   router.put('/:kind/:id', c.save)
   router.delete('/:kind/:id', c.remove)

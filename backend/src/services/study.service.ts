@@ -2,14 +2,25 @@ import { ApiError } from '../errors/api-error.js'
 import type { SafeFamilyProfile } from './family-auth.service.js'
 import { getFamilyDate } from '../time/family-calendar.js'
 import { validDate } from './calendar.service.js'
+import {
+  normalizeAssessment,
+  summarizeGrades,
+  compareAssessments,
+  assessmentPercentage,
+  type AssessmentInput,
+  type AssessmentData,
+  type Assessment,
+} from './study-assessment.js'
 export const STUDY_KINDS = [
   'semesters',
   'courses',
   'goals',
   'sessions',
+  'assessments',
 ] as const
 export type StudyKind = (typeof STUDY_KINDS)[number]
 export type StudyInput =
+  | AssessmentInput
   | { name: string; startDate: string; endDate: string; isActive: boolean }
   | { semesterId: string; name: string; code: string | null }
   | {
@@ -75,6 +86,10 @@ export interface StudyWorkspace {
   summary: StudySummary
 }
 export interface StudyRepository {
+  readAssessments(
+    actorId: string,
+    courseId: string | null,
+  ): Promise<AssessmentData>
   read(actorId: string, today: string): Promise<StudyWorkspace>
   mutate(
     actorId: string,
@@ -95,8 +110,46 @@ export class StudyService {
       this.repository.read(actor.id, getFamilyDate(this.clock())),
     )
   }
-  async summary(actor: SafeFamilyProfile) {
-    return (await this.read(actor)).summary
+  async assessments(actor: SafeFamilyProfile, courseId: unknown = undefined) {
+    allowed(actor)
+    if (courseId !== undefined) studyId(courseId)
+    const data = await this.run(() =>
+      this.repository.readAssessments(
+        actor.id,
+        (courseId as string | undefined) ?? null,
+      ),
+    )
+    return {
+      ...data,
+      assessments: data.assessments.map((a) => ({
+        ...a,
+        percentage: assessmentPercentage(a),
+      })),
+      summaries: summarizeGrades(data),
+    }
+  }
+  async summary(
+    actor: SafeFamilyProfile,
+  ): Promise<
+    StudySummary & {
+      latestAssessment?: { courseName: string; assessment: Assessment } | null
+    }
+  > {
+    const [workspace, grades] = await Promise.all([
+      this.read(actor),
+      this.assessments(actor),
+    ])
+    const latest = [...grades.assessments].sort(compareAssessments)[0]
+    return {
+      ...workspace.summary,
+      latestAssessment: latest
+        ? {
+            courseName: grades.courses.find((c) => c.id === latest.courseId)!
+              .name,
+            assessment: latest,
+          }
+        : null,
+    }
   }
   async save(
     actor: SafeFamilyProfile,
@@ -189,6 +242,7 @@ export function normalizeStudy(
   input: unknown,
   today: string,
 ): StudyInput {
+  if (kind === 'assessments') return normalizeAssessment(input)
   if (input === null || typeof input !== 'object' || Array.isArray(input))
     invalid()
   const v = input as Record<string, unknown>
