@@ -11,6 +11,23 @@ import { AuthenticatedShell } from '../auth/AuthenticatedShell'
 import { StudyPage } from './StudyPage'
 import type { StudyWorkspace, StudyKind } from './study-api'
 import { familyDate } from '../meals/family-time'
+vi.mock('../wellness/wellness-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../wellness/wellness-api')>()),
+  fetchWellness: async () => ({
+    profile: null,
+    logs: [],
+    summary: {
+      currentWeightKg: null,
+      currentLoggedDate: null,
+      previousWeightKg: null,
+      previousLoggedDate: null,
+      changeKg: null,
+      bmi: null,
+      trend7: null,
+      trend30: null,
+    },
+  }),
+}))
 vi.mock('../fitness/fitness-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../fitness/fitness-api')>()
   return {

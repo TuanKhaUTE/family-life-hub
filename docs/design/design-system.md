@@ -555,6 +555,12 @@ Members' own chores appear first with a completion button only when eligible; ot
 
 # 20. Wellness Design
 
+Feature 4D adds “Thể trạng” as a distinct lavender/soft-blue subsection inside sage Rèn luyện, not a health dashboard. Use cream rounded cards, natural Vietnamese, and compact current weight, optional target, recent signed change, and informational BMI. Show the latest measurement date and actual dates/counts for 7/30-day comparisons. Missing height/measurements have calm incomplete states, without fabricated estimates or health categories. Activity selection is optional and does not infer sensitive demographic inputs or energy estimates.
+
+“Ghi cân nặng” and “Cập nhật thông tin” open labelled, feature-owned forms that close after saving and refresh the summary. Duplicate-day feedback guides the owner to edit the existing history entry. Deletion requires confirmation. Keep 44px touch targets, keyboard focus, wrapping titles/notes, and comfortable 320px/390px forms. Show seven recent dated observations initially, expandable to fourteen; a compact list is sufficient, with no synthetic chart points or heavy chart library.
+
+Use neutral signs and text for weight changes, not red/green judgments or target scoring. BMI is a numeric reference only, with a brief non-medical disclaimer. No pressure to change weight, streaks, rankings, or wellness details on Home. PARENT never sees this workspace or another member's body data.
+
 Wellness belongs to the individual user.
 
 Charts should be calm and supportive.

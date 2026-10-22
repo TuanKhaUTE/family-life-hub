@@ -632,43 +632,17 @@ Push subscriptions should be managed securely.
 
 ## wellness_profiles
 
-Suggested fields:
+Feature 4D migration: `20261022120000_create_private_wellness.sql`.
 
-id
+`owner_member_id` is the primary key/FK to `family_members`, with RESTRICT. Optional `height_cm` is 100–250; optional `target_weight_kg` is 20–350. Numeric values must equal their two-decimal rounding, rather than silently rounding invalid input. Optional `activity_level` is SEDENTARY/LIGHT/MODERATE/ACTIVE/VERY_ACTIVE. `updated_at` is a UTC timestamp maintained by the shared update trigger. An absent profile or null fields never invent defaults.
 
-owner_id
+## wellness_weight_logs
 
-height_cm
+UUID `id` primary key; `owner_member_id` FK to `family_members` with RESTRICT; family-local `logged_date` between 2000 and 2199, not future; required numeric `weight_kg` (20–350, at most two decimals); optional trimmed `note` (1–1000 characters); UTC `created_at`/`updated_at`. Unique `(owner_member_id, logged_date)` enforces one daily measurement and supports scoped chronological reads. Date conflicts are rejected on insert and update, not upserted. Profile reset never cascades to logs.
 
-target_weight_kg
+Both tables enable default-deny RLS with no browser policies. PUBLIC/anon/authenticated grants are revoked; only backend service_role receives CRUD and function execute. Triggers require active ADMIN/MEMBER owners and immutable ownership/row identity. PARENT has no workspace. Restricted SECURITY INVOKER functions `wellness_read(actor, today)` and `wellness_mutate(actor, kind, id, input, remove)` have fixed empty search paths and qualified relations. Actor identity comes from the backend session, not editable JSON. Every mutation/read is owner-scoped; foreign and missing log IDs produce the same not-found response. Profile writes upsert only the actor's own row. Per-owner advisory locks serialize writes.
 
-activity_level
-
-created_at
-
-updated_at
-
----
-
-## weight_entries
-
-Suggested fields:
-
-id
-
-owner_id
-
-weight_kg
-
-recorded_date
-
-notes
-
-created_at
-
-updated_at
-
-One user may have multiple historical entries.
+Read RPC returns the own profile and latest 31 dated measurements; the service derives summaries and returns only the latest 14 history rows. Daily uniqueness means 31 rows contain every possible observation within a 30-day window. Current/previous measurements, signed changes, observed 7/30-day trends, and optional BMI are computed by the service, never stored. No birthday/age/biological-sex fields, BMR/TDEE, sharing tables, or calorie tracking are added. Rollback-only verification lives in `database/tests/wellness.rollback.sql`.
 
 ---
 

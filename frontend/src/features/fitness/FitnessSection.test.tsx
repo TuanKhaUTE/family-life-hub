@@ -11,6 +11,23 @@ import { StudyPage } from '../study/StudyPage'
 import { FitnessSection } from './FitnessSection'
 import type { FitnessWorkspace, FitnessKind } from './fitness-api'
 import { familyDate } from '../meals/family-time'
+vi.mock('../wellness/wellness-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../wellness/wellness-api')>()),
+  fetchWellness: async () => ({
+    profile: null,
+    logs: [],
+    summary: {
+      currentWeightKg: null,
+      currentLoggedDate: null,
+      previousWeightKg: null,
+      previousLoggedDate: null,
+      changeKg: null,
+      bmi: null,
+      trend7: null,
+      trend30: null,
+    },
+  }),
+}))
 const id = '11111111-1111-4111-8111-111111111111',
   today = familyDate()
 function workspace(): FitnessWorkspace {

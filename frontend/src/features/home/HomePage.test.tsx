@@ -71,17 +71,34 @@ function network(home = summary()) {
                     },
                   },
                 }
-              : url === '/api/study'
+              : url === '/api/wellness'
                 ? {
-                    study: {
-                      semesters: [],
-                      courses: [],
-                      goals: [],
-                      sessions: [],
-                      summary: { ...home.study, courses: [] },
+                    wellness: {
+                      profile: null,
+                      logs: [],
+                      summary: {
+                        currentWeightKg: null,
+                        currentLoggedDate: null,
+                        previousWeightKg: null,
+                        previousLoggedDate: null,
+                        changeKg: null,
+                        bmi: null,
+                        trend7: null,
+                        trend30: null,
+                      },
                     },
                   }
-                : { notifications: [], unreadCount: 0 },
+                : url === '/api/study'
+                  ? {
+                      study: {
+                        semesters: [],
+                        courses: [],
+                        goals: [],
+                        sessions: [],
+                        summary: { ...home.study, courses: [] },
+                      },
+                    }
+                  : { notifications: [], unreadCount: 0 },
         ),
       ),
   )
@@ -94,6 +111,19 @@ afterEach(() => {
 })
 
 describe('warm role-aware Home', () => {
+  it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+    'does not fetch or display Wellness on %s Home',
+    async (role) => {
+      const fetch = network()
+      render(<HomePage profile={{ ...profile, role }} onNavigate={() => {}} />)
+      await screen.findByText('Món sáng thử nghiệm')
+      expect(
+        fetch.mock.calls.some((call) => call[0].startsWith('/api/wellness')),
+      ).toBe(false)
+      expect(screen.queryByRole('region', { name: 'Thể trạng' })).toBeNull()
+      expect(screen.queryByText(/Cân nặng|BMI tham khảo/)).toBeNull()
+    },
+  )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'keeps %s Fitness Home data own-only and concise',
     async (role) => {

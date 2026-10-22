@@ -18,6 +18,7 @@ import {
   fitnessRecordName,
 } from './fitness-display'
 import './fitness.css'
+import { WellnessSection } from '../wellness/WellnessSection'
 export function FitnessSection() {
   const [data, setData] = useState<FitnessWorkspace | null>(null),
     [state, setState] = useState<'loading' | 'ready' | 'error'>('loading'),
@@ -261,6 +262,7 @@ export function FitnessSection() {
           )}
         </>
       )}
+      <WellnessSection />
     </section>
   )
 }

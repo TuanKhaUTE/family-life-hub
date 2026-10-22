@@ -664,13 +664,13 @@ Push subscriptions
 
 ## Wellness
 
-Wellness profiles
+Feature 4D follows Route → Controller → WellnessService → SupabaseWellnessRepository → restricted SECURITY INVOKER RPCs, using existing session middleware. `GET /api/wellness` returns the actor's profile, latest 14 weight logs, and derived summary. `PUT /api/wellness/profile` sets optional height/target/activity; `DELETE /api/wellness/profile` resets only profile settings, preserving logs. `POST /api/wellness/logs`, `PUT /api/wellness/logs/:id`, and `DELETE /api/wellness/logs/:id` manage own measurements. Duplicate dates return an actionable conflict, never silently overwrite.
 
-Weight entries
+Service and RPCs independently require active ADMIN/MEMBER. PARENT is denied and ADMIN cannot bypass ownership. Client owner fields are rejected on updates and never authorize reads. Missing/foreign log IDs have identical errors. Default-deny RLS and service_role-only grants exclude browser access. A profile's PK is its owner FK; logs reference the same family member directly and remain independent of optional profile existence. Per-owner advisory locks serialize writes; triggers enforce valid active owners and immutable identities.
 
-Weight goals
+The repository reconstructs whitelisted DTOs and validates measurements. It reads at most 31 latest unique daily logs so the service can calculate exact observed 7/30-day windows even though only 14 history rows reach the client. The service uses centralized family-local today, derives current/previous change, observed spans/counts, and BMI when height exists; no derived data is stored. Windows are today plus the previous 6/29 dates; two actual observations are required. Created/updated timestamps remain UTC. No sensitive demographic attributes are inferred or added, so BMR/TDEE remain deferred.
 
-Visibility settings
+Feature-owned frontend Thể trạng is nested within Rèn luyện with independent loading/error/retry and compact profile/log forms. It uses Express only and a bounded observation list, without chart dependencies. Home never invokes Wellness or returns its data for any role. There is no sharing, family calendar write, workout-goal adjustment, notification, background job, or medical-advice engine.
 
 ---
 

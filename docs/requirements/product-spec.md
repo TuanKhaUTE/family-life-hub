@@ -617,6 +617,22 @@ The application should still function as a normal website if the user does not i
 
 # 18. Wellness
 
+## Implemented private foundation (Feature 4D)
+
+Thể trạng is an optional, separate subsection within Rèn luyện for active ADMIN/MEMBER. Each owner alone manages their profile and measurements; ADMIN has no privacy bypass. PARENT has no Wellness workspace or API access. Sharing is not implemented. No Wellness data is queried or returned by Home, including for the owner. Fitness goals never change automatically with body weight, and nothing is synchronized to the family calendar.
+
+The profile stores optional height (100–250 cm), optional target weight (20–350 kg), and an optional explicitly selected activity level. Height/weight values accept up to two decimal places. These are input bounds, not health recommendations. Empty optional fields clear previously stored values; resetting the profile does not delete measurement history. No age, birthday, or biological sex is collected or inferred.
+
+Each completed weight log has a family-local date (2000–2199, not future), weight (20–350 kg), and optional trimmed note up to 1000 characters. One entry per owner/date is enforced; duplicates are rejected with guidance to edit the existing entry, never silently overwritten. Owners can edit/delete their own entries, with explicit deletion confirmation. Forms close after successful saves and refresh real summaries.
+
+Current weight is the latest dated measurement, with its date shown; previous weight is the preceding dated measurement. Recent change is current minus previous, rounded to two decimal places. A 7/30-day trend uses today's family-local date and the previous 6/29 dates, comparing the earliest and latest actual observations within that window. At least two observations are required. Display actual comparison dates and point counts; never interpolate missing days or imply a full seven/thirty-day change from sparse observations.
+
+BMI is weight in kg divided by squared height in meters, rounded to one decimal place, only when both measurements exist. It is informational, without categories, diagnosis, recommendations, warning colors, or scoring. Missing inputs show a calm incomplete state. BMR/TDEE are deliberately omitted in Feature 4D because required age/biological-sex inputs do not safely exist; activity level is stored only as the owner's optional selection and does not produce calorie estimates.
+
+The compact history initially shows seven of the latest fourteen observations. Backend calculation reads at most 31 latest daily entries: uniqueness per date guarantees that all possible observations in the 30-day window are included. No derived BMI, change, or trend is stored. No photos, wearable sync, wellness notifications, streaks, gamification, or medical advice are introduced.
+
+## Longer-term direction
+
 Each family member may choose to use personal wellness tracking.
 
 This module is optional.

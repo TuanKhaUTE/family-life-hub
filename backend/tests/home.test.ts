@@ -205,6 +205,7 @@ describe('role-aware home', () => {
     async (role) => {
       const s = setup(role)
       const result = await s.service.get(s.profile)
+      expect(result).not.toHaveProperty('wellness')
       if (role === 'PARENT') {
         expect(result).not.toHaveProperty('fitness')
         expect(s.dependencies.fitness.summary).not.toHaveBeenCalled()
