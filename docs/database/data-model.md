@@ -458,6 +458,10 @@ Home additionally exposes family rating averages/counts for up to three recent r
 
 ## Implemented family calendar (Feature 3B)
 
+Correction Batch B reuses `calendar_events` with explicit `calendar_type` FAMILY/PERSONAL (default FAMILY for new legacy writes). Existing child-owned events are conservatively backfilled PERSONAL; all PARENT events remain FAMILY, including retained inactive-parent history. During the locked migration only, existing owner/update-timestamp triggers are paused for that type-only backfill and restored before commit, preserving original timestamps. Inactive owners remain hidden until reactivation. A visibility trigger rejects new PARENT personal events. Both old/new `calendar_read` signatures enforce privacy; the new signature adds type and rejects foreign PERSONAL filters. Legacy save updates retain type unless the owner explicitly changes it. No Study/Fitness integration is added.
+
+Week-copy provenance columns `copied_from_event_id`, `copied_from_date`, `copy_target_week` have a unique index with owner identity. Provenance is retained as an identity snapshot, not a cascading foreign key. `calendar_duplicate_week` expands only owned FAMILY source occurrences, skips cancelled entries and recurring instances already in the next week, creates concrete next-week rows atomically and deduplicates retries. Source edits do not overwrite saved copies. All new functions remain service_role-only SECURITY INVOKER with empty search paths.
+
 `calendar_events` contains UUID `id`, `owner_member_id` (family-member FK), trimmed `title` (1–120 characters), `category`, UTC `starts_at` / `ends_at`, optional trimmed `note` (1–1000 characters), nullable integer-array `weekdays` (distinct ISO weekdays 1–7), optional `recurrence_until`, and created/updated timestamps. Null weekdays means one-time. Weekly anchor dates and times use `Asia/Ho_Chi_Minh`, with same-day start/end and optional inclusive end date. Times must be finite, ordered, and at most 31 days apart; supported family dates are 2000–2199. Categories: SCHOOL, WORK, FITNESS, FAMILY, APPOINTMENT, PERSONAL, OTHER.
 
 `calendar_occurrence_exceptions` uses `(event_id, occurrence_date)` as its primary key, with a cascading event FK. The date identifies the original recurring occurrence, even if moved. A cancelled row has no override fields. A non-cancelled row has its own title, UTC start/end, nullable note, and timestamps. Retry updates reuse the same exception. Triggers validate that the original date belongs to an active owner's weekly series. Series scheduling changes with existing exceptions fail rather than deleting or orphaning those exceptions.
@@ -553,6 +557,14 @@ Weekly duplication should create or derive future sessions without granting edit
 ---
 
 # 6. Chore Domain
+
+## Active combined household duty (Correction Batch B)
+
+`household_duties` uses DATE `duty_date` as its primary key (one Rửa chén & Đổ rác assignment/day), unique UUID `id`, active-assignee FK, scheduling-PARENT FK, `cancelled`, nullable UTC `completed_at` / completed-by FK, and UTC created/updated timestamps. Completion requires both fields, completed-by equals assignee, and cancellation is incompatible with completion. Triggers retain immutable identity and completion facts. Completed rows cannot be reassigned or cancelled.
+
+Restricted `household_duty_read`, `household_duty_save_week`, `household_duty_duplicate_week`, and `household_duty_action` enforce active actors and roles inside the database. Week saves contain up to seven unique dated assignments and are atomic. Copies take a Monday source date, copy non-cancelled assignments forward seven days without completion facts, skip identical targets and abort on differing/cancelled targets. A shared transaction lock serializes mutations. Completion is assignee-only on today's Asia/Ho_Chi_Minh date, idempotent and atomically emits `HOUSEHOLD_DUTY_COMPLETED` to the active scheduling PARENT with resource type HOUSEHOLD_DUTY and the duty UUID. Conflict handling preserves `read_at`; no sibling/admin notification is emitted.
+
+RLS is enabled without browser policies; PUBLIC/anon/authenticated have no table or function privileges. Service-role invoker functions use fixed empty search paths and qualified relations. Legacy generic chore tables below remain intact as historical data and are not automatically merged or shown as new combined duties. Rollback-only coverage: `database/tests/correction-batch-b.rollback.sql`.
 
 ## Implemented family chores (Feature 3C)
 

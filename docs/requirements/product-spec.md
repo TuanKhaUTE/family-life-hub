@@ -486,11 +486,11 @@ The system should not create negative or embarrassing awards.
 
 # 14. Timetable
 
-Feature 3B implements a shared family calendar before academic timetable specialization. Every active family member (including PARENT) can create and manage their own events; all active family members can view each other's calendars. Neither ADMIN nor PARENT may edit/delete another owner's event. Calendar sharing does not grant access to private study, wellness, grades, or expenses.
+Lịch has two explicit products. **Lịch nhà** (FAMILY) is visible to every active family member; every member, including PARENT, creates/edits/deletes only their own events. **Lịch của tôi** (PERSONAL) is available only to ADMIN/MEMBER and is readable/mutable only by its owner; neither a sibling, PARENT nor ADMIN has a privacy bypass. PARENT has only Lịch nhà. School/on-campus availability and genuinely shared commitments belong in Lịch nhà; self-study, workouts and personal goals belong in Lịch của tôi. No automatic Study/Fitness calendar generation is introduced.
 
 The calendar supports one-time events and same-day weekly schedules with selected weekdays, a start date, and optional inclusive end date. A single recurring occurrence can be cancelled or given its own title, times, and note without changing the series. Cancelled occurrences remain visibly marked; moved occurrences appear in their destination date range. Whole-series schedule changes are refused once exceptions exist, to avoid silently invalidating those changes; edit individual occurrences instead. Deleting an owned series explicitly removes its exceptions.
 
-Lịch defaults to today's vertical timeline, with a week view, date navigation, and active-member filters. Owner-only controls are separate from read-only family details. Home shows up to three ongoing/upcoming events today: family-wide for PARENT, own events for ADMIN/MEMBER. There is no automatic interaction with meals, reminders, or chores.
+Lịch defaults to a day time-axis grid with positioned event blocks, a horizontally scrollable mobile week grid, date navigation, and stable member-color identity in FAMILY. PERSONAL uses category colors. “Nhân bản tuần” copies only the actor's FAMILY occurrences into the following week, includes explicit confirmation, skips recurring occurrences already present, and deduplicates retries. It never copies another member's or personal events. Existing child-owned legacy events migrate to PERSONAL conservatively; an explicit owner edit may publish them to FAMILY. PARENT legacy events remain FAMILY, including retained inactive-parent history, which stays hidden until reactivation. Home shows up to three current/upcoming FAMILY events for everyone and a separate own PERSONAL summary only for ADMIN/MEMBER.
 
 The following academic timetable features remain future work. Each student member will be able to maintain their own university timetable.
 
@@ -544,17 +544,17 @@ This is important because university schedules can change.
 
 # 15. Family Chores (Feature 3C)
 
-PARENT manages household chores: create, edit, reassign to any active member (including self), cancel one occurrence, or cancel a schedule. ADMIN and MEMBER do not inherit management permissions. All active members can view the family schedule; only the assigned member can complete their own occurrence, including PARENT's own chores. There is no parent completion override.
+The active household schedule is one combined **“Rửa chén & Đổ rác”** duty per family date. Only PARENT assigns an active member (including self), edits/reassigns a pending date, cancels it, or duplicates a saved week into the next week. ADMIN has no management bypass. All active members view daily/weekly assignments. Only the assignee may confirm **today's** uncancelled duty; past/future completion and completion on another member's behalf are refused.
 
-Categories are DISHES, TRASH, CLEANING, SHOPPING, LAUNDRY, and OTHER. Each dated occurrence is PENDING, COMPLETED, or CANCELLED. Completion is idempotent and records server timestamps and the assignee; future occurrences cannot be completed early. No points, penalties, rankings, or rewards are included.
+Missing assignments are not completion. Completion retains assignee, completed-by identity and server time, is idempotent, and cannot later be cancelled or reassigned. Each completion notifies the active scheduling PARENT once using the existing in-app notification subsystem; retries preserve read state. There is no realtime/push or gamification.
 
-A chore is either one-time or a simple weekly pattern with explicit weekday-to-member assignments, a start date, and an optional inclusive end date. No recurrence syntax or background generation is required. Completed/cancelled occurrence snapshots survive later schedule edits; pending occurrences follow the current pattern. Cancelling a schedule is terminal, preserves completed history, and does not hard-delete it.
+The seven-day editor saves explicit dated assignments atomically. Week duplication copies non-cancelled saved assignments, not completion status; an identical target is a no-op and a conflicting target is never overwritten. Legacy generic chore schedules/occurrences and their historical notifications remain retained in the legacy API, not destructively merged into the new duty model or displayed as new combined assignments.
 
-Lịch keeps the calendar timeline separate from “Việc nhà hôm nay”. PARENT sees “Quản lý việc nhà”, “Thêm việc”, and “Lịch lặp hàng tuần”. Members see their own chores first, others read-only, and completed chores in a compact checked state. A DISHES chore without a specific time is labelled “Sau bữa tối”; other untimed chores use “Trong ngày”.
+Lịch keeps “Việc nhà hôm nay” / “Việc nhà trong tuần” separate from event blocks. PARENT uses “Quản lý việc nhà”, “Lưu tuần” and confirmed “Nhân bản tuần việc nhà”. Assignees see “Hôm nay tới phiên bạn”, “Hoàn thành việc nhà ✓”, then a compact “Đã hoàn thành ✓” state with completion time.
 
-Home shows at most three non-cancelled chores for today: family assignments and statuses for PARENT, own chores for ADMIN/MEMBER. “Xem lịch” leads to Lịch; Home does not duplicate management or completion forms.
+Home shows today's non-cancelled combined duty: assignee/status for PARENT and own assignment/completion action for ADMIN/MEMBER. It never duplicates management forms or exposes private child-calendar data to Mom.
 
-Assignment/reassignment updates one notification per recipient and schedule, preserves read status, and safely handles retries. Former assignees' existing notices explain that the work is no longer assigned to them. There are no recurring reminder jobs, push notifications, or realtime updates.
+Legacy assignment notices keep their existing behavior. Combined-duty completion uses one notification per scheduling parent and duty identity; unrelated notices are untouched.
 
 ---
 

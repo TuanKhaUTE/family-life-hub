@@ -50,6 +50,7 @@ function setup(
     save: vi.fn(async () => eventId),
     remove: vi.fn(async () => {}),
     exception: vi.fn(async () => {}),
+    duplicateWeek: vi.fn(async () => 2),
   }
   const service = new CalendarService(
     repository,
@@ -120,6 +121,7 @@ describe('calendar API and validation', () => {
         '2099-05-04',
         '2099-05-10',
         null,
+        'FAMILY',
       )
     },
   )
@@ -133,6 +135,7 @@ describe('calendar API and validation', () => {
       '2099-05-04',
       '2099-05-04',
       eventId,
+      'FAMILY',
     )
     expect(
       (
@@ -275,5 +278,81 @@ describe('calendar API and validation', () => {
     expect(result.status).toBe(503)
     expect(result.body.error.code).toBe('CALENDAR_UNAVAILABLE')
     expect(JSON.stringify(result.body)).not.toMatch(/private|secret|stack/)
+  })
+})
+
+describe('calendar visibility and week copy', () => {
+  it.each(['ADMIN', 'MEMBER', 'PARENT'] as const)(
+    '%s copies only session-owned family week',
+    async (role) => {
+      const { app, repository } = setup(role)
+      const response = await request(app)
+        .post('/api/calendar/duplicate-week')
+        .send({ sourceWeek: '2099-05-04' })
+      expect(response.status).toBe(200)
+      expect(response.body).toEqual({ copied: 2 })
+      expect(repository.duplicateWeek).toHaveBeenCalledWith(
+        actor.id,
+        '2099-05-04',
+      )
+    },
+  )
+  it.each(['ADMIN', 'MEMBER'] as const)(
+    '%s reads only own personal calendar',
+    async (role) => {
+      const { app, repository } = setup(role)
+      expect(
+        (await request(app).get('/api/calendar?calendarType=PERSONAL')).status,
+      ).toBe(200)
+      expect(repository.list).toHaveBeenCalledWith(
+        actor.id,
+        '2099-05-04',
+        '2099-05-04',
+        actor.id,
+        'PERSONAL',
+      )
+      expect(
+        (
+          await request(app).get(
+            `/api/calendar?calendarType=PERSONAL&memberId=${eventId}`,
+          )
+        ).status,
+      ).toBe(403)
+    },
+  )
+  it('does not offer a personal calendar to a parent', async () => {
+    const { app, repository } = setup('PARENT')
+    expect(
+      (await request(app).get('/api/calendar?calendarType=PERSONAL')).status,
+    ).toBe(403)
+    expect(
+      (
+        await request(app)
+          .post('/api/calendar/events')
+          .send({ ...input, calendarType: 'PERSONAL' })
+      ).status,
+    ).toBe(403)
+    expect(repository.list).not.toHaveBeenCalled()
+    expect(repository.save).not.toHaveBeenCalled()
+  })
+  it('rejects invalid visibility and malformed copy requests', async () => {
+    const { app } = setup()
+    expect(
+      (await request(app).get('/api/calendar?calendarType=ALL')).status,
+    ).toBe(400)
+    expect(
+      (
+        await request(app)
+          .post('/api/calendar/duplicate-week')
+          .send({ sourceWeek: '2099-05-05' })
+      ).status,
+    ).toBe(400)
+    expect(
+      (
+        await request(app)
+          .post('/api/calendar/duplicate-week')
+          .send({ sourceWeek: '2099-05-04', ownerMemberId: eventId })
+      ).status,
+    ).toBe(400)
   })
 })

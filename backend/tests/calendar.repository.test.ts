@@ -67,6 +67,7 @@ describe('calendar repository security boundary', () => {
       p_from: '2099-05-04',
       p_to: '2099-05-10',
       p_owner_member_id: null,
+      p_calendar_type: 'FAMILY',
     })
   })
   it('sends authenticated actor and immutable occurrence identity to exception RPC', async () => {

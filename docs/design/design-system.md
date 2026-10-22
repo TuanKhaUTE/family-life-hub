@@ -515,11 +515,11 @@ In the main kitchen, show only the compact **Đánh giá bữa tối** / **Xem g
 
 # 18. Timetable Design
 
-Feature 3B's Lịch is a mobile-first family calendar headed “Lịch” / “Cùng nhau sắp xếp thời gian”. Default to today's vertical timeline, with Today/Week controls, date navigation, and active-member chips. Use cream surfaces, sage/peach/lavender/blue owner cards, avatars, category icons, and timeline dots. Labels and dates remain Vietnamese. Preserve comfortable touch targets at 320px and 390px, not a shrunken month grid.
+Lịch is a mobile-first calendar headed “Lịch” / “Cùng nhau sắp xếp thời gian”. ADMIN/MEMBER have [Lịch nhà] [Lịch của tôi]; PARENT only Lịch nhà. Day/week grids have an explicit time axis and time-positioned event blocks, with horizontally scrolling readable week columns rather than a generic card list. Family colors follow stable member order; personal colors follow category. Use cream surfaces and sage/peach/lavender/blue blocks. Preserve visible keyboard focus and 44px touch targets at 320px and 390px. “Nhân bản tuần” explains owned FAMILY-only scope and confirms the selected source/next week.
 
 Own event details offer explicit edit/delete controls; another owner's details are read-only regardless of role. Weekly details distinguish “Chỉnh sửa lần này”, “Chỉnh sửa cả lịch”, “Hủy lần này”, and confirmed “Xóa cả lịch”. Cancelled occurrences stay visibly marked. The shared form closes after a successful save. Feature 3C adds real household chores in a separate section beneath the timeline, never as fake calendar events.
 
-Home's calendar placeholder is replaced with a compact “Lịch gia đình hôm nay” (PARENT) / “Lịch của bạn hôm nay” (ADMIN/MEMBER) card, owner avatars, up to three real upcoming/ongoing items, a calm empty state, and “Xem lịch”. No full editor is duplicated on Home.
+Home uses “Lịch nhà hôm nay” for everyone and a separate “Lịch của tôi hôm nay” for ADMIN/MEMBER only. Each has at most three ongoing/upcoming items, owner identity, a calm empty state and “Xem lịch”. No full editor is duplicated on Home; PARENT never receives private-calendar details.
 
 Timetable views should prioritize readability.
 
@@ -547,11 +547,11 @@ Cancelled sessions should remain visible but clearly marked.
 
 # 19. Chores
 
-Household duties should feel friendly and collaborative, never punitive. Use “Việc nhà hôm nay”, “Giao cho”, “Sau bữa tối”, and “Đã làm xong”, with warm household icons, cream/yellow/sage rounded cards, member avatars, and readable Vietnamese dates. Keep chores visually separate from the calendar timeline.
+Household duties should feel friendly and collaborative, never punitive. Show one “Rửa chén & Đổ rác” assignment per date, with cream/yellow/sage rounded cards, member identity and readable Vietnamese dates. Keep duties separate from the calendar time-axis grid.
 
-PARENT manages through “Quản lý việc nhà”, “Thêm việc”, and “Lịch lặp hàng tuần”. The weekly form uses seven familiar weekday/member selectors, not technical recurrence syntax. All controls must remain comfortable at 320px and 390px, with visible focus states and touch targets of at least 44px. Forms collapse after successful saves.
+PARENT manages through “Quản lý việc nhà”, seven dated member selectors, “Lưu tuần” and confirmed “Nhân bản tuần việc nhà”. Pending dates may be reassigned or cancelled explicitly; completed dates are locked to preserve history. Controls remain comfortable at 320px/390px, with visible focus and 44px touch targets. Forms collapse after saving.
 
-Members' own chores appear first with a completion button only when eligible; other members' chores remain read-only. Completed cards collapse to “Hoàn thành ✓” without repeated completion controls. Cancellation is clearly distinct from completion. Home presents up to three compact chore summaries with “Xem lịch”, not management forms. No points, punitive language, rankings, or streaks.
+The assignee sees “Hôm nay tới phiên bạn” and “Hoàn thành việc nhà ✓” only for today's pending duty; other dates/members remain read-only. Completed cards show “Đã hoàn thành ✓” and who/when without repeat controls. Cancellation is distinct from completion. Home shows the same concise daily duty and completion action, not management forms. No points, punitive language, rankings or streaks.
 
 ---
 

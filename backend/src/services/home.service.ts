@@ -6,7 +6,7 @@ import type { MealRequestService } from './meal-request.service.js'
 import type { FinalMealService } from './final-meal.service.js'
 import type { DishRatingService } from './dish-rating.service.js'
 import type { CalendarService } from './calendar.service.js'
-import type { ChoreService } from './chore.service.js'
+import type { HouseholdDutyService } from './household-duty.service.js'
 import type { StudyService } from './study.service.js'
 import type { FitnessService } from './fitness.service.js'
 import type { PersonalExpenseService } from './personal-expense.service.js'
@@ -34,7 +34,7 @@ interface HomeDependencies {
   ratings: Pick<DishRatingService, 'get'>
   recent: HomeRepository
   calendar: Pick<CalendarService, 'list'>
-  chores: Pick<ChoreService, 'list'>
+  household: Pick<HouseholdDutyService, 'list'>
   study: Pick<StudyService, 'summary'>
   fitness: Pick<FitnessService, 'summary'>
   expenses: Pick<PersonalExpenseService, 'summary'>
@@ -59,7 +59,7 @@ export class HomeService {
         ratings,
         recent,
         calendar,
-        chores,
+        household,
         study,
         fitness,
         expenses,
@@ -76,17 +76,21 @@ export class HomeService {
         fitnessSummary,
         expenseSummary,
         foodSummary,
+        personalView,
       ] = await Promise.all([
         breakfastService.getDay(profile, 'next'),
         requests.listCurrent(profile),
         meals.get(date, 'DINNER'),
         recent.listRecent(profile.id, parent, date),
-        calendar.list(profile, date, date, parent ? undefined : profile.id),
-        chores.list(profile, date, date, parent ? undefined : profile.id),
+        calendar.list(profile, date, date, undefined, 'FAMILY'),
+        household.list(profile, date, date),
         parent ? Promise.resolve(null) : study.summary(profile),
         parent ? Promise.resolve(null) : fitness.summary(profile),
         expenses.summary(profile),
         familyFood.summary(profile),
+        parent
+          ? Promise.resolve(null)
+          : calendar.list(profile, date, date, profile.id, 'PERSONAL'),
       ])
       const plan = plans.find(
         (p) =>
@@ -119,6 +123,13 @@ export class HomeService {
         ).length
       }
       const actions: { id: string; label: string }[] = []
+      const duty =
+        choreView.duties.find(
+          (d) =>
+            d.date === date &&
+            !d.cancelled &&
+            (parent || d.assignee.id === profile.id),
+        ) ?? null
       if (breakfast.isOpen && !breakfast.purchase) {
         for (const response of breakfastResponses.filter(
           (r) => r.state === 'NO_RESPONSE',
@@ -247,42 +258,55 @@ export class HomeService {
               },
             }
           : {}),
-        chores: choreView.chores
-          .filter(
-            (c) =>
-              c.status !== 'CANCELLED' &&
-              (parent || c.assignee.id === profile.id),
-          )
-          .sort(
-            (a, b) =>
-              Number(a.status === 'COMPLETED') -
-                Number(b.status === 'COMPLETED') ||
-              (a.schedule.scheduledTime ?? '99:99').localeCompare(
-                b.schedule.scheduledTime ?? '99:99',
-              ),
-          )
-          .slice(0, 3)
-          .map((c) => ({
-            scheduleId: c.schedule.id,
-            title: c.schedule.title,
-            category: c.schedule.category,
-            scheduledTime: c.schedule.scheduledTime,
-            date: c.date,
-            status: c.status,
-            assignee: {
-              id: c.assignee.id,
-              displayName: c.assignee.displayName,
-              avatarType: c.assignee.avatarType,
-              avatarValue: c.assignee.avatarValue,
-            },
-          })),
+        chores: [],
+        householdDuty: duty
+          ? {
+              id: duty.id,
+              date: duty.date,
+              assignee: {
+                id: duty.assignee.id,
+                displayName: duty.assignee.displayName,
+                avatarType: duty.assignee.avatarType,
+                avatarValue: duty.assignee.avatarValue,
+              },
+              cancelled: duty.cancelled,
+              completedAt: duty.completedAt,
+              completedByMemberId: duty.completedByMemberId,
+            }
+          : null,
+        ...(!parent && personalView
+          ? {
+              personalCalendar: {
+                events: personalView.occurrences
+                  .filter(
+                    (item) =>
+                      !item.cancelled &&
+                      item.owner.id === profile.id &&
+                      Date.parse(item.endsAt) > now.getTime(),
+                  )
+                  .slice(0, 3)
+                  .map((item) => ({
+                    id: item.event.id + ':' + item.date,
+                    title: item.title,
+                    startsAt: item.startsAt,
+                    endsAt: item.endsAt,
+                    owner: {
+                      id: item.owner.id,
+                      displayName: item.owner.displayName,
+                      avatarType: item.owner.avatarType,
+                      avatarValue: item.owner.avatarValue,
+                    },
+                  })),
+              },
+            }
+          : {}),
         calendar: {
           events: calendarView.occurrences
             .filter(
               (item) =>
                 !item.cancelled &&
-                Date.parse(item.endsAt) > now.getTime() &&
-                (parent || item.owner.id === profile.id),
+                item.event.calendarType !== 'PERSONAL' &&
+                Date.parse(item.endsAt) > now.getTime(),
             )
             .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
             .slice(0, 3)

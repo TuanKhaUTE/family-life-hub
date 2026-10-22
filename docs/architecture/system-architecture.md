@@ -369,9 +369,9 @@ Detailed endpoint design will be created feature by feature rather than defining
 
 `GET /api/home` is an authenticated, read-only composition of existing breakfast, today's dinner request/final meal, and rating data. Existing services retain deadline and ownership rules. Home explicitly projects compact DTOs; members receive only their own response states, PARENT receives family response states. Recent ready dinner dishes expose family average/count and only the actor's individual score, never other members' comments or rating identities. The session middleware rejects inactive/expired sessions. Responses are not cached. Home adds no future-module persistence, schema changes, or database writes.
 
-Feature 3B adds calendar composition to Home using the same CalendarService as Lịch. It returns at most three non-cancelled ongoing/upcoming events today: all active owners for PARENT, only the actor for ADMIN/MEMBER. Calendar visibility is intentionally family-shared and does not change privacy defaults for other modules.
+Calendar composition uses the same CalendarService as Lịch. FAMILY reads are active-family-visible; PERSONAL requires ADMIN/MEMBER and is actor-only, including inside the database. PARENT personal reads are refused. Home returns at most three ongoing/upcoming FAMILY events and, only for ADMIN/MEMBER, a separate own PERSONAL summary. No private calendar is queried for PARENT. Conservative legacy classification keeps child events private unless explicitly republished by their owner.
 
-Authenticated calendar APIs follow Route → Controller → Service → Repository → Database: `GET /api/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD&memberId=UUID` (inclusive range, up to 31 days; optional member filter), `POST /api/calendar/events`, `PUT /api/calendar/events/:eventId`, `DELETE /api/calendar/events/:eventId`, and `PUT /api/calendar/events/:eventId/occurrences/:date`. Mutation bodies cannot supply actor/owner identity. Full event updates and occurrence overrides are distinct. Service-only RPCs recheck active ownership and serialize series/exception writes with event-row locks. Recurrence expansion lives in the database read RPC rather than being duplicated on the client. No calendar/meal automation, push, external sync, or private-module reads are introduced.
+Authenticated APIs follow Route → Controller → Service → Repository → Database: `GET /api/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD&calendarType=FAMILY|PERSONAL&memberId=UUID` (up to 31 inclusive days; PERSONAL filters only self), event POST/PUT/DELETE and occurrence PUT endpoints. Bodies cannot supply actor/owner. Event `calendarType` is explicit in new UI; omitted legacy updates preserve existing privacy, legacy creates default FAMILY. Both read RPC signatures enforce visibility. `POST /api/calendar/duplicate-week {sourceWeek}` copies only owned FAMILY occurrences into next-week one-offs, skips existing recurring instances and deduplicates source occurrence/target week. Per-owner advisory and event-row locks make copying atomic. Copies are snapshots, not live synchronization. No Study/Fitness generation, push or external sync is introduced.
 
 ---
 
@@ -641,7 +641,11 @@ Schedule exceptions
 
 ## Chores
 
-Feature 3C uses Route → Controller → ChoreService → SupabaseChoreRepository → restricted database RPCs. Session middleware supplies the actor; client role/member fields never authorize a write. PARENT manages, every active member reads, and only the assignee completes their own dated occurrence. No parent override or ADMIN management bypass exists.
+Correction Batch B's active duty workflow uses Route → Controller → HouseholdDutyService → SupabaseHouseholdDutyRepository → restricted SECURITY INVOKER RPCs. Session actor identity authorizes every operation; PARENT alone manages, everyone active reads, and only the assignee completes today's uncancelled duty. No parent override or ADMIN bypass exists. One `household_duties` row per date combines Rửa chén & Đổ rác; completion metadata is retained. Shared transaction locks serialize week save/copy/cancel/complete. A completion atomically notifies the active scheduling PARENT once, preserving `read_at`. Home projects today's duty without legacy generic tasks.
+
+Active REST endpoints: `GET /api/chores/duties?from=...&to=...`, `PUT /api/chores/duties/week {assignments:[{date,memberId}]}`, `POST /api/chores/duties/duplicate-week {sourceWeek}`, `POST /api/chores/duties/:date/complete`, `DELETE /api/chores/duties/:date` (soft cancellation). Weekly writes are atomic; duplicate-week retries skip identical targets and refuse conflicting assignments without overwriting. Completed duties cannot be cancelled/reassigned. Browser table/RPC access remains denied.
+
+The following Feature 3C APIs are retained for legacy chore history and are no longer used by the normal Lịch/Home experience:
 
 REST endpoints:
 

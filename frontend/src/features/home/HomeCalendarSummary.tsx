@@ -4,21 +4,25 @@ import type { HomeSummary } from './home-api'
 
 export function HomeCalendarSummary({
   calendar,
-  parent,
+  personal = false,
   onOpen,
 }: {
   calendar: HomeSummary['calendar']
-  parent: boolean
+  personal?: boolean
   onOpen: () => void
 }) {
   return (
     <section
       className="home-card home-calendar"
-      aria-labelledby="home-calendar-title"
+      aria-labelledby={
+        personal ? 'home-personal-calendar-title' : 'home-calendar-title'
+      }
     >
       <div className="home-section-title">
-        <h2 id="home-calendar-title">
-          {parent ? 'Lịch gia đình hôm nay' : 'Lịch của bạn hôm nay'}
+        <h2
+          id={personal ? 'home-personal-calendar-title' : 'home-calendar-title'}
+        >
+          {personal ? 'Lịch của tôi hôm nay' : 'Lịch nhà hôm nay'}
         </h2>
         <button className="home-link" onClick={onOpen}>
           Xem lịch

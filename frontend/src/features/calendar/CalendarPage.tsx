@@ -7,24 +7,22 @@ import {
   type CalendarView,
   type CalendarOccurrence,
 } from './calendar-api'
-import {
-  calendarDay,
-  calendarTime,
-  shiftDay,
-  weekRange,
-  CATEGORY_LABELS,
-  CATEGORY_ICONS,
-} from './calendar-time'
+import { shiftDay, weekRange } from './calendar-time'
 import { CalendarForm } from './CalendarForm'
 import { CalendarDetails } from './CalendarDetails'
 import './calendar.css'
-import { ChoresSection } from '../chores/ChoresSection'
+import { HouseholdDutySection } from '../chores/HouseholdDutySection'
+import { CalendarGrid } from './CalendarGrid'
+import { CalendarWeekCopy } from './CalendarWeekCopy'
 
 export function CalendarPage({ profile }: { profile: FamilyProfile }) {
   const [today] = useState(() => familyDate())
   const [date, setDate] = useState(today)
   const [view, setView] = useState<'DAY' | 'WEEK'>('DAY')
   const [memberId, setMemberId] = useState<string | null>(null)
+  const [calendarType, setCalendarType] = useState<'FAMILY' | 'PERSONAL'>(
+    'FAMILY',
+  )
   const [showMembers, setShowMembers] = useState(true)
   const [data, setData] = useState<CalendarView | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -39,7 +37,13 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
     view === 'WEEK' ? weekRange(date) : { from: date, to: date }
   useEffect(() => {
     const controller = new AbortController()
-    void fetchCalendar(from, to, memberId, controller.signal)
+    void fetchCalendar(
+      from,
+      to,
+      calendarType === 'PERSONAL' ? profile.id : memberId,
+      controller.signal,
+      calendarType,
+    )
       .then((calendar) => {
         if (!controller.signal.aborted) {
           setData(calendar)
@@ -50,7 +54,7 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
         if (!controller.signal.aborted) setState('error')
       })
     return () => controller.abort()
-  }, [from, to, memberId, version])
+  }, [from, to, memberId, version, calendarType, profile.id])
   function reload() {
     setState('loading')
     setVersion((v) => v + 1)
@@ -89,6 +93,42 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
           Thêm lịch
         </button>
       </header>
+      <div className="calendar-tabs" aria-label="Loại lịch">
+        <button
+          aria-pressed={calendarType === 'FAMILY'}
+          onClick={() => {
+            setCalendarType('FAMILY')
+            setSelected(null)
+            setForm(null)
+            setData(null)
+            reload()
+          }}
+        >
+          Lịch nhà
+        </button>
+        {profile.role !== 'PARENT' && (
+          <button
+            aria-pressed={calendarType === 'PERSONAL'}
+            onClick={() => {
+              setCalendarType('PERSONAL')
+              setSelected(null)
+              setForm(null)
+              setData(null)
+              reload()
+            }}
+          >
+            Lịch của tôi
+          </button>
+        )}
+      </div>
+      <p className="calendar-hint">
+        {calendarType === 'FAMILY'
+          ? 'Lịch nhà để cả nhà biết lịch đi học và những cuộc hẹn cần chia sẻ. Mỗi người chỉ sửa lịch của mình.'
+          : 'Góc thời gian riêng, chỉ mình bạn xem và chỉnh sửa. Lịch tự học, tập luyện chưa tự động đồng bộ.'}
+      </p>
+      {calendarType === 'FAMILY' && (
+        <CalendarWeekCopy date={date} onCopied={changed} />
+      )}
       <div className="calendar-tabs" aria-label="Chế độ xem lịch">
         <button
           aria-pressed={view === 'DAY'}
@@ -108,14 +148,16 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
         >
           Tuần này
         </button>
-        <button
-          aria-expanded={showMembers}
-          onClick={() => setShowMembers((v) => !v)}
-        >
-          Mọi người
-        </button>
+        {calendarType === 'FAMILY' && (
+          <button
+            aria-expanded={showMembers}
+            onClick={() => setShowMembers((v) => !v)}
+          >
+            Mọi người
+          </button>
+        )}
       </div>
-      {showMembers && (
+      {showMembers && calendarType === 'FAMILY' && (
         <div className="calendar-filters" aria-label="Lọc thành viên">
           <button
             aria-pressed={memberId === null}
@@ -181,8 +223,11 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
           date={date}
           item={form.item}
           occurrenceOnly={form.occurrenceOnly}
+          calendarType={calendarType}
+          allowPersonal={profile.role !== 'PARENT'}
           onClose={() => setForm(null)}
-          onSaved={(day) => {
+          onSaved={(day, kind) => {
+            setCalendarType(kind)
             setDate(day)
             setMemberId(profile.id)
             changed('Đã lưu lịch của bạn.')
@@ -226,78 +271,24 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
               chút nhé.
             </p>
           )}
-          {days.map((day) => {
-            const items = data.occurrences.filter((item) => {
-              const local = familyDate(new Date(item.startsAt))
-              return (local < from ? from : local) === day
-            })
-            return (
-              <section key={day} className="calendar-day">
-                <h2>{calendarDay(day)}</h2>
-                {view === 'WEEK' && items.length === 0 && (
-                  <p className="calendar-hint">Chưa có lịch</p>
-                )}
-                <ol>
-                  {items.map((item) => {
-                    const tone =
-                      data.members.findIndex((m) => m.id === item.owner.id) % 4
-                    return (
-                      <li key={`${item.event.id}:${item.date}`}>
-                        <span className="calendar-dot" aria-hidden="true" />
-                        <button
-                          className={`calendar-event calendar-tone-${tone}${item.cancelled ? ' calendar-cancelled' : ''}`}
-                          onClick={() => {
-                            setSelected(item)
-                            setForm(null)
-                            setMessage(null)
-                          }}
-                        >
-                          <span className="calendar-event-time">
-                            <time dateTime={item.startsAt}>
-                              {calendarTime(item.startsAt)}
-                            </time>
-                            –
-                            <time dateTime={item.endsAt}>
-                              {calendarTime(item.endsAt)}
-                            </time>
-                          </span>
-                          <span className="calendar-owner">
-                            <ProfileAvatar profile={item.owner} />
-                            {item.owner.displayName}
-                          </span>
-                          <strong>{item.title}</strong>
-                          <span className="calendar-category">
-                            <span aria-hidden="true">
-                              {CATEGORY_ICONS[item.event.category]}{' '}
-                            </span>
-                            {CATEGORY_LABELS[item.event.category]}
-                            {item.event.weekdays ? ' · Hàng tuần' : ''}
-                          </span>
-                          {item.cancelled && (
-                            <span className="calendar-cancelled-label">
-                              Đã hủy lần này
-                            </span>
-                          )}
-                          {item.isException && !item.cancelled && (
-                            <span className="calendar-hint">
-                              Đã đổi riêng lần này
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ol>
-              </section>
-            )
-          })}
+          <CalendarGrid
+            focusDate={date}
+            days={days}
+            data={data}
+            personal={calendarType === 'PERSONAL'}
+            onSelect={(item) => {
+              setSelected(item)
+              setForm(null)
+              setMessage(null)
+            }}
+          />
         </section>
       )}
-      <ChoresSection
+      <HouseholdDutySection
+        key={`${from}:${to}`}
         profile={profile}
         from={from}
         to={to}
-        memberId={memberId}
       />
     </div>
   )

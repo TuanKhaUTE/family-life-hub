@@ -6,6 +6,7 @@ import { greeting } from './home-time'
 import { AuthenticatedShell } from '../auth/AuthenticatedShell'
 import type { FamilyProfile } from '../auth/auth-api'
 import type { HomeSummary } from './home-api'
+import { familyDate } from '../meals/family-time'
 
 const profile: FamilyProfile = {
   id: 'synthetic-member',
@@ -54,6 +55,69 @@ function summary(): HomeSummary {
     },
   }
 }
+it.each(['ADMIN', 'MEMBER', 'PARENT'] as const)(
+  '%s Home never renders another owner personal calendar',
+  async (role) => {
+    const home = summary()
+    const event = {
+      id: 'own',
+      title: 'Lịch riêng của bạn',
+      startsAt: '2099-05-01T02:00Z',
+      endsAt: '2099-05-01T03:00Z',
+      owner: profile,
+    }
+    home.personalCalendar = {
+      events: [
+        event,
+        {
+          ...event,
+          id: 'foreign',
+          title: 'Không được hiển thị',
+          owner: { ...profile, id: 'other' },
+        },
+      ],
+    }
+    network(home)
+    render(<HomePage profile={{ ...profile, role }} onNavigate={() => {}} />)
+    await screen.findByRole('heading', { name: 'Lịch nhà hôm nay' })
+    expect(screen.queryByText('Không được hiển thị')).toBeNull()
+    expect(!!screen.queryByText('Lịch riêng của bạn')).toBe(role !== 'PARENT')
+  },
+)
+it('assignee completes today from Home and refreshes persisted completion state', async () => {
+  const home = summary()
+  home.date = familyDate()
+  home.householdDuty = {
+    id: 'duty',
+    date: home.date,
+    assignee: profile,
+    cancelled: false,
+    completedAt: null,
+    completedByMemberId: null,
+  }
+  const calls: string[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push(url)
+      if (url.endsWith('/complete') && init?.method === 'POST') {
+        home.householdDuty!.completedAt = new Date().toISOString()
+        home.householdDuty!.completedByMemberId = profile.id
+        return new Response(null, { status: 204 })
+      }
+      return new Response(JSON.stringify({ home }))
+    }),
+  )
+  render(<HomePage profile={profile} onNavigate={() => {}} />)
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Hoàn thành việc nhà ✓' }),
+  )
+  expect(await screen.findByText('Đã hoàn thành ✓')).toBeTruthy()
+  expect(calls.filter((url) => url === '/api/home')).toHaveLength(2)
+  expect(
+    screen.queryByRole('button', { name: 'Hoàn thành việc nhà ✓' }),
+  ).toBeNull()
+})
 it.each([false, true])(
   'Home shows the lifecycle copy and purchase message without exposing a meal editor: purchased=%s',
   async (purchased) => {
@@ -280,9 +344,22 @@ describe('warm role-aware Home', () => {
     },
   )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
-    'shows real %s chores without Home management or completion forms',
+    'shows %s combined duty on Home without schedule management',
     async (role) => {
       const home = summary()
+      home.householdDuty = {
+        id: 'synthetic',
+        date: home.date,
+        assignee: {
+          id: profile.id,
+          displayName: profile.displayName,
+          avatarType: null,
+          avatarValue: null,
+        },
+        cancelled: false,
+        completedAt: null,
+        completedByMemberId: null,
+      }
       home.chores = [
         {
           scheduleId: 'synthetic',
@@ -305,8 +382,8 @@ describe('warm role-aware Home', () => {
       const region = await screen.findByRole('region', {
         name: role === 'PARENT' ? 'Việc nhà hôm nay' : 'Việc nhà của bạn',
       })
-      expect(within(region).getByText('Việc nhà từ API')).toBeTruthy()
-      expect(within(region).getByText(/Sau bữa tối/)).toBeTruthy()
+      expect(within(region).getByText('Rửa chén & Đổ rác')).toBeTruthy()
+      expect(within(region).getByText('Chưa hoàn thành')).toBeTruthy()
       expect(
         within(region).queryByRole('button', { name: 'Đã làm xong' }),
       ).toBeNull()
@@ -340,20 +417,14 @@ describe('warm role-aware Home', () => {
       render(<HomePage profile={{ ...profile, role }} onNavigate={navigate} />)
       expect(
         await screen.findByRole('heading', {
-          name:
-            role === 'PARENT'
-              ? 'Lịch gia đình hôm nay'
-              : 'Lịch của bạn hôm nay',
+          name: 'Lịch nhà hôm nay',
         }),
       ).toBeTruthy()
       expect(screen.getByText('Hoạt động thật từ API')).toBeTruthy()
       await userEvent.click(
         within(
           screen.getByRole('region', {
-            name:
-              role === 'PARENT'
-                ? 'Lịch gia đình hôm nay'
-                : 'Lịch của bạn hôm nay',
+            name: 'Lịch nhà hôm nay',
           }),
         ).getByRole('button', { name: 'Xem lịch' }),
       )
@@ -446,10 +517,7 @@ describe('warm role-aware Home', () => {
       ).toBeTruthy()
       expect(
         screen.getByRole('heading', {
-          name:
-            role === 'PARENT'
-              ? 'Lịch gia đình hôm nay'
-              : 'Lịch của bạn hôm nay',
+          name: 'Lịch nhà hôm nay',
         }),
       ).toBeTruthy()
       expect(

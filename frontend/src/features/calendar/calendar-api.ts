@@ -14,6 +14,7 @@ export interface CalendarMember {
   avatarValue: string | null
 }
 export interface CalendarInput {
+  calendarType?: 'FAMILY' | 'PERSONAL'
   title: string
   category: (typeof CATEGORIES)[number]
   startsAt: string
@@ -84,8 +85,10 @@ export async function fetchCalendar(
   to: string,
   memberId: string | null,
   signal: AbortSignal,
+  calendarType: 'FAMILY' | 'PERSONAL' = 'FAMILY',
 ): Promise<CalendarView> {
   const query = new URLSearchParams({ from, to })
+  query.set('calendarType', calendarType)
   if (memberId) query.set('memberId', memberId)
   const body = await request(`?${query}`, { signal })
   if (!object(body) || !object(body.calendar)) invalid()
@@ -105,6 +108,22 @@ export async function fetchCalendar(
     members: view.members.map(readMember),
     occurrences: view.occurrences.map(readOccurrence),
   }
+}
+export async function duplicateCalendarWeek(
+  sourceWeek: string,
+): Promise<number> {
+  const data = await request('/duplicate-week', {
+    method: 'POST',
+    body: JSON.stringify({ sourceWeek }),
+  })
+  if (
+    !object(data) ||
+    typeof data.copied !== 'number' ||
+    !Number.isInteger(data.copied) ||
+    data.copied < 0
+  )
+    invalid()
+  return data.copied
 }
 export async function saveCalendarEvent(
   input: CalendarInput,
@@ -171,6 +190,9 @@ function readOccurrence(value: unknown): CalendarOccurrence {
     typeof e.ownerMemberId !== 'string' ||
     typeof e.title !== 'string' ||
     !CATEGORIES.includes(e.category as never) ||
+    (e.calendarType !== undefined &&
+      e.calendarType !== 'FAMILY' &&
+      e.calendarType !== 'PERSONAL') ||
     !stamp(e.startsAt) ||
     !stamp(e.endsAt) ||
     !nullable(e.note) ||
@@ -184,6 +206,9 @@ function readOccurrence(value: unknown): CalendarOccurrence {
     invalid()
   return {
     event: {
+      ...(e.calendarType === undefined
+        ? {}
+        : { calendarType: e.calendarType as 'FAMILY' | 'PERSONAL' }),
       id: e.id,
       ownerMemberId: e.ownerMemberId,
       title: e.title,

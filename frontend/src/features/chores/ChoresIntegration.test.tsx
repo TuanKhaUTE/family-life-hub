@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { CalendarPage } from '../calendar/CalendarPage'
 import { NotificationPanel } from '../notifications/NotificationPanel'
@@ -15,7 +9,7 @@ const id = '11111111-1111-4111-8111-111111111111',
 const profile: FamilyProfile = {
   id,
   displayName: 'Thử nghiệm',
-  role: 'PARENT',
+  role: 'MEMBER',
   avatarType: null,
   avatarValue: null,
 }
@@ -23,15 +17,16 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
-it('Lịch keeps chores separate and the existing notification panel refreshes after a schedule save', async () => {
-  let saved = false,
+it('combined duty completion refreshes notifications; only the parent session receives its notice', async () => {
+  let completed = false,
+    parentSession = false,
     readAt: string | null = null
   const notice = {
     id,
-    type: 'CHORE_ASSIGNMENT',
-    title: 'Việc nhà đã cập nhật',
-    message: 'Việc thử nghiệm',
-    relatedResourceType: 'CHORE_SCHEDULE',
+    type: 'HOUSEHOLD_DUTY_COMPLETED',
+    title: 'Thử nghiệm đã hoàn thành việc nhà hôm nay',
+    message: 'Rửa chén & Đổ rác',
+    relatedResourceType: 'HOUSEHOLD_DUTY',
     relatedResourceId: id,
     relatedDate: date,
     createdAt: `${date}T00:00:00Z`,
@@ -50,29 +45,36 @@ it('Lịch keeps chores separate and the existing notification panel refreshes a
             occurrences: [],
           },
         }
-      else if (url.startsWith('/api/chores?'))
+      else if (url.startsWith('/api/chores/duties?'))
         body = {
-          chores: {
-            from: date,
-            to: date,
-            timeZone: 'Asia/Ho_Chi_Minh',
+          household: {
             members: [profile],
-            chores: [],
+            duties: [
+              {
+                id,
+                date,
+                assignee: profile,
+                cancelled: false,
+                completedAt: completed ? `${date}T12:00:00Z` : null,
+                completedByMemberId: completed ? id : null,
+              },
+            ],
           },
         }
-      else if (url === '/api/chores/schedules' && init?.method === 'POST') {
-        saved = true
-        body = { scheduleId: id }
-      } else if (url.endsWith('/read')) {
-        readAt = `${date}T01:00:00Z`
+      else if (url.endsWith('/complete') && init?.method === 'POST') {
+        completed = true
+        return new Response(null, { status: 204 })
+      } else if (url.endsWith('/read') && parentSession) {
+        readAt = `${date}T13:00:00Z`
         body = { notification: { ...notice, readAt } }
       } else if (url === '/api/notifications')
         body = {
-          notifications: saved ? [{ ...notice, readAt }] : [],
-          unreadCount: saved && readAt === null ? 1 : 0,
+          notifications:
+            completed && parentSession ? [{ ...notice, readAt }] : [],
+          unreadCount: completed && parentSession && !readAt ? 1 : 0,
         }
       else throw new Error('Unexpected synthetic request')
-      return new Response(JSON.stringify(body), { status: 200 })
+      return new Response(JSON.stringify(body))
     }),
   )
   render(
@@ -81,21 +83,18 @@ it('Lịch keeps chores separate and the existing notification panel refreshes a
       <CalendarPage profile={profile} />
     </>,
   )
-  const chores = screen.getByRole('region', { name: 'Việc nhà hôm nay' })
   expect(
-    await within(chores).findByText('Hôm nay chưa có việc nhà cần làm.'),
+    await screen.findByRole('button', { name: 'Hoàn thành việc nhà ✓' }),
   ).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Lịch' })).toBeTruthy()
-  fireEvent.click(within(chores).getByRole('button', { name: 'Thêm việc' }))
-  fireEvent.change(screen.getByLabelText('Tên việc'), {
-    target: { value: 'Việc thử nghiệm' },
-  })
-  fireEvent.change(screen.getByLabelText('Giao cho'), { target: { value: id } })
-  fireEvent.click(screen.getByRole('button', { name: 'Lưu việc' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Hoàn thành việc nhà ✓' }))
+  expect(await screen.findByText('Đã hoàn thành ✓')).toBeTruthy()
+  expect(screen.queryByLabelText('1 thông báo chưa đọc')).toBeNull()
+  cleanup()
+  parentSession = true
+  render(<NotificationPanel />)
   expect(await screen.findByLabelText('1 thông báo chưa đọc')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Thông báo' }))
-  expect(await screen.findByText('Việc nhà đã cập nhật')).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Đánh dấu đã đọc' })).toBeNull()
+  expect(await screen.findByText(notice.title)).toBeTruthy()
   expect(await screen.findByText('Đã đọc')).toBeTruthy()
   expect(screen.queryByLabelText('1 thông báo chưa đọc')).toBeNull()
 })

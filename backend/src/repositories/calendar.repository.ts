@@ -50,12 +50,14 @@ export class SupabaseCalendarRepository implements CalendarRepository {
     from: string,
     to: string,
     memberId: string | null,
+    calendarType: 'FAMILY' | 'PERSONAL' = 'FAMILY',
   ) {
     const data = await this.rpc('calendar_read', {
       p_actor_member_id: actorId,
       p_from: from,
       p_to: to,
       p_owner_member_id: memberId,
+      p_calendar_type: calendarType,
     })
     try {
       if (
@@ -87,6 +89,7 @@ export class SupabaseCalendarRepository implements CalendarRepository {
       p_note: input.note,
       p_weekdays: input.weekdays,
       p_recurrence_until: input.recurrenceUntil,
+      p_calendar_type: input.calendarType ?? null,
     })
     try {
       requireId(data)
@@ -100,6 +103,15 @@ export class SupabaseCalendarRepository implements CalendarRepository {
       p_actor_member_id: actorId,
       p_event_id: eventId,
     })
+  }
+  async duplicateWeek(actorId: string, sourceWeek: string) {
+    const data = await this.rpc('calendar_duplicate_week', {
+      p_actor_member_id: actorId,
+      p_source_week: sourceWeek,
+    })
+    if (typeof data !== 'number' || !Number.isInteger(data) || data < 0)
+      throw new Error('Invalid copy result')
+    return data
   }
   async exception(
     actorId: string,
@@ -153,6 +165,7 @@ function occurrence(value: unknown): CalendarOccurrence {
   requireId(e.ownerMemberId)
   if (!timestamp(e.createdAt) || !timestamp(e.updatedAt)) throw new Error()
   const input = normalizeCalendarInput({
+    calendarType: e.calendarType,
     title: e.title,
     category: e.category,
     startsAt: e.startsAt,

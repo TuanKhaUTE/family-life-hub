@@ -14,7 +14,7 @@ import type { BreakfastDay } from '../src/services/breakfast.service.js'
 import type { MealRequestView } from '../src/services/meal-request.service.js'
 import type { FinalMeal } from '../src/services/final-meal.service.js'
 import type { CalendarOccurrence } from '../src/services/calendar.service.js'
-import type { ChoreOccurrence } from '../src/services/chore.service.js'
+import type { HouseholdDuty } from '../src/services/household-duty.service.js'
 
 const member: SafeFamilyProfile = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -174,20 +174,11 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
         ],
       })),
     },
-    chores: {
+    household: {
       list: vi.fn(
-        async (): Promise<{
-          from: string
-          to: string
-          timeZone: string
-          members: []
-          chores: ChoreOccurrence[]
-        }> => ({
-          from: '2099-05-01',
-          to: '2099-05-01',
-          timeZone: 'Asia/Ho_Chi_Minh',
+        async (): Promise<{ members: []; duties: HouseholdDuty[] }> => ({
           members: [],
-          chores: [],
+          duties: [],
         }),
       ),
     },
@@ -313,65 +304,43 @@ describe('role-aware home', () => {
     },
   )
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
-    'projects %s Home chores safely with own filtering and pending priority',
+    'projects %s combined duty without exposing another child assignment on Home',
     async (role) => {
       const s = setup(role)
-      const schedule = {
+      const duty: HouseholdDuty = {
         id: member.id,
-        requestId: member.id,
-        title: 'Synthetic chore',
-        category: 'DISHES' as const,
-        scheduledDate: '2099-05-01',
-        scheduledTime: null,
-        assignedMemberId: member.id,
-        weeklyAssignments: [],
-        recurrenceUntil: null,
-        note: 'not needed on Home',
-        createdByMemberId: member.id,
-        cancelled: false,
-        createdAt: '2099-05-01T00:00:00Z',
-        updatedAt: '2099-05-01T00:00:00Z',
-      }
-      const chore: ChoreOccurrence = {
-        schedule,
         date: '2099-05-01',
         assignee: member,
-        status: 'PENDING',
+        cancelled: false,
         completedAt: null,
         completedByMemberId: null,
       }
-      s.dependencies.chores.list.mockResolvedValue({
-        from: '2099-05-01',
-        to: '2099-05-01',
-        timeZone: 'Asia/Ho_Chi_Minh',
+      s.dependencies.household.list.mockResolvedValue({
         members: [],
-        chores: [
-          {
-            ...chore,
-            status: 'COMPLETED',
-            completedAt: '2099-05-01T01:00:00Z',
-            completedByMemberId: member.id,
-          },
-          { ...chore, assignee: { ...member, id: 'other' } },
-          chore,
-          { ...chore, status: 'CANCELLED' },
-        ],
+        duties: [duty],
       })
       const result = await s.service.get(s.profile)
-      expect(result.chores).toHaveLength(role === 'PARENT' ? 3 : 2)
-      expect(result.chores[0]!.status).toBe('PENDING')
-      if (role !== 'PARENT')
-        expect(result.chores.every((c) => c.assignee.id === member.id)).toBe(
-          true,
-        )
-      expect(JSON.stringify(result.chores)).not.toMatch(
-        /note|requestId|createdBy|completedBy|session/,
+      expect(result.householdDuty).toEqual({
+        ...duty,
+        assignee: {
+          id: member.id,
+          displayName: member.displayName,
+          avatarType: null,
+          avatarValue: null,
+        },
+      })
+      expect(result.chores).toEqual([])
+      s.dependencies.household.list.mockResolvedValue({
+        members: [],
+        duties: [{ ...duty, assignee: { ...member, id: 'other' } }],
+      })
+      expect((await s.service.get(s.profile)).householdDuty === null).toBe(
+        role !== 'PARENT',
       )
-      expect(s.dependencies.chores.list).toHaveBeenCalledWith(
+      expect(s.dependencies.household.list).toHaveBeenCalledWith(
         s.profile,
         '2099-05-01',
         '2099-05-01',
-        role === 'PARENT' ? undefined : member.id,
       )
     },
   )
@@ -428,12 +397,26 @@ describe('role-aware home', () => {
         s.profile,
         '2099-05-01',
         '2099-05-01',
-        role === 'PARENT' ? undefined : member.id,
+        undefined,
+        'FAMILY',
       )
-      if (role !== 'PARENT')
+      if (role === 'PARENT') {
+        expect(result).not.toHaveProperty('personalCalendar')
+        expect(s.dependencies.calendar.list).toHaveBeenCalledTimes(1)
+      } else {
+        expect(s.dependencies.calendar.list).toHaveBeenCalledWith(
+          s.profile,
+          '2099-05-01',
+          '2099-05-01',
+          member.id,
+          'PERSONAL',
+        )
         expect(
-          result.calendar.events.every((e) => e.owner.id === member.id),
+          result.personalCalendar!.events.every(
+            (e) => e.owner.id === member.id,
+          ),
         ).toBe(true)
+      }
       expect(JSON.stringify(result.calendar)).not.toMatch(
         /createdAt|updatedAt|note|session|weekdays/,
       )

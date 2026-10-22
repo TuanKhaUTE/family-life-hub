@@ -79,7 +79,7 @@ describe('calendar API and family time boundary', () => {
       },
     ])
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/calendar?from=2099-05-04&to=2099-05-10&memberId=self',
+      '/api/calendar?from=2099-05-04&to=2099-05-10&calendarType=FAMILY&memberId=self',
       expect.objectContaining({ signal }),
     )
   })

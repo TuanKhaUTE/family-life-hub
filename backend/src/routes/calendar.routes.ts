@@ -16,6 +16,7 @@ export function createCalendarRouter(
   router.use(createRequireAuth(sessions))
   const controller = createCalendarController(service)
   router.get('/', controller.list)
+  router.post('/duplicate-week', controller.duplicateWeek)
   router.post('/events', controller.create)
   router.put('/events/:eventId', controller.update)
   router.delete('/events/:eventId', controller.remove)

@@ -13,6 +13,9 @@ import type { FamilyProfile } from '../auth/auth-api'
 vi.mock('../chores/chore-api', () => ({
   fetchChores: async () => ({ members: [], chores: [] }),
 }))
+vi.mock('../chores/household-duty-api', () => ({
+  fetchHouseholdDuties: async () => ({ members: [], duties: [] }),
+}))
 
 const id = '11111111-1111-4111-8111-111111111111',
   otherId = '22222222-2222-4222-8222-222222222222'
@@ -90,6 +93,8 @@ function network(
             },
           }),
         )
+      if (url.endsWith('/duplicate-week'))
+        return new Response(JSON.stringify({ copied: 1 }))
       if (init.method === 'DELETE' || url.includes('/occurrences/'))
         return new Response(null, { status: 204 })
       return new Response(JSON.stringify({ eventId: id }), {
@@ -104,6 +109,103 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('shared family calendar', () => {
+  it('allows an empty source date without crashing or submitting a copy', async () => {
+    const calls = network()
+    render(<CalendarPage profile={profile} />)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Nhân bản tuần' }),
+    )
+    fireEvent.change(screen.getByLabelText('Chọn ngày trong tuần nguồn'), {
+      target: { value: '' },
+    })
+    expect(screen.getByRole('form', { name: 'Nhân bản lịch nhà' })).toBeTruthy()
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Xác nhận nhân bản lịch',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true)
+    expect(calls.some((c) => c.url.endsWith('/duplicate-week'))).toBe(false)
+    fireEvent.change(screen.getByLabelText('Chọn ngày trong tuần nguồn'), {
+      target: { value: today },
+    })
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Xác nhận nhân bản lịch',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false)
+  })
+  it('confirms an owned family-week copy and reuses the retry-safe endpoint', async () => {
+    const calls = network()
+    render(<CalendarPage profile={profile} />)
+    await screen.findByRole('button', { name: /Lịch thử nghiệm/ })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Nhân bản tuần' }),
+    )
+    expect(calls.some((c) => c.url.endsWith('/duplicate-week'))).toBe(false)
+    expect(screen.getByText(/Chỉ sao chép lịch nhà của bạn/)).toBeTruthy()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Xác nhận nhân bản lịch' }),
+    )
+    await screen.findByText(
+      'Đã thêm 1 lịch vào tuần sau. Lịch đã có không bị nhân đôi.',
+    )
+    const copy = calls.find((c) => c.url.endsWith('/duplicate-week'))!
+    const body = JSON.parse(String(copy.init?.body))
+    expect(Object.keys(body)).toEqual(['sourceWeek'])
+    expect(new Date(body.sourceWeek + 'T12:00Z').getUTCDay()).toBe(1)
+  })
+  it('keeps family colors stable when filtering and uses a seven-column week grid', async () => {
+    network([item({ ...profile, ...other })])
+    render(<CalendarPage profile={profile} />)
+    const before = await screen.findByRole('button', {
+      name: /Lịch thử nghiệm/,
+    })
+    expect(before.classList.contains('calendar-tone-1')).toBe(true)
+    await userEvent.click(
+      screen.getByRole('button', { name: other.displayName }),
+    )
+    expect(
+      (
+        await screen.findByRole('button', { name: /Lịch thử nghiệm/ })
+      ).classList.contains('calendar-tone-1'),
+    ).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Tuần này' }))
+    await screen.findByRole('region', { name: 'Lịch tuần' })
+    expect(document.querySelectorAll('.calendar-grid-day')).toHaveLength(7)
+  })
+  it.each(['ADMIN', 'MEMBER'] as const)(
+    '%s has separate personal owner calendar',
+    async (role) => {
+      const calls = network()
+      render(<CalendarPage profile={{ ...profile, role }} />)
+      await screen.findByRole('button', { name: /Lịch thử nghiệm/ })
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Lịch của tôi' }),
+      )
+      await screen.findByRole('button', { name: /Lịch thử nghiệm/ })
+      expect(calls.at(-1)!.url).toContain('calendarType=PERSONAL')
+      expect(calls.at(-1)!.url).toContain(`memberId=${id}`)
+      expect(screen.queryByRole('button', { name: 'Mọi người' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Nhân bản tuần' })).toBeNull()
+    },
+  )
+  it('parent has family calendar only, with a positioned time axis', async () => {
+    network()
+    render(<CalendarPage profile={{ ...profile, role: 'PARENT' }} />)
+    const event = await screen.findByRole('button', { name: /Lịch thử nghiệm/ })
+    expect(
+      screen.queryByRole('button', { name: 'Lịch của tôi' }),
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Lịch nhà' }),
+    ).toBeTruthy()
+    expect((event as HTMLElement).style.top).not.toBe('')
+    expect(screen.getByLabelText('Trục giờ')).toBeTruthy()
+  })
   it('keeps the form retryable and explains existing-exception conflicts safely', async () => {
     network([item()], false, 'CALENDAR_EXCEPTIONS_EXIST')
     render(<CalendarPage profile={profile} />)

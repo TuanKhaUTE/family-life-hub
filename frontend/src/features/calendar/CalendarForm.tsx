@@ -16,14 +16,19 @@ export function CalendarForm({
   occurrenceOnly,
   onClose,
   onSaved,
+  calendarType = 'FAMILY',
+  allowPersonal = true,
 }: {
   date: string
   item: CalendarOccurrence | null
   occurrenceOnly: boolean
   onClose: () => void
-  onSaved: (date: string) => void
+  onSaved: (date: string, kind: 'FAMILY' | 'PERSONAL') => void
+  calendarType?: 'FAMILY' | 'PERSONAL'
+  allowPersonal?: boolean
 }) {
   const source = item ? (occurrenceOnly ? item : item.event) : null
+  const [kind, setKind] = useState(item?.event.calendarType ?? calendarType)
   const start = source
     ? toLocalDateTimeInput(new Date(source.startsAt))
     : `${date}T09:00`
@@ -85,6 +90,7 @@ export function CalendarForm({
       else
         await saveCalendarEvent(
           {
+            calendarType: kind,
             title: title.trim(),
             category,
             startsAt,
@@ -96,7 +102,7 @@ export function CalendarForm({
           },
           item?.event.id ?? null,
         )
-      onSaved(day)
+      onSaved(day, kind)
     } catch (error) {
       setError(calendarError(error))
       setPending(false)
@@ -123,6 +129,20 @@ export function CalendarForm({
       )}
       <form aria-label="Thông tin lịch" onSubmit={submit}>
         <fieldset disabled={pending}>
+          {!occurrenceOnly && allowPersonal && (
+            <label>
+              Nơi lưu lịch
+              <select
+                value={kind}
+                onChange={(e) =>
+                  setKind(e.target.value as 'FAMILY' | 'PERSONAL')
+                }
+              >
+                <option value="FAMILY">Lịch nhà · Cả nhà cùng xem</option>
+                <option value="PERSONAL">Lịch của tôi · Chỉ mình bạn</option>
+              </select>
+            </label>
+          )}
           <label>
             Tiêu đề
             <input

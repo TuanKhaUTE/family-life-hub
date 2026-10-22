@@ -5,7 +5,7 @@ import { FAMILY_TIME_ZONE } from '../meals/family-time'
 import { fetchHome, type HomeSummary } from './home-api'
 import { greeting } from './home-time'
 import { HomeCalendarSummary } from './HomeCalendarSummary'
-import { HomeChoresSummary } from './HomeChoresSummary'
+import { HouseholdDutyCard } from '../chores/HouseholdDutyCard'
 import { StudyProgress } from '../study/StudyProgress'
 import { gradeScore } from '../study/grade-display'
 import { FitnessSummary } from '../fitness/FitnessSummary'
@@ -129,9 +129,19 @@ export function HomePage({
         <>
           <HomeCalendarSummary
             calendar={data.calendar}
-            parent={parent}
             onOpen={() => onNavigate('Lịch')}
           />
+          {!parent && data.personalCalendar && (
+            <HomeCalendarSummary
+              personal
+              calendar={{
+                events: data.personalCalendar.events.filter(
+                  (e) => e.owner.id === profile.id,
+                ),
+              }}
+              onOpen={() => onNavigate('Lịch')}
+            />
+          )}
           <section
             className="home-card home-attention"
             aria-labelledby="home-actions-title"
@@ -151,16 +161,33 @@ export function HomePage({
                 ))}
               </ul>
             ) : (
-              !data.chores.some((c) => c.status === 'PENDING') && (
+              (!data.householdDuty || !!data.householdDuty.completedAt) && (
                 <p className="home-calm">Hôm nay mọi việc đang ổn 💚</p>
               )
             )}
           </section>
-          <HomeChoresSummary
-            chores={data.chores}
-            parent={parent}
-            onOpen={() => onNavigate('Lịch')}
-          />
+          <section
+            className="home-card chores-section"
+            aria-label={parent ? 'Việc nhà hôm nay' : 'Việc nhà của bạn'}
+          >
+            <h2>{parent ? 'Việc nhà hôm nay' : 'Việc nhà của bạn'}</h2>
+            {data.householdDuty &&
+            (parent || data.householdDuty.assignee.id === profile.id) ? (
+              <HouseholdDutyCard
+                duty={data.householdDuty}
+                profile={profile}
+                onChanged={() => {
+                  setState('loading')
+                  setRetry((v) => v + 1)
+                }}
+              />
+            ) : (
+              <p>Hôm nay chưa có việc nhà giao cho bạn.</p>
+            )}
+            <button className="home-link" onClick={() => onNavigate('Lịch')}>
+              Xem lịch
+            </button>
+          </section>
           {!parent && data.study && (
             <section
               className="home-card home-study"

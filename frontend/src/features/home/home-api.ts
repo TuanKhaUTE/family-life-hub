@@ -1,5 +1,9 @@
 import { CHORE_CATEGORIES } from '../chores/chore-api'
 import {
+  validHouseholdDuty,
+  type HouseholdDuty,
+} from '../chores/household-duty-api'
+import {
   validExpenseHomeSummary,
   type ExpenseHomeSummary,
 } from '../expenses/expense-api'
@@ -16,6 +20,8 @@ interface ResponseSummary {
   choice: string | null
 }
 export interface HomeSummary {
+  householdDuty?: HouseholdDuty | null
+  personalCalendar?: HomeSummary['calendar']
   familyFood?: ExpenseHomeSummary
   personalExpenses?: ExpenseHomeSummary
   fitness?: FitnessHomeSummary
@@ -147,6 +153,34 @@ function validHome(value: unknown): value is HomeSummary {
   )
     return false
   const b = value.breakfast
+  if (
+    value.householdDuty !== undefined &&
+    value.householdDuty !== null &&
+    !validHouseholdDuty(value.householdDuty)
+  )
+    return false
+  if (
+    value.personalCalendar !== undefined &&
+    (!object(value.personalCalendar) ||
+      !Array.isArray(value.personalCalendar.events) ||
+      value.personalCalendar.events.length > 3 ||
+      !value.personalCalendar.events.every(
+        (item) =>
+          object(item) &&
+          text(item.id) &&
+          text(item.title) &&
+          text(item.startsAt) &&
+          Number.isFinite(Date.parse(item.startsAt)) &&
+          text(item.endsAt) &&
+          Number.isFinite(Date.parse(item.endsAt)) &&
+          object(item.owner) &&
+          text(item.owner.id) &&
+          text(item.owner.displayName) &&
+          nullableText(item.owner.avatarType) &&
+          nullableText(item.owner.avatarValue),
+      ))
+  )
+    return false
   if (
     value.familyFood !== undefined &&
     !validExpenseHomeSummary(value.familyFood)

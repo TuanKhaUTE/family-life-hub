@@ -27,15 +27,19 @@ export function createCalendarController(service: CalendarService) {
           req.query.from,
           req.query.to,
           req.query.memberId,
+          req.query.calendarType,
         ),
       })
     }),
+    duplicateWeek: handler(async (req, res) => {
+      res.json({
+        copied: await service.duplicateWeek(req.auth!.profile, req.body),
+      })
+    }),
     create: handler(async (req, res) => {
-      res
-        .status(201)
-        .json({
-          eventId: await service.save(req.auth!.profile, null, req.body),
-        })
+      res.status(201).json({
+        eventId: await service.save(req.auth!.profile, null, req.body),
+      })
     }),
     update: handler(async (req, res) => {
       res.json({

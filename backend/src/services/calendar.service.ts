@@ -16,6 +16,7 @@ export const CALENDAR_CATEGORIES = [
   'OTHER',
 ] as const
 export interface CalendarInput {
+  calendarType?: 'FAMILY' | 'PERSONAL'
   title: string
   category: (typeof CALENDAR_CATEGORIES)[number]
   startsAt: string
@@ -60,6 +61,7 @@ export interface CalendarRepository {
     from: string,
     to: string,
     memberId: string | null,
+    calendarType?: 'FAMILY' | 'PERSONAL',
   ): Promise<{ members: CalendarMember[]; occurrences: CalendarOccurrence[] }>
   save(
     actorId: string,
@@ -67,6 +69,7 @@ export interface CalendarRepository {
     input: CalendarInput,
   ): Promise<string>
   remove(actorId: string, eventId: string): Promise<void>
+  duplicateWeek(actorId: string, sourceWeek: string): Promise<number>
   exception(
     actorId: string,
     eventId: string,
@@ -84,6 +87,7 @@ export class CalendarService {
     from: unknown = undefined,
     to: unknown = undefined,
     memberId: unknown = undefined,
+    calendarType: unknown = 'FAMILY',
   ) {
     const first = from ?? getFamilyDate(this.clock())
     const last = to ?? first
@@ -95,12 +99,25 @@ export class CalendarService {
     )
       invalid()
     if (memberId !== undefined && memberId !== null) requireId(memberId)
+    if (calendarType !== 'FAMILY' && calendarType !== 'PERSONAL') invalid()
+    if (
+      calendarType === 'PERSONAL' &&
+      (actor.role === 'PARENT' || (memberId != null && memberId !== actor.id))
+    )
+      throw new ApiError(
+        403,
+        'CALENDAR_FORBIDDEN',
+        'Private calendar is owner-only',
+      )
     const result = await this.run(() =>
       this.repository.list(
         actor.id,
         first,
         last,
-        (memberId as string | undefined) ?? null,
+        calendarType === 'PERSONAL'
+          ? actor.id
+          : ((memberId as string | undefined) ?? null),
+        calendarType,
       ),
     )
     return { from: first, to: last, timeZone: FAMILY_TIME_ZONE, ...result }
@@ -108,9 +125,21 @@ export class CalendarService {
   async save(actor: SafeFamilyProfile, eventId: unknown, value: unknown) {
     if (eventId !== null) requireId(eventId)
     const input = normalizeCalendarInput(value)
+    if (input.calendarType === 'PERSONAL' && actor.role === 'PARENT')
+      throw new ApiError(
+        403,
+        'CALENDAR_FORBIDDEN',
+        'Personal calendar is unavailable',
+      )
     return this.run(() =>
       this.repository.save(actor.id, eventId as string | null, input),
     )
+  }
+  async duplicateWeek(actor: SafeFamilyProfile, value: unknown) {
+    if (!object(value) || !keys(value, ['sourceWeek'])) invalid()
+    const source = requireMonday(value.sourceWeek)
+    if (source > '2199-12-17') invalid()
+    return this.run(() => this.repository.duplicateWeek(actor.id, source))
   }
   async remove(actor: SafeFamilyProfile, eventId: unknown) {
     requireId(eventId)
@@ -178,8 +207,15 @@ export function normalizeCalendarInput(value: unknown): CalendarInput {
       'note',
       'weekdays',
       'recurrenceUntil',
+      'calendarType',
     ]) ||
     !CALENDAR_CATEGORIES.includes(value.category as never)
+  )
+    invalid()
+  if (
+    value.calendarType !== undefined &&
+    value.calendarType !== 'FAMILY' &&
+    value.calendarType !== 'PERSONAL'
   )
     invalid()
   const times = normalizeTimes(value.startsAt, value.endsAt)
@@ -208,6 +244,9 @@ export function normalizeCalendarInput(value: unknown): CalendarInput {
   )
     invalid()
   return {
+    ...(value.calendarType === undefined
+      ? {}
+      : { calendarType: value.calendarType as 'FAMILY' | 'PERSONAL' }),
     title: normalizeText(value.title, 120),
     category: value.category as CalendarInput['category'],
     ...times,
@@ -215,6 +254,11 @@ export function normalizeCalendarInput(value: unknown): CalendarInput {
     weekdays: weekdays as number[] | null,
     recurrenceUntil: until as string | null,
   }
+}
+export function requireMonday(value: unknown): string {
+  if (!validDate(value) || new Date(value + 'T12:00:00Z').getUTCDay() !== 1)
+    invalid()
+  return value
 }
 function normalizeTimes(start: unknown, end: unknown) {
   if (
