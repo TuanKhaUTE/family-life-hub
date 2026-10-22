@@ -9,6 +9,7 @@ const expense = {
   id: '11111111-1111-4111-8111-111111111111',
   mealDate: '2026-10-22',
   mealType: 'DINNER',
+  category: 'DINNER',
   note: null,
   items: [{ name: 'Synthetic dish', amount: '170000' }],
   total: '170000',
@@ -51,6 +52,58 @@ it('uses session REST only and projects item snapshots without private metadata'
     '/api/expenses/family-food?month=2026-10&page=1',
     expect.objectContaining({ credentials: 'same-origin', signal }),
   )
+})
+it('parses grocery records and exact category/day/month trend totals', async () => {
+  const f = vi.fn(async () =>
+    new Response(
+      JSON.stringify({
+        familyFood: {
+          ...view,
+          expenses: [
+            {
+              id: expense.id,
+              mealDate: expense.mealDate,
+              mealType: null,
+              category: 'GROCERIES',
+              amount: '350000',
+              note: 'Thịt, rau, trứng',
+              total: '350000',
+            },
+          ],
+          summary: {
+            ...view.summary,
+            currentTotal: '350000',
+            previousTotal: '0',
+            differenceAmount: '350000',
+            groceriesTotal: '350000',
+            breakfastTotal: '0',
+            dinnerTotal: '0',
+            categories: [
+              { category: 'BREAKFAST', amount: '0' },
+              { category: 'DINNER', amount: '0' },
+              { category: 'GROCERIES', amount: '350000' },
+            ],
+            dailyTrend: [{ date: expense.mealDate, amount: '350000' }],
+            monthlyTrend: [{ month: '2026-10', amount: '350000' }],
+          },
+        },
+      }),
+    ),
+  )
+  vi.stubGlobal('fetch', f)
+  const result = await fetchFood('2026-10', 1, new AbortController().signal)
+  expect(result.expenses[0]).toMatchObject({
+    category: 'GROCERIES',
+    mealType: null,
+    total: '350000',
+  })
+  expect(result.summary.categories?.[2]).toEqual({
+    category: 'GROCERIES',
+    amount: '350000',
+  })
+  expect(result.summary.dailyTrend).toEqual([
+    { date: expense.mealDate, amount: '350000' },
+  ])
 })
 it.each([
   { ...view, summary: { ...view.summary, currentTotal: '170001' } },

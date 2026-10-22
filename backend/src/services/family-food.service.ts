@@ -12,15 +12,35 @@ import {
 import type { FinalMealService } from './final-meal.service.js'
 import type { BreakfastService } from './breakfast.service.js'
 
-export interface FoodInput {
+export type FoodMealType = 'BREAKFAST' | 'DINNER'
+export type FoodCategory = FoodMealType | 'GROCERIES'
+export interface MealFoodInput {
   mealDate: string
-  mealType: 'BREAKFAST' | 'DINNER'
+  mealType: FoodMealType
   note: string | null
   items: { name: string; amount: string }[]
 }
-export interface FoodExpense extends FoodInput {
-  id: string
-  total: string
+export interface GroceryFoodInput {
+  mealDate: string
+  category: 'GROCERIES'
+  amount: string
+  note: string | null
+}
+export type FoodInput = MealFoodInput | GroceryFoodInput
+export type FoodExpense =
+  | (MealFoodInput & { id: string; category: FoodMealType; total: string })
+  | (GroceryFoodInput & { id: string; total: string })
+export interface FoodCategoryTotal {
+  category: FoodCategory
+  amount: string
+}
+export interface FoodTrendPoint {
+  date: string
+  amount: string
+}
+export interface FoodMonthlyTrendPoint {
+  month: string
+  amount: string
 }
 export interface FoodData {
   expenses: FoodExpense[]
@@ -29,13 +49,17 @@ export interface FoodData {
   previousTotal: string
   breakfastTotal: string
   dinnerTotal: string
+  groceriesTotal: string
+  categories: FoodCategoryTotal[]
+  dailyTrend: FoodTrendPoint[]
+  monthlyTrend: FoodMonthlyTrendPoint[]
 }
 export interface FamilyFoodRepository {
   read(actor: string, month: string, page: number): Promise<FoodData>
   slot(
     actor: string,
     date: string,
-    type: FoodInput['mealType'],
+    type: FoodMealType,
   ): Promise<FoodExpense | null>
   mutate(
     actor: string,
@@ -81,21 +105,32 @@ export class FamilyFoodService {
           previousMonth: previousExpenseMonth(m),
           breakfastTotal: d.breakfastTotal,
           dinnerTotal: d.dinnerTotal,
+          groceriesTotal: d.groceriesTotal,
+          categories: d.categories,
+          dailyTrend: d.dailyTrend,
+          monthlyTrend: d.monthlyTrend,
           ...expenseComparison(d.currentTotal, d.previousTotal),
         },
       }
     })
   }
-  async summary(actor: SafeFamilyProfile) {
-    const { month, currency, summary: s } = await this.read(actor)
-    return {
+  async summary(actor: SafeFamilyProfile, month?: unknown) {
+    const { month: selectedMonth, currency, summary: s } = await this.read(
+      actor,
       month,
+    )
+    return {
+      month: selectedMonth,
       currency,
       currentTotal: s.currentTotal,
       previousTotal: s.previousTotal,
       previousMonth: s.previousMonth,
       differenceAmount: s.differenceAmount,
       percentageChange: s.percentageChange,
+      groceriesTotal: s.groceriesTotal,
+      categories: s.categories,
+      dailyTrend: s.dailyTrend,
+      monthlyTrend: s.monthlyTrend,
     }
   }
   async slot(actor: SafeFamilyProfile, date: unknown, type: unknown) {
@@ -104,7 +139,7 @@ export class FamilyFoodService {
       this.repository.slot(
         actor.id,
         date as string,
-        type as FoodInput['mealType'],
+        type as FoodMealType,
       ),
     )
   }
@@ -166,25 +201,35 @@ export function foodSlot(date: unknown, type: unknown) {
     invalid()
 }
 export function normalizeFood(v: unknown, today: string): FoodInput {
+  if (!object(v) || !validDate(v.mealDate) || (v.mealDate as string) > today)
+    invalid()
+  if (v.category === 'GROCERIES') {
+    if (
+      Object.keys(v).some(
+        (k) => !['mealDate', 'category', 'amount', 'note'].includes(k),
+      ) ||
+      !money(v.amount) ||
+      (v.amount as string).length > 10 ||
+      BigInt(v.amount as string) < 1n ||
+      BigInt(v.amount as string) > 1000000000n
+    )
+      invalid()
+    return {
+      mealDate: v.mealDate as string,
+      category: 'GROCERIES',
+      amount: v.amount as string,
+      note: normalizeNote(v.note),
+    }
+  }
   if (
-    !object(v) ||
     Object.keys(v).some(
-      (k) => !['mealDate', 'mealType', 'note', 'items'].includes(k),
+      (k) => !['mealDate', 'mealType', 'category', 'note', 'items'].includes(k),
     )
   )
     invalid()
   foodSlot(v.mealDate, v.mealType)
-  if (
-    (v.mealDate as string) > today ||
-    !Array.isArray(v.items) ||
-    v.items.length < 1 ||
-    v.items.length > 30
-  )
-    invalid()
-  if (
-    v.note != null &&
-    (typeof v.note !== 'string' || Array.from(v.note.trim()).length > 1000)
-  )
+  if (v.category !== undefined && v.category !== v.mealType) invalid()
+  if (!Array.isArray(v.items) || v.items.length < 1 || v.items.length > 30)
     invalid()
   const items = v.items.map((i) => {
     if (
@@ -203,10 +248,15 @@ export function normalizeFood(v: unknown, today: string): FoodInput {
   })
   return {
     mealDate: v.mealDate as string,
-    mealType: v.mealType as FoodInput['mealType'],
-    note: typeof v.note === 'string' ? v.note.trim() || null : null,
+    mealType: v.mealType as FoodMealType,
+    note: normalizeNote(v.note),
     items,
   }
+}
+function normalizeNote(note: unknown) {
+  if (note != null && (typeof note !== 'string' || Array.from(note.trim()).length > 1000))
+    invalid()
+  return typeof note === 'string' ? note.trim() || null : null
 }
 function parent(actor: SafeFamilyProfile) {
   if (actor.role !== 'PARENT')

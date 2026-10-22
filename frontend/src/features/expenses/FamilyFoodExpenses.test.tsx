@@ -19,6 +19,7 @@ const expense = {
   id,
   mealDate: today,
   mealType: 'DINNER',
+  category: 'DINNER',
   note: null,
   items: [
     { name: 'Synthetic dinner', amount: '100000' },
@@ -117,6 +118,26 @@ it('Mom adds multiple items without guessed prices, collapses save, edits and co
   await waitFor(() =>
     expect(f.mock.calls.some((c) => c[1]?.method === 'DELETE')).toBe(true),
   )
+})
+it('Mom can quickly add and edit a standalone grocery expense', async () => {
+  const f = api(),
+    user = userEvent.setup()
+  render(<FamilyFoodExpenses parent />)
+  await screen.findByText('Soup')
+  await user.click(screen.getByRole('button', { name: 'Thêm chi phí đi chợ' }))
+  await user.type(screen.getByLabelText('Số tiền'), '350000')
+  await user.type(screen.getByLabelText('Ghi chú (không bắt buộc)'), 'Thịt, rau, trứng')
+  await user.click(screen.getByRole('button', { name: 'Lưu chi phí đi chợ' }))
+  await waitFor(() => expect(screen.queryByRole('form')).toBeNull())
+  const sent = JSON.parse(
+    f.mock.calls.find((c) => c[1]?.method === 'POST')![1]!.body as string,
+  )
+  expect(sent).toEqual({
+    mealDate: today,
+    category: 'GROCERIES',
+    amount: '350000',
+    note: 'Thịt, rau, trứng',
+  })
 })
 it('network failure is safe and retry restores real data', async () => {
   const f = api()

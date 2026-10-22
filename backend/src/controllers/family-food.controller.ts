@@ -21,6 +21,9 @@ export function createFamilyFoodController(service: FamilyFoodService) {
         ),
       })
     }),
+    summary: handle(async (req, res) => {
+      res.json({ summary: await service.summary(req.auth!.profile, req.query.month) })
+    }),
     slot: handle(async (req, res) => {
       res.json({
         expense: await service.slot(

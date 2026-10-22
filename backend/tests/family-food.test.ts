@@ -41,6 +41,14 @@ function setup(role: SafeFamilyProfile['role'] = 'PARENT') {
       previousTotal: '200000',
       breakfastTotal: '120000',
       dinnerTotal: '170000',
+      groceriesTotal: '0',
+      categories: [
+        { category: 'BREAKFAST', amount: '120000' },
+        { category: 'DINNER', amount: '170000' },
+        { category: 'GROCERIES', amount: '0' },
+      ],
+      dailyTrend: [],
+      monthlyTrend: [],
     })),
     slot: vi.fn(async () => null),
     mutate: vi.fn(async () => {}),
@@ -70,6 +78,14 @@ it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
       previousTotal: '200000',
       breakfastTotal: '120000',
       dinnerTotal: '170000',
+      groceriesTotal: '0',
+      categories: [
+        { category: 'BREAKFAST', amount: '120000' },
+        { category: 'DINNER', amount: '170000' },
+        { category: 'GROCERIES', amount: '0' },
+      ],
+      dailyTrend: [],
+      monthlyTrend: [],
       previousMonth: '2026-09',
       differenceAmount: '90000',
       percentageChange: 45,
@@ -189,6 +205,10 @@ it('returns an honest zero-baseline shared Home summary without item details', a
     previousTotal: '0',
     breakfastTotal: '0',
     dinnerTotal: '0',
+    groceriesTotal: '0',
+    categories: [],
+    dailyTrend: [],
+    monthlyTrend: [],
   })
   expect(await s.service.summary(s.actor)).toEqual({
     month: '2026-10',
@@ -198,6 +218,10 @@ it('returns an honest zero-baseline shared Home summary without item details', a
     previousMonth: '2026-09',
     differenceAmount: '0',
     percentageChange: null,
+    groceriesTotal: '0',
+    categories: [],
+    dailyTrend: [],
+    monthlyTrend: [],
   })
 })
 it('all family-food endpoints require an active session', async () => {
@@ -265,6 +289,14 @@ it('repository validates exact totals and whitelists database rows', async () =>
       previousTotal: '0',
       breakfastTotal: '0',
       dinnerTotal: '170000',
+      groceriesTotal: '0',
+      categories: [
+        { category: 'BREAKFAST', amount: '0' },
+        { category: 'DINNER', amount: '170000' },
+        { category: 'GROCERIES', amount: '0' },
+      ],
+      dailyTrend: [],
+      monthlyTrend: [],
     },
     error: null,
   }))
@@ -275,6 +307,7 @@ it('repository validates exact totals and whitelists database rows', async () =>
   expect(result.expenses[0]).toEqual({
     id,
     ...input,
+    category: 'DINNER',
     items: [{ name: 'Dinner', amount: '170000' }],
     total: '170000',
   })

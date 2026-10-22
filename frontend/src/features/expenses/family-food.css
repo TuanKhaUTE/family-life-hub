@@ -9,20 +9,58 @@
 }
 .food-breakdown {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.7rem;
 }
-.food-breakdown p {
+.food-category {
   padding: 0.8rem;
   border-radius: 1rem;
   display: grid;
   gap: 0.4rem;
+}
+.food-category p {
+  display: grid;
+  gap: 0.35rem;
 }
 .food-breakfast {
   background: #fae5d7;
 }
 .food-dinner {
   background: #e6eddc;
+}
+.food-groceries {
+  background: #f6e4ba;
+}
+.food-bar {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 70%);
+}
+.food-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a96b49;
+}
+.food-trends {
+  display: grid;
+  gap: 1rem;
+}
+.food-trends h4 {
+  margin: 0 0 0.4rem;
+}
+.food-trends ul {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.food-trends li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 .food-records,
 .food-items {

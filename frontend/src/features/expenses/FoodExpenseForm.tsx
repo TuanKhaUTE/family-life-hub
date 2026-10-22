@@ -5,7 +5,7 @@ import {
   saveFood,
   FoodApiError,
   type FoodExpense,
-  type FoodInput,
+  type FoodMealType,
 } from './family-food-api'
 import { formatVnd } from './expense-display'
 export function FoodExpenseForm({
@@ -18,7 +18,7 @@ export function FoodExpenseForm({
   onCancel: () => void
 }) {
   const [date, setDate] = useState(existing?.mealDate ?? familyDate()),
-    [type, setType] = useState<FoodInput['mealType']>(
+    [type, setType] = useState<FoodMealType>(
       existing?.mealType ?? 'BREAKFAST',
     ),
     [note, setNote] = useState(existing?.note ?? '')
@@ -103,7 +103,7 @@ export function FoodExpenseForm({
             value={type}
             onChange={(e) => {
               version.current++
-              setType(e.target.value as FoodInput['mealType'])
+              setType(e.target.value as FoodMealType)
               setHint('')
             }}
           >

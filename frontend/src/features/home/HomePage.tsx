@@ -263,7 +263,7 @@ export function HomePage({
               </p>
               <p>{expenseComparisonText(data.familyFood)}</p>
               <p className="home-meta">
-                Chi phí chung bữa sáng và bữa tối, không gồm chi tiêu cá nhân.
+                Chi phí chung bữa ăn và đi chợ, không gồm chi tiêu cá nhân.
               </p>
               <button
                 className="home-link"

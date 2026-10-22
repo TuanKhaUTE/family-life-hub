@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   fetchFoodSlot,
   type FoodExpense,
-  type FoodInput,
+  type FoodMealType,
 } from './family-food-api'
 import { FoodItems } from './FamilyFoodExpenses'
 import { expenseDate } from './expense-display'
@@ -12,7 +12,7 @@ export function MealFoodCost({
   mealType,
 }: {
   date: string
-  mealType: FoodInput['mealType']
+  mealType: FoodMealType
 }) {
   return (
     <SlotFoodCost key={`${date}:${mealType}`} date={date} mealType={mealType} />
@@ -23,7 +23,7 @@ function SlotFoodCost({
   mealType,
 }: {
   date: string
-  mealType: FoodInput['mealType']
+  mealType: FoodMealType
 }) {
   const [expense, setExpense] = useState<FoodExpense | null>(null),
     [state, setState] = useState('loading'),

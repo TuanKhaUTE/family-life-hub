@@ -7,6 +7,9 @@ import {
   type FoodInput,
   type FoodExpense,
   type FoodData,
+  type FoodMealType,
+  type MealFoodInput,
+  type GroceryFoodInput,
 } from '../services/family-food.service.js'
 import { expenseId, money } from '../services/personal-expense.service.js'
 export class SupabaseFamilyFoodRepository implements FamilyFoodRepository {
@@ -62,10 +65,22 @@ export class SupabaseFamilyFoodRepository implements FamilyFoodRepository {
       !money(v.previousTotal) ||
       !money(v.breakfastTotal) ||
       !money(v.dinnerTotal) ||
+      !money(v.groceriesTotal) ||
       BigInt(v.breakfastTotal) + BigInt(v.dinnerTotal) !==
-        BigInt(v.currentTotal)
+        BigInt(v.currentTotal) - BigInt(v.groceriesTotal) ||
+      !Array.isArray(v.categories) ||
+      !Array.isArray(v.dailyTrend) ||
+      !Array.isArray(v.monthlyTrend)
     )
       throw new Error('Invalid food summary')
+    const categories = v.categories.map(parseCategoryTotal)
+    if (
+      categories.length !== 3 ||
+      new Set(categories.map((c) => c.category)).size !== 3 ||
+      categories.reduce((sum, c) => sum + BigInt(c.amount), 0n) !==
+        BigInt(v.currentTotal)
+    )
+      throw new Error('Invalid food categories')
     const expenses = v.expenses.map(parseFood)
     if (expenses.some((e) => e.mealDate.slice(0, 7) !== month))
       throw new Error('Invalid food month')
@@ -76,9 +91,13 @@ export class SupabaseFamilyFoodRepository implements FamilyFoodRepository {
       previousTotal: v.previousTotal,
       breakfastTotal: v.breakfastTotal,
       dinnerTotal: v.dinnerTotal,
+      groceriesTotal: v.groceriesTotal,
+      categories,
+      dailyTrend: v.dailyTrend.map(parseDailyTrend),
+      monthlyTrend: v.monthlyTrend.map(parseMonthlyTrend),
     }
   }
-  async slot(actor: string, date: string, type: FoodInput['mealType']) {
+  async slot(actor: string, date: string, type: FoodMealType) {
     const v = await this.rpc('family_food_slot', {
       p_actor_member_id: actor,
       p_date: date,
@@ -86,7 +105,7 @@ export class SupabaseFamilyFoodRepository implements FamilyFoodRepository {
     })
     if (v === null) return null
     const expense = parseFood(v)
-    if (expense.mealDate !== date || expense.mealType !== type)
+    if (expense.mealDate !== date || expense.category !== type)
       throw new Error('Invalid food slot')
     return expense
   }
@@ -107,6 +126,25 @@ export class SupabaseFamilyFoodRepository implements FamilyFoodRepository {
 function parseFood(v: unknown): FoodExpense {
   if (!object(v)) throw new Error('Invalid food expense')
   expenseId(v.id)
+  if (v.category === 'GROCERIES') {
+    const input = normalizeFood(
+      {
+        mealDate: v.mealDate,
+        category: 'GROCERIES',
+        amount: v.amount ?? v.total,
+        note: v.note,
+      },
+      '2199-12-31',
+    )
+    const grocery = input as GroceryFoodInput
+    if (v.total !== grocery.amount)
+      throw new Error('Invalid grocery total')
+    return {
+      id: v.id,
+      ...grocery,
+      total: grocery.amount,
+    }
+  }
   const input = normalizeFood(
     {
       mealDate: v.mealDate,
@@ -116,11 +154,39 @@ function parseFood(v: unknown): FoodExpense {
     },
     '2199-12-31',
   )
-  const total = input.items
+  const meal = input as MealFoodInput
+  const total = meal.items
     .reduce((s, i) => s + BigInt(i.amount), 0n)
     .toString()
   if (v.total !== total) throw new Error('Invalid food total')
-  return { id: v.id, ...input, total }
+  return { id: v.id, ...meal, category: meal.mealType, total }
+}
+function parseCategoryTotal(value: unknown) {
+  if (
+    !object(value) ||
+    !['BREAKFAST', 'DINNER', 'GROCERIES'].includes(String(value.category)) ||
+    !money(value.amount)
+  )
+    throw new Error('Invalid food category total')
+  return {
+    category: value.category as 'BREAKFAST' | 'DINNER' | 'GROCERIES',
+    amount: value.amount,
+  }
+}
+function parseDailyTrend(value: unknown) {
+  if (!object(value) || typeof value.date !== 'string' || !money(value.amount))
+    throw new Error('Invalid food daily trend')
+  return { date: value.date, amount: value.amount }
+}
+function parseMonthlyTrend(value: unknown) {
+  if (
+    !object(value) ||
+    typeof value.month !== 'string' ||
+    !/^20\d\d-(0[1-9]|1[0-2])$/.test(value.month) ||
+    !money(value.amount)
+  )
+    throw new Error('Invalid food monthly trend')
+  return { month: value.month, amount: value.amount }
 }
 function object(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === 'object' && !Array.isArray(v)

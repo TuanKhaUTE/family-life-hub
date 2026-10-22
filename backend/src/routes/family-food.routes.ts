@@ -20,6 +20,7 @@ export function createFamilyFoodRouter(
     c = createFamilyFoodController(service)
   r.use(createRequireAuth(sessions))
   r.get('/', c.read)
+  r.get('/summary', c.summary)
   r.get('/slot', c.slot)
   r.get('/prefill', c.prefill)
   r.post('/', c.save)

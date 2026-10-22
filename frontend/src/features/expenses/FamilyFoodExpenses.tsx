@@ -13,6 +13,7 @@ import {
   expenseMonthLabel,
 } from './expense-display'
 import { FoodExpenseForm } from './FoodExpenseForm'
+import { GroceryExpenseForm } from './GroceryExpenseForm'
 import './family-food.css'
 export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
   const [month, setMonth] = useState(() => familyDate().slice(0, 7)),
@@ -21,6 +22,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
   const [data, setData] = useState<FoodWorkspace | null>(null),
     [state, setState] = useState('loading'),
     [editing, setEditing] = useState<FoodExpense | null | undefined>(undefined),
+    [editingKind, setEditingKind] = useState<'MEAL' | 'GROCERIES'>('MEAL'),
     [deleting, setDeleting] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
@@ -59,7 +61,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
       <header>
         <h2>Tiền ăn gia đình</h2>
         <p>
-          Chi phí bữa sáng, bữa tối của cả nhà — tách riêng khỏi chi tiêu cá
+          Chi phí bữa ăn và đi chợ của cả nhà — tách riêng khỏi chi tiêu cá
           nhân.
         </p>
         {!parent && <p>Góc chung để xem; mẹ sẽ ghi và cập nhật chi phí.</p>}
@@ -83,30 +85,62 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
         />
       </label>
       {parent && editing === undefined && (
-        <button
-          className="expense-primary"
-          onClick={() => {
-            setEditing(null)
-            setMessage('')
-          }}
-        >
-          Thêm chi phí ăn uống
-        </button>
+        <div className="expense-actions">
+          <button
+            className="expense-primary"
+            onClick={() => {
+              setEditing(null)
+              setEditingKind('MEAL')
+              setMessage('')
+            }}
+          >
+            Thêm chi phí ăn uống
+          </button>
+          <button
+            onClick={() => {
+              setEditing(null)
+              setMessage('')
+              setEditingKind('GROCERIES')
+            }}
+          >
+            Thêm chi phí đi chợ
+          </button>
+        </div>
       )}
       {parent && editing !== undefined && (
-        <FoodExpenseForm
-          key={editing?.id ?? 'new'}
-          existing={editing}
-          onCancel={() => setEditing(undefined)}
-          onSaved={(date) => {
-            setEditing(undefined)
-            setState('loading')
-            setMonth(date.slice(0, 7))
-            setPage(1)
-            setReload((v) => v + 1)
-            setMessage('Đã lưu chi phí bữa ăn.')
-          }}
-        />
+        editingKind === 'GROCERIES' ? (
+          <GroceryExpenseForm
+            key={editing?.id ?? 'new-grocery'}
+            existing={editing}
+            onCancel={() => {
+              setEditing(undefined)
+              setEditingKind('MEAL')
+            }}
+            onSaved={(date) => {
+              setEditing(undefined)
+              setEditingKind('MEAL')
+              setState('loading')
+              setMonth(date.slice(0, 7))
+              setPage(1)
+              setReload((v) => v + 1)
+              setMessage('Đã lưu chi phí đi chợ.')
+            }}
+          />
+        ) : (
+          <FoodExpenseForm
+            key={editing?.id ?? 'new'}
+            existing={editing}
+            onCancel={() => setEditing(undefined)}
+            onSaved={(date) => {
+              setEditing(undefined)
+              setState('loading')
+              setMonth(date.slice(0, 7))
+              setPage(1)
+              setReload((v) => v + 1)
+              setMessage('Đã lưu chi phí bữa ăn.')
+            }}
+          />
+        )
       )}
       {message && (
         <p role="status" className="expense-message">
@@ -151,14 +185,54 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
             </p>
             <p>{expenseComparisonText(data.summary)}</p>
             <div className="food-breakdown">
-              <p className="food-breakfast">
-                Bữa sáng{' '}
-                <strong>{formatVnd(data.summary.breakfastTotal)}</strong>
-              </p>
-              <p className="food-dinner">
-                Bữa tối <strong>{formatVnd(data.summary.dinnerTotal)}</strong>
-              </p>
+              {(data.summary.categories ?? [
+                { category: 'BREAKFAST' as const, amount: data.summary.breakfastTotal },
+                { category: 'DINNER' as const, amount: data.summary.dinnerTotal },
+                { category: 'GROCERIES' as const, amount: data.summary.groceriesTotal ?? '0' },
+              ]).map((category) => {
+                const share = proportion(category.amount, data.summary.currentTotal)
+                return (
+                  <div className={`food-category food-${category.category.toLowerCase()}`} key={category.category}>
+                    <p>
+                      <span>{foodCategoryLabel(category.category)}</span>
+                      <strong>{formatVnd(category.amount)}</strong>
+                    </p>
+                    <div className="food-bar" aria-label={`${foodCategoryLabel(category.category)} chiếm ${share}%`}>
+                      <span style={{ width: `${share}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
+            {data.summary.dailyTrend && data.summary.monthlyTrend && (
+              <div className="food-trends">
+                <div>
+                  <h4>Chi theo ngày</h4>
+                  <ul>
+                    {data.summary.dailyTrend
+                      .filter((point) => point.amount !== '0')
+                      .slice(-7)
+                      .map((point) => (
+                        <li key={point.date}>
+                          <span>{expenseDate(point.date)}</span>
+                          <strong>{formatVnd(point.amount)}</strong>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4>Chi theo tháng</h4>
+                  <ul>
+                    {data.summary.monthlyTrend.map((point) => (
+                      <li key={point.month}>
+                        <span>{expenseMonthLabel(point.month)}</span>
+                        <strong>{formatVnd(point.amount)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
           </section>
           <section className="expense-card">
             <h3>Các bữa ăn đã ghi</h3>
@@ -183,8 +257,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                     key={e.id}
                   >
                     <h4>
-                      {expenseDate(e.mealDate)} ·{' '}
-                      {e.mealType === 'BREAKFAST' ? 'Bữa sáng' : 'Bữa tối'}
+                      {expenseDate(e.mealDate)} · {foodCategoryLabel(e.category ?? e.mealType)}
                     </h4>
                     <FoodItems expense={e} />
                     {e.note && <p className="expense-note">{e.note}</p>}
@@ -193,6 +266,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                         <button
                           onClick={() => {
                             setEditing(e)
+              setEditingKind(e.category === 'GROCERIES' ? 'GROCERIES' : 'MEAL')
                             setMessage('')
                           }}
                         >
@@ -272,4 +346,18 @@ export function FoodItems({ expense }: { expense: FoodExpense }) {
       </p>
     </>
   )
+}
+
+function foodCategoryLabel(category: FoodExpense['category'] | null) {
+  return category === 'BREAKFAST'
+    ? 'Bữa sáng'
+    : category === 'DINNER'
+      ? 'Bữa tối'
+      : 'Đi chợ / nguyên liệu'
+}
+
+function proportion(amount: string, total: string) {
+  if (total === '0') return 0
+  const value = (BigInt(amount) * 10000n) / BigInt(total)
+  return Math.min(100, Number(value) / 100)
 }
