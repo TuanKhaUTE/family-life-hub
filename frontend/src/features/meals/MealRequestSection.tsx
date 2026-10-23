@@ -17,6 +17,7 @@ import './meals.css'
 import { FinalMealSection } from './FinalMealSection'
 import { MealPlanControls } from './MealPlanControls'
 import { useFamilyClock } from './use-family-clock'
+import { FoodIllustration } from '../../ui/Illustration'
 
 export function MealRequestSection({ profile }: { profile: FamilyProfile }) {
   const now = useFamilyClock(), today = familyDate(now), targetDate = relevantBreakfastDate(now), phase = breakfastLifecycle(targetDate, now).phase
@@ -106,7 +107,7 @@ function Heading() {
         <p className="eyebrow">Bữa ăn gia đình</p>
         <h2 id="meals-title">Bữa tối nhà mình</h2>
       </div>
-      <span aria-hidden="true">🍲</span>
+      <FoodIllustration variant="dinner" />
     </header>
   )
 }
@@ -158,6 +159,7 @@ function MealCard({
                 ? 'Đang mở'
                 : 'Đã đóng'}
         </span>
+        <span className="meal-workflow-chip meal-workflow-chip--question">1 · Hỏi ý kiến</span>
       </header>
       {request.parentMessage && (
         <p className="parent-note">“{request.parentMessage}”</p>
@@ -183,7 +185,10 @@ function MealCard({
 function DinnerParentView({ request, onChanged }: { request: MealRequest; onChanged: (request: MealRequest) => void }) {
   const [message, setMessage] = useState(request.parentMessage ?? ''), [editing, setEditing] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null)
   return <div>
-    {request.status !== 'SELF_SERVICE' && <ul className="response-list">{request.responses.map(r => <li key={r.member.id}><strong>{r.member.displayName}</strong><span>{responseLabel(r)}</span></li>)}</ul>}
+    {request.status !== 'SELF_SERVICE' && <section className="meal-workflow-step meal-workflow-step--responses" aria-label="Phản hồi của các thành viên">
+      <div className="meal-workflow-heading"><span className="meal-workflow-number">2</span><strong>Phản hồi của Kha và Bin</strong><span className="meal-workflow-chip">{request.responses.filter(r => r.state !== 'NO_RESPONSE').length}/{request.responses.length}</span></div>
+      <ul className="response-list">{request.responses.map(r => <li key={r.member.id}><strong>{r.member.displayName}</strong><span>{responseLabel(r)}</span></li>)}</ul>
+    </section>}
     {editing ? <form className="meal-composer" onSubmit={async e => {
       e.preventDefault(); if (busy) return
       setBusy(true); setError(null)

@@ -130,103 +130,115 @@ export function CalendarForm({
       <form aria-label="Thông tin lịch" onSubmit={submit}>
         <fieldset disabled={pending}>
           {!occurrenceOnly && allowPersonal && (
-            <label>
-              Nơi lưu lịch
-              <select
-                value={kind}
-                onChange={(e) =>
-                  setKind(e.target.value as 'FAMILY' | 'PERSONAL')
-                }
-              >
-                <option value="FAMILY">Lịch nhà · Cả nhà cùng xem</option>
-                <option value="PERSONAL">Lịch của tôi · Chỉ mình bạn</option>
-              </select>
-            </label>
+            <div className="calendar-form-group">
+              <p className="calendar-form-group-title">Lưu ở đâu</p>
+              <label>
+                Nơi lưu lịch
+                <select
+                  value={kind}
+                  onChange={(e) =>
+                    setKind(e.target.value as 'FAMILY' | 'PERSONAL')
+                  }
+                >
+                  <option value="FAMILY">Lịch nhà · Cả nhà cùng xem</option>
+                  <option value="PERSONAL">Lịch của tôi · Chỉ mình bạn</option>
+                </select>
+              </label>
+            </div>
           )}
-          <label>
-            Tiêu đề
-            <input
-              required
-              maxLength={120}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </label>
-          {!occurrenceOnly && (
+          <div className="calendar-form-group">
+            <p className="calendar-form-group-title">Nội dung</p>
             <label>
-              Loại hoạt động
-              <select
-                value={category}
-                onChange={(e) =>
-                  setCategory(e.target.value as CalendarInput['category'])
-                }
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LABELS[c]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <label>
-            Ngày
-            <input
-              required
-              type="date"
-              min="2000-01-01"
-              max="2199-12-31"
-              value={day}
-              onChange={(e) => {
-                setDay(e.target.value)
-                if (endDay === day) setEndDay(e.target.value)
-              }}
-            />
-          </label>
-          <div className="calendar-form-row">
-            <label>
-              Giờ bắt đầu
+              Tiêu đề
               <input
                 required
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                maxLength={120}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
             </label>
-            <label>
-              Giờ kết thúc
-              <input
-                required
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
-            </label>
+            {!occurrenceOnly && (
+              <label>
+                Loại hoạt động
+                <select
+                  value={category}
+                  onChange={(e) =>
+                    setCategory(e.target.value as CalendarInput['category'])
+                  }
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
-          {repeat !== 'WEEKLY' && (
+          <div className="calendar-form-group">
+            <p className="calendar-form-group-title">Ngày &amp; giờ</p>
             <label>
-              Ngày kết thúc
+              Ngày
               <input
                 required
                 type="date"
-                min={day}
+                min="2000-01-01"
                 max="2199-12-31"
-                value={endDay}
-                onChange={(e) => setEndDay(e.target.value)}
+                value={day}
+                onChange={(e) => {
+                  setDay(e.target.value)
+                  if (endDay === day) setEndDay(e.target.value)
+                }}
               />
             </label>
-          )}
+            <div className="calendar-form-row">
+              <label>
+                Giờ bắt đầu
+                <input
+                  required
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </label>
+              <label>
+                Giờ kết thúc
+                <input
+                  required
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </label>
+            </div>
+            {repeat !== 'WEEKLY' && (
+              <label>
+                Ngày kết thúc
+                <input
+                  required
+                  type="date"
+                  min={day}
+                  max="2199-12-31"
+                  value={endDay}
+                  onChange={(e) => setEndDay(e.target.value)}
+                />
+              </label>
+            )}
+          </div>
           {!occurrenceOnly && (
-            <label>
-              Lặp lại
-              <select
-                value={repeat}
-                onChange={(e) => setRepeat(e.target.value)}
-              >
-                <option value="NONE">Không lặp</option>
-                <option value="WEEKLY">Hàng tuần</option>
-              </select>
-            </label>
+            <div className="calendar-form-group">
+              <p className="calendar-form-group-title">Lặp lại</p>
+              <label>
+                Lặp lại
+                <select
+                  value={repeat}
+                  onChange={(e) => setRepeat(e.target.value)}
+                >
+                  <option value="NONE">Không lặp</option>
+                  <option value="WEEKLY">Hàng tuần</option>
+                </select>
+              </label>
+            </div>
           )}
           {repeat === 'WEEKLY' && !occurrenceOnly && (
             <>
@@ -264,14 +276,17 @@ export function CalendarForm({
               </p>
             </>
           )}
-          <label>
-            Ghi chú (không bắt buộc)
-            <textarea
-              maxLength={1000}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </label>
+          <div className="calendar-form-group">
+            <p className="calendar-form-group-title">Ghi chú</p>
+            <label>
+              Ghi chú (không bắt buộc)
+              <textarea
+                maxLength={1000}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </label>
+          </div>
           {error && (
             <p role="alert" className="calendar-error">
               {error}

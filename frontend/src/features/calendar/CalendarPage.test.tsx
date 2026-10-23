@@ -242,6 +242,15 @@ describe('shared family calendar', () => {
         .getAttribute('aria-pressed'),
     ).toBe('true')
   })
+  it('uses a compact empty state instead of a blank day timeline', async () => {
+    network([])
+    render(<CalendarPage profile={profile} />)
+    expect(
+      await screen.findByText('Ngày này đang để trống'),
+    ).toBeTruthy()
+    expect(document.querySelector('.calendar-grid-scroll')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Thêm lịch' })).toBeTruthy()
+  })
   it('reselecting Today refreshes instead of remaining stuck loading', async () => {
     network()
     render(<CalendarPage profile={profile} />)

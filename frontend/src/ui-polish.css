@@ -521,6 +521,195 @@
   .final-meal-section { box-shadow: var(--shadow-card); }
 }
 
+/* Kitchen + Calendar V2: illustrated, compact presentation without changing data flows. */
+.kitchen-page {
+  display: grid;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.kitchen-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.68fr);
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 154px;
+  padding: 1rem 1rem 0.8rem 1.1rem;
+  overflow: hidden;
+  border: 1px solid #ecdccf;
+  border-radius: var(--radius-2xl);
+  background: #fff1e3;
+  box-shadow: var(--shadow-card);
+}
+
+.kitchen-hero-copy { display: grid; gap: 0.38rem; min-width: 0; }
+.kitchen-hero h1 { margin: 0; letter-spacing: -0.045em; }
+.kitchen-hero-note { margin: 0; max-width: 27rem; color: var(--text-secondary); line-height: 1.45; }
+.kitchen-hero .feature-illustration { justify-self: end; width: min(100%, 190px); }
+.kitchen-flow { display: grid; gap: 0.85rem; min-width: 0; }
+.kitchen-flow > .breakfast-card,
+.kitchen-flow > .meals-card,
+.kitchen-flow > .final-meal-section { margin-top: 0; }
+
+.feature-illustration { display: block; height: auto; overflow: visible; }
+.kitchen-illustration, .calendar-illustration { width: 168px; }
+.food-illustration { width: 3.9rem; flex: 0 0 auto; }
+
+.breakfast-card::before,
+.meals-card::before,
+.final-meal-section::before { content: none; }
+.breakfast-heading-art { display: grid; justify-items: end; gap: 0.12rem; }
+.breakfast-heading-art .food-illustration { width: 4.1rem; }
+.breakfast-date { white-space: nowrap; }
+.breakfast-option { justify-content: flex-start; align-items: center; padding: 0.55rem 0.65rem; }
+.breakfast-option-art { display: grid; width: 2.35rem; height: 2.35rem; flex: 0 0 auto; place-items: center; border-radius: 0.7rem; background: rgb(255 255 255 / 65%); }
+.breakfast-option-art .food-illustration { width: 2.2rem; }
+.breakfast-option > span:not(.breakfast-option-art) { flex: 1; }
+.breakfast-option i { margin-left: auto; }
+.final-meal-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.final-meal-heading h2 { margin: 0.15rem 0 0; }
+.final-meal-heading .food-illustration { width: 4.2rem; }
+.final-dishes li { grid-template-columns: 2.4rem 1fr; align-items: center; }
+.final-dishes li > .food-illustration { width: 2.3rem; }
+
+.calendar-heading { position: relative; align-items: center; }
+.calendar-heading-copy { min-width: 0; }
+.calendar-heading .calendar-illustration { width: 148px; margin-inline: auto 0; }
+.calendar-heading .calendar-primary { align-self: end; }
+.calendar-form-group { display: grid; gap: 0.75rem; padding: 0.8rem; border: 1px solid #eee2d5; border-radius: 1rem; background: rgb(255 250 244 / 70%); }
+.calendar-form-group-title { margin: 0; color: var(--sage-deep); font-size: 0.78rem; font-weight: 850; letter-spacing: 0.03em; text-transform: uppercase; }
+.calendar-details { border-top: 3px solid var(--sage); }
+.calendar-details .calendar-owner { padding: 0.45rem 0.55rem; border-radius: 0.8rem; background: rgb(255 255 255 / 70%); }
+.calendar-grid-scroll { scrollbar-color: #b9cdb5 #f6eee6; }
+.calendar-grid-heading { color: var(--sage-deep); }
+.calendar-block { border-left-width: 5px !important; }
+.calendar-block-owner { display: inline-flex; align-items: center; gap: 0.3rem; }
+.calendar-empty { display: grid; gap: 0.35rem; justify-items: start; }
+.chore-heading-copy { display: flex; align-items: center; gap: 0.55rem; }
+.chore-heading-icon { display: grid; width: 2.3rem; height: 2.3rem; place-items: center; border-radius: 0.8rem; color: var(--sage-deep); background: #fff8e9; }
+.chores-section { gap: 0.7rem; }
+
+@media (max-width: 600px) {
+  .kitchen-hero { grid-template-columns: minmax(0, 1fr) 106px; min-height: 140px; padding-inline: 0.8rem; }
+  .kitchen-hero .feature-illustration { width: 126px; margin-right: -0.55rem; }
+  .kitchen-hero-note { font-size: 0.8rem; }
+  .calendar-heading { display: grid; grid-template-columns: minmax(0, 1fr) 94px; }
+  .calendar-heading .calendar-illustration { width: 102px; }
+  .calendar-heading .calendar-primary { grid-column: 1 / -1; width: 100%; }
+  .calendar-form-group { padding: 0.7rem; }
+}
+
+@media (max-width: 360px) {
+  .kitchen-hero { grid-template-columns: minmax(0, 1fr) 88px; }
+  .kitchen-hero .feature-illustration { width: 105px; }
+  .calendar-heading .calendar-illustration { width: 88px; }
+  .breakfast-option { font-size: 0.82rem; }
+  .breakfast-option-art { width: 2rem; height: 2rem; }
+}
+
+/* Final V2 density pass: keep the most useful state above the fold on phones. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.calendar-timeline--empty {
+  min-height: 0;
+}
+.calendar-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 132px;
+  padding: 0.9rem 1rem;
+  border: 1px dashed #d8cbbd;
+  border-radius: var(--radius-xl);
+  background: #fffaf3;
+  color: var(--text-secondary);
+}
+.calendar-empty-state .calendar-illustration { width: 110px; flex: 0 0 auto; }
+.calendar-empty-state > div { display: grid; gap: 0.22rem; }
+.calendar-empty-state strong { color: var(--text); font-size: 0.98rem; }
+.calendar-empty-state p, .calendar-empty-state span { margin: 0; line-height: 1.4; }
+.calendar-empty-state span { color: var(--text-muted); font-size: 0.77rem; }
+.calendar-week-copy-trigger { width: fit-content; min-height: 38px !important; padding: 0.42rem 0.72rem; border-radius: 0.8rem; font-size: 0.8rem; }
+.calendar-page > .calendar-tabs { width: fit-content; max-width: 100%; }
+.calendar-page > .calendar-tabs button { min-height: 40px; padding: 0.44rem 0.72rem; font-size: 0.82rem; }
+.calendar-filters { max-height: 48px; overflow-x: auto; flex-wrap: nowrap; padding: 0.22rem; scrollbar-width: thin; }
+.calendar-filters button { min-height: 38px !important; white-space: nowrap; padding: 0.36rem 0.58rem; font-size: 0.78rem; }
+.calendar-date-nav { padding: 0.35rem; border: 1px solid var(--border); border-radius: 1rem; background: rgb(255 255 255 / 68%); }
+.calendar-date-nav .calendar-secondary { width: 42px; min-height: 42px; padding: 0; font-size: 1.35rem; }
+.calendar-date-nav label { flex: 1; text-align: center; }
+.calendar-date-nav input { min-height: 40px; padding-block: 0.42rem; text-align: center; }
+
+.chores-section--empty { gap: 0.5rem; padding: 0.82rem 0.9rem; }
+.chores-section--empty .chore-heading { margin-bottom: 0.05rem; }
+.chore-empty-state { display: flex; align-items: center; gap: 0.65rem; min-height: 48px; padding: 0.25rem 0.1rem; }
+.chore-empty-icon { display: grid; width: 2.1rem; height: 2.1rem; flex: 0 0 auto; place-items: center; border-radius: 0.72rem; color: var(--sage-deep); background: #fff8e9; }
+.chore-empty-state > div { display: grid; gap: 0.05rem; }
+.chore-empty-state strong { color: var(--text); font-size: 0.88rem; }
+.chore-empty-state span { color: var(--text-muted); font-size: 0.78rem; }
+
+.kitchen-flow > .breakfast-card,
+.kitchen-flow > .meals-card,
+.kitchen-flow > .final-meal-section { padding: 0.92rem; }
+.kitchen-flow .breakfast-heading h2,
+.kitchen-flow .meals-heading h2,
+.kitchen-flow .final-meal-heading h2 { font-size: 1.3rem; }
+.kitchen-flow .breakfast-form { margin-top: 0.8rem; }
+.kitchen-flow .breakfast-closed,
+.kitchen-flow .breakfast-parent-copy { margin-top: 0.8rem; }
+.kitchen-flow .breakfast-status-list { gap: 0.5rem; margin-top: 0.75rem; }
+.kitchen-flow .breakfast-status-list li { gap: 0.65rem; padding: 0.58rem; }
+.kitchen-flow .breakfast-status-list .profile-avatar { width: 40px; height: 40px; border-radius: 0.75rem; font-size: 1rem; }
+.kitchen-flow .breakfast-purchase-section { margin-top: 0.8rem; padding-top: 0.8rem; }
+.breakfast-note-field { display: grid; gap: 0.25rem; }
+.breakfast-note-field small { color: var(--text-muted); font-size: 0.73rem; }
+.kitchen-flow .breakfast-purchase-form textarea { min-height: 58px; padding-block: 0.52rem; }
+.kitchen-flow .breakfast-purchase-form { gap: 0.65rem; }
+.kitchen-flow .breakfast-purchased-banner { margin-top: 0.75rem; padding: 0.7rem 0.8rem; }
+.kitchen-flow .meal-list { gap: 0.7rem; margin-top: 0.7rem; }
+.kitchen-flow .meal-request { padding: 0.78rem; }
+.kitchen-flow .meal-request > header { gap: 0.45rem; }
+.kitchen-flow .meal-request h3 { font-size: 1.02rem; }
+.kitchen-flow .meal-deadline { margin-block: 0.45rem; font-size: 0.76rem; line-height: 1.4; }
+.kitchen-flow .response-list { gap: 0.35rem; }
+.kitchen-flow .response-list li { padding: 0.52rem 0.6rem; font-size: 0.84rem; }
+.kitchen-flow .meal-response-form { gap: 0.55rem; }
+.kitchen-flow .meal-response-form textarea { min-height: 68px; }
+.kitchen-flow .final-meal-content { gap: 0.7rem; margin-top: 0.7rem; }
+.meal-workflow-step { display: grid; gap: 0.55rem; margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid rgb(222 216 201 / 80%); }
+.meal-workflow-heading { display: flex; align-items: center; gap: 0.45rem; min-width: 0; }
+.meal-workflow-heading strong { color: var(--text); font-size: 0.83rem; }
+.meal-workflow-number { display: grid; width: 1.55rem; height: 1.55rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #fff; background: var(--sage-deep); font-size: 0.72rem; font-weight: 850; }
+.meal-workflow-chip { margin-left: auto; padding: 0.2rem 0.48rem; border-radius: 999px; color: var(--sage-deep); background: var(--sage-soft); font-size: 0.7rem; font-weight: 800; white-space: nowrap; }
+.meal-workflow-chip--question { align-self: center; }
+.meal-workflow-step .dish-editor { margin-top: 0; }
+.final-ready .meal-workflow-heading { margin-bottom: 0.1rem; }
+.final-ready > strong { font-size: 0.95rem; }
+
+@media (max-width: 420px) {
+  .calendar-empty-state { min-height: 116px; padding: 0.75rem; }
+  .calendar-empty-state .calendar-illustration { width: 86px; }
+  .calendar-empty-state p { font-size: 0.82rem; }
+  .calendar-empty-state span { font-size: 0.7rem; }
+  .kitchen-flow > .breakfast-card,
+  .kitchen-flow > .meals-card,
+  .kitchen-flow > .final-meal-section { padding: 0.78rem; }
+  .kitchen-flow .breakfast-option { min-height: 56px; }
+  .kitchen-flow .breakfast-option-art { width: 1.9rem; height: 1.9rem; }
+  .kitchen-flow .breakfast-option-art .food-illustration { width: 1.8rem; }
+  .meal-workflow-chip--question { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

@@ -11,6 +11,7 @@ import {
   type HouseholdView,
 } from './household-duty-api'
 import './chores.css'
+import { AppIcon } from '../../ui/AppIcon'
 
 export function HouseholdDutySection({
   profile,
@@ -47,10 +48,19 @@ export function HouseholdDutySection({
     setMessage(text ?? null)
     setVersion((v) => v + 1)
   }
+  const isEmpty = state === 'ready' && data?.duties.length === 0
   return (
-    <section className="chores-section" aria-label="Lịch việc nhà">
+    <section
+      className={`chores-section${isEmpty ? ' chores-section--empty' : ''}`}
+      aria-label="Lịch việc nhà"
+    >
       <div className="chore-heading">
-        <h2>{from === to ? 'Việc nhà hôm nay' : 'Việc nhà trong tuần'}</h2>
+        <div className="chore-heading-copy">
+          <span className="chore-heading-icon" aria-hidden="true">
+            <AppIcon name="chores" size={20} />
+          </span>
+          <h2>{from === to ? 'Việc nhà hôm nay' : 'Việc nhà trong tuần'}</h2>
+        </div>
         {parent && state === 'ready' && (
           <button
             className="chore-secondary"
@@ -60,10 +70,12 @@ export function HouseholdDutySection({
           </button>
         )}
       </div>
-      <p className="chore-hint">
-        Mỗi ngày một người lo cả rửa chén và đổ rác. Lịch việc riêng trước đây
-        vẫn được giữ trong lịch sử.
-      </p>
+      {!isEmpty && (
+        <p className="chore-hint">
+          Mỗi ngày một người lo cả rửa chén và đổ rác. Lịch việc riêng trước đây
+          vẫn được giữ trong lịch sử.
+        </p>
+      )}
       {message && <p role="status">{message}</p>}
       {state === 'loading' && <p role="status">Đang xem lịch việc nhà…</p>}
       {state === 'error' && (
@@ -79,19 +91,29 @@ export function HouseholdDutySection({
           {editing && parent && (
             <DutyWeekEditor key={from} date={from} onSaved={reload} />
           )}
-          {data.duties.length === 0 && (
-            <p>Chưa phân công việc nhà trong khoảng này.</p>
+          {data.duties.length === 0 ? (
+            <div className="chore-empty-state">
+              <span className="chore-empty-icon" aria-hidden="true">
+                <AppIcon name="chores" size={19} />
+              </span>
+              <div>
+                <strong>{from === to ? 'Việc nhà hôm nay' : 'Việc nhà trong tuần'}</strong>
+                <span>Chưa có phân công</span>
+                <span className="visually-hidden">Chưa phân công việc nhà trong khoảng này.</span>
+              </div>
+            </div>
+          ) : (
+            <div className="chore-list">
+              {data.duties.map((duty) => (
+                <HouseholdDutyCard
+                  key={duty.id}
+                  duty={duty}
+                  profile={profile}
+                  onChanged={() => reload('Đã xác nhận hoàn thành việc nhà.')}
+                />
+              ))}
+            </div>
           )}
-          <div className="chore-list">
-            {data.duties.map((duty) => (
-              <HouseholdDutyCard
-                key={duty.id}
-                duty={duty}
-                profile={profile}
-                onChanged={() => reload('Đã xác nhận hoàn thành việc nhà.')}
-              />
-            ))}
-          </div>
         </>
       )}
     </section>

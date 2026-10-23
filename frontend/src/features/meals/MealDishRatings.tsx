@@ -9,6 +9,7 @@ import {
   type MealFeedback,
 } from './dish-rating-api'
 import './dish-rating.css'
+import { FoodIllustration } from '../../ui/Illustration'
 
 export function MealDishRatings({
   mealId,
@@ -70,6 +71,7 @@ export function MealDishRatings({
                 aria-label={dish.name}
                 className="dish-feedback-card"
               >
+                <FoodIllustration variant="final" />
                 <span className="dish-category">
                   {categoryLabels[dish.category]}
                 </span>

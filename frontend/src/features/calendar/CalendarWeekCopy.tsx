@@ -17,7 +17,7 @@ export function CalendarWeekCopy({
   if (!open)
     return (
       <button
-        className="calendar-secondary"
+        className="calendar-secondary calendar-week-copy-trigger"
         onClick={() => {
           setSource(weekRange(date).from)
           setOpen(true)

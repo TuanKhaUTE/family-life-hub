@@ -13,6 +13,7 @@ import { StudyGrades } from '../study/StudyGrades'
 import { MealFoodCost } from '../expenses/MealFoodCost'
 import { familyDate } from '../meals/family-time'
 import { AppIcon, type AppIconName } from '../../ui/AppIcon'
+import { KitchenIllustration } from '../../ui/Illustration'
 import './shell.css'
 
 interface AuthenticatedShellProps {
@@ -86,12 +87,23 @@ export function AuthenticatedShell({
           />
         )}
         {destination === 'Bếp' && (
-          <>
-            <h1>Bếp nhà mình</h1>
-            <BreakfastSection profile={profile} />
-            <MealFoodCost date={familyDate()} mealType="BREAKFAST" />
-            <MealRequestSection profile={profile} />
-          </>
+          <div className="kitchen-page">
+            <header className="kitchen-hero">
+              <div className="kitchen-hero-copy">
+                <p className="eyebrow">Món ngon và chuyện trò</p>
+                <h1>Bếp nhà mình</h1>
+                <p className="kitchen-hero-note">
+                  Cả nhà cùng chọn món, để bữa ăn hôm nay thật vừa ý.
+                </p>
+              </div>
+              <KitchenIllustration />
+            </header>
+            <div className="kitchen-flow">
+              <BreakfastSection profile={profile} />
+              <MealFoodCost date={familyDate()} mealType="BREAKFAST" />
+              <MealRequestSection profile={profile} />
+            </div>
+          </div>
         )}
         {destination === 'Lịch' && <CalendarPage profile={profile} />}
         {destination === 'Chi tiêu' && profile.role === 'PARENT' && (

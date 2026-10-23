@@ -14,6 +14,7 @@ import { MealDishRatings } from './MealDishRatings'
 import { MealFeedbackSheet } from './MealFeedbackSheet'
 import './final-meal.css'
 import { MealFoodCost } from '../expenses/MealFoodCost'
+import { FoodIllustration } from '../../ui/Illustration'
 
 export function FinalMealSection({
   profile,
@@ -28,7 +29,13 @@ export function FinalMealSection({
       className="final-meal-section"
       aria-labelledby="final-meal-heading"
     >
-      <h2 id="final-meal-heading">Bữa tối đã chốt</h2>
+      <header className="final-meal-heading">
+        <div>
+          <p className="eyebrow">Món ngon hôm nay</p>
+          <h2 id="final-meal-heading">Bữa tối đã chốt</h2>
+        </div>
+        <FoodIllustration variant="final" />
+      </header>
       <SlotMeal
         key={`${date}:${profile.id}`}
         date={date}
@@ -99,6 +106,7 @@ function SlotMeal({
         <ul className="final-dishes">
           {meal.dishes.map((dish) => (
             <li key={dish.id}>
+              <FoodIllustration variant="final" />
               <strong>{dish.name}</strong>
             </li>
           ))}
@@ -107,6 +115,7 @@ function SlotMeal({
       {meal?.readyAt ? (
         <>
           <div className="final-ready" role="status">
+            <div className="meal-workflow-heading"><span className="meal-workflow-number">4</span><strong>Đã sẵn sàng</strong><span className="meal-workflow-chip">Báo cả nhà</span></div>
             <strong>Bữa tối đã sẵn sàng ✓</strong>
             <time dateTime={meal.readyAt}>
               {new Intl.DateTimeFormat('vi-VN', {
@@ -152,43 +161,49 @@ function SlotMeal({
             nhé.
           </p>
         ) : !meal || editing ? (
-          <DinnerFinalizer
-            key={request?.updatedAt ?? 'direct'}
-            initial={meal?.dishes}
-            candidates={request?.candidates ?? []}
-            onCancel={meal ? () => setEditing(false) : undefined}
-            onSave={async (dishes) => {
-              try {
-                const saved = await saveFinalMeal(
-                  date,
-                  'DINNER',
-                  dishes,
-                  meal?.mealRequestId ?? request?.id ?? null,
-                )
-                setMeal(saved)
-                setEditing(false)
-                setError(null)
-              } catch (cause) {
-                setError(
-                  cause instanceof FinalMealApiError &&
-                    cause.code === 'FINAL_MEAL_LOCKED'
-                    ? 'Bữa tối đã sẵn sàng nên không thể đổi món nữa. Mẹ tải lại Bếp nhé.'
-                    : 'Chưa thể lưu bữa tối. Mẹ thử lại nhé.',
-                )
-                throw cause
-              }
-            }}
-          />
+          <section className="meal-workflow-step meal-workflow-step--final" aria-label="Chốt món">
+            <div className="meal-workflow-heading"><span className="meal-workflow-number">3</span><strong>Chốt món</strong><span className="meal-workflow-chip">Đang chuẩn bị</span></div>
+            <DinnerFinalizer
+              key={request?.updatedAt ?? 'direct'}
+              initial={meal?.dishes}
+              candidates={request?.candidates ?? []}
+              onCancel={meal ? () => setEditing(false) : undefined}
+              onSave={async (dishes) => {
+                try {
+                  const saved = await saveFinalMeal(
+                    date,
+                    'DINNER',
+                    dishes,
+                    meal?.mealRequestId ?? request?.id ?? null,
+                  )
+                  setMeal(saved)
+                  setEditing(false)
+                  setError(null)
+                } catch (cause) {
+                  setError(
+                    cause instanceof FinalMealApiError &&
+                      cause.code === 'FINAL_MEAL_LOCKED'
+                      ? 'Bữa tối đã sẵn sàng nên không thể đổi món nữa. Mẹ tải lại Bếp nhé.'
+                      : 'Chưa thể lưu bữa tối. Mẹ thử lại nhé.',
+                  )
+                  throw cause
+                }
+              }}
+            />
+          </section>
         ) : (
-          <button
-            className="secondary-button"
-            onClick={() => {
-              setError(null)
-              setEditing(true)
-            }}
-          >
-            Chỉnh sửa món
-          </button>
+          <section className="meal-workflow-step meal-workflow-step--final" aria-label="Chốt món">
+            <div className="meal-workflow-heading"><span className="meal-workflow-number">3</span><strong>Chốt món</strong><span className="meal-workflow-chip">Đã lưu</span></div>
+            <button
+              className="secondary-button"
+              onClick={() => {
+                setError(null)
+                setEditing(true)
+              }}
+            >
+              Chỉnh sửa món
+            </button>
+          </section>
         ))}
       {isParent && meal && !editing && (
         <ReadyControl

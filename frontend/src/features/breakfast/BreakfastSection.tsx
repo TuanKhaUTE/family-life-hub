@@ -17,6 +17,7 @@ import {
 import './breakfast.css'
 import { breakfastLifecycle, relevantBreakfastDate } from '../meals/family-time'
 import { useFamilyClock } from '../meals/use-family-clock'
+import { FoodIllustration } from '../../ui/Illustration'
 
 interface BreakfastSectionProps {
   profile: FamilyProfile
@@ -303,9 +304,12 @@ function BreakfastHeader({ day }: { day?: BreakfastDay }) {
         <p className="eyebrow">Cả nhà ăn sáng nhé</p>
         <h2 id="breakfast-title">Bữa sáng tiếp theo</h2>
       </div>
-      <span className="breakfast-date">
-        {day ? formatFamilyDate(day.date, day.timeZone) : 'Ngày tiếp theo'}
-      </span>
+      <div className="breakfast-heading-art">
+        <FoodIllustration />
+        <span className="breakfast-date">
+          {day ? formatFamilyDate(day.date, day.timeZone) : 'Ngày tiếp theo'}
+        </span>
+      </div>
     </header>
   )
 }
@@ -331,6 +335,9 @@ function ChoiceCard({
         checked={checked}
         onChange={onSelect}
       />
+      <span className="breakfast-option-art" aria-hidden="true">
+        <FoodIllustration variant={tone === 'quiet' ? 'final' : tone === 'peach' ? 'dinner' : 'breakfast'} />
+      </span>
       <span>{label}</span>
       <i aria-hidden="true">{checked ? '✓' : ''}</i>
     </label>
@@ -467,16 +474,19 @@ function ParentBreakfastView({
                 className="breakfast-purchase-form"
                 onSubmit={handlePurchase}
               >
-                <label>
-                  <span>Lời nhắn cho cả nhà</span>
-                  <textarea
-                    value={message}
-                    maxLength={300}
-                    rows={3}
-                    placeholder="Ví dụ: Nước cam trong tủ lạnh nha"
-                    onChange={(event) => setMessage(event.target.value)}
-                  />
-                </label>
+                <div className="breakfast-note-field">
+                  <label>
+                    <span>Lời nhắn cho cả nhà</span>
+                    <textarea
+                      value={message}
+                      maxLength={300}
+                      rows={2}
+                      placeholder="Ví dụ: Nước cam trong tủ lạnh nha"
+                      onChange={(event) => setMessage(event.target.value)}
+                    />
+                  </label>
+                  <small>Không bắt buộc · có thể thêm sau</small>
+                </div>
                 {error && (
                   <p className="breakfast-save-error" role="alert">
                     {error}

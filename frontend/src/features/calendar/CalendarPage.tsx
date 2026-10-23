@@ -14,6 +14,7 @@ import './calendar.css'
 import { HouseholdDutySection } from '../chores/HouseholdDutySection'
 import { CalendarGrid } from './CalendarGrid'
 import { CalendarWeekCopy } from './CalendarWeekCopy'
+import { CalendarIllustration } from '../../ui/Illustration'
 
 export function CalendarPage({ profile }: { profile: FamilyProfile }) {
   const [today] = useState(() => familyDate())
@@ -77,11 +78,12 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
   return (
     <div className="calendar-page">
       <header className="calendar-heading">
-        <div>
+        <div className="calendar-heading-copy">
           <p className="eyebrow">Thời gian của nhà mình</p>
           <h1>Lịch</h1>
           <p>Cùng nhau sắp xếp thời gian</p>
         </div>
+        <CalendarIllustration />
         <button
           className="calendar-primary"
           onClick={() => {
@@ -124,7 +126,7 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
       <p className="calendar-hint">
         {calendarType === 'FAMILY'
           ? 'Lịch nhà để cả nhà biết lịch đi học và những cuộc hẹn cần chia sẻ. Mỗi người chỉ sửa lịch của mình.'
-          : 'Góc thời gian riêng, chỉ mình bạn xem và chỉnh sửa. Lịch tự học, tập luyện chưa tự động đồng bộ.'}
+          : 'Góc thời gian riêng của bạn, gồm lịch cá nhân và các kế hoạch Học & Luyện.'}
       </p>
       {calendarType === 'FAMILY' && (
         <CalendarWeekCopy date={date} onCopied={changed} />
@@ -263,25 +265,36 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
       {state === 'ready' && data && (
         <section
           aria-label={view === 'WEEK' ? 'Lịch tuần' : 'Lịch hôm nay'}
-          className="calendar-timeline"
+          className={`calendar-timeline${data.occurrences.length === 0 ? ' calendar-timeline--empty' : ''}`}
         >
           {data.occurrences.length === 0 && (
-            <p className="calendar-empty">
-              Khoảng thời gian này chưa có lịch. Cả nhà có thể thong thả một
-              chút nhé.
-            </p>
+            <div className="calendar-empty-state">
+              <CalendarIllustration />
+              <div>
+                <strong>
+                  {view === 'DAY' ? 'Ngày này đang để trống' : 'Tuần này đang để trống'}
+                </strong>
+                <p>
+                  Khoảng thời gian này chưa có lịch. Cả nhà có thể thong thả một
+                  chút nhé.
+                </p>
+                <span>Dùng “Thêm lịch” ở trên nếu bạn muốn ghi lại một kế hoạch.</span>
+              </div>
+            </div>
           )}
-          <CalendarGrid
-            focusDate={date}
-            days={days}
-            data={data}
-            personal={calendarType === 'PERSONAL'}
-            onSelect={(item) => {
-              setSelected(item)
-              setForm(null)
-              setMessage(null)
-            }}
-          />
+          {data.occurrences.length > 0 && (
+            <CalendarGrid
+              focusDate={date}
+              days={days}
+              data={data}
+              personal={calendarType === 'PERSONAL'}
+              onSelect={(item) => {
+                setSelected(item)
+                setForm(null)
+                setMessage(null)
+              }}
+            />
+          )}
         </section>
       )}
       <HouseholdDutySection
