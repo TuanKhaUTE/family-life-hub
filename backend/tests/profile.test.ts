@@ -43,6 +43,48 @@ it('profile repository whitelists safe updates and binds rotation to authenticat
     p_reset: true,
   })
 })
+it('profile repository uses a deterministic owner path and service-mediated profile update', async () => {
+  const s = setup(),
+    rpc = vi.fn(async () => ({
+      data: {
+        ...s.profile,
+        avatarType: 'IMAGE',
+        avatarValue: '/api/profile/avatar/' + id + '?v=42',
+      },
+      error: null,
+    })),
+    upload = vi.fn(async () => ({ data: { path: 'ignored' }, error: null })),
+    remove = vi.fn(async () => ({ data: [], error: null })),
+    getPublicUrl = vi.fn(() => ({
+      data: { publicUrl: 'https://synthetic.example/avatar.webp' },
+    })),
+    storage = {
+      from: vi.fn(() => ({ upload, remove, getPublicUrl })),
+    },
+    r = new SupabaseProfileRepository(
+      () => ({ rpc, storage }) as unknown as SupabaseClient,
+    )
+
+  expect(await r.uploadAvatar(s.auth, webpBytes(), '42')).toMatchObject({
+    avatarType: 'IMAGE',
+    avatarValue: '/api/profile/avatar/' + id + '?v=42',
+  })
+  expect(upload).toHaveBeenCalledWith(
+    'avatars/' + id + '/avatar.webp',
+    expect.anything(),
+    { contentType: 'image/webp', cacheControl: '31536000', upsert: true },
+  )
+  expect(rpc).toHaveBeenCalledWith('update_own_family_profile', {
+    p_actor_member_id: id,
+    p_session_id: sessionId,
+    p_input: {
+      displayName: s.profile.displayName,
+      avatarType: 'IMAGE',
+      avatarValue: '/api/profile/avatar/' + id + '?v=42',
+    },
+  })
+  expect(r.publicAvatarUrl(id)).toBe('https://synthetic.example/avatar.webp')
+})
 it.each([
   ['42501', 403],
   ['28000', 401],
@@ -109,6 +151,15 @@ function setup(role: SafeFamilyProfile['role'] = 'MEMBER') {
       displayName: 'Synthetic Updated',
     })),
     rotate: vi.fn(async () => {}),
+    uploadAvatar: vi.fn(async () => ({
+      ...profile,
+      avatarType: 'IMAGE',
+      avatarValue: '/api/profile/avatar/' + id + '?v=1',
+    })),
+    deleteAvatar: vi.fn(async () => {}),
+    publicAvatarUrl: vi.fn(() =>
+      'https://synthetic.example/storage/family-avatars/avatars/' + id,
+    ),
   }
   const credentials: FamilyAuthRepository = {
     listActiveProfiles: vi.fn(async () => [
@@ -199,6 +250,101 @@ it.each([
   )
   expect(s.repository.update).not.toHaveBeenCalled()
 })
+
+it('uploads an owner-bound avatar without accepting a target member selector', async () => {
+  const s = setup(),
+    repository = s.repository as ProfileRepository & {
+      uploadAvatar: ReturnType<typeof vi.fn>
+    },
+    response = await request(s.app)
+      .put('/profile/me/avatar?memberId=' + other)
+      .set('Content-Type', 'image/webp')
+      .send(webpBytes())
+
+  expect(response.status).toBe(200)
+  expect(response.body.profile.avatarType).toBe('IMAGE')
+  expect(repository.uploadAvatar).toHaveBeenCalledWith(
+    s.auth,
+    expect.any(Buffer),
+    expect.any(String),
+  )
+})
+
+it('keeps an administrator avatar upload bound to the administrator session', async () => {
+  const s = setup('ADMIN'),
+    repository = s.repository as ProfileRepository & {
+      uploadAvatar: ReturnType<typeof vi.fn>
+    },
+    response = await request(s.app)
+      .put('/profile/me/avatar?memberId=' + other)
+      .set('Content-Type', 'image/webp')
+      .send(webpBytes())
+
+  expect(response.status).toBe(200)
+  expect(response.body.profile.id).toBe(id)
+  expect(repository.uploadAvatar).toHaveBeenCalledWith(
+    s.auth,
+    expect.any(Buffer),
+    expect.any(String),
+  )
+})
+
+it.each([
+  ['unsupported content type', 'image/gif', Buffer.from('GIF89a')],
+  ['invalid image bytes', 'image/webp', Buffer.from('not an image')],
+] as const)('rejects %s before storage', async (_label, contentType, body) => {
+  const s = setup(),
+    repository = s.repository as ProfileRepository & {
+      uploadAvatar: ReturnType<typeof vi.fn>
+    },
+    response = await request(s.app)
+      .put('/profile/me/avatar')
+      .set('Content-Type', contentType)
+      .send(body)
+
+  expect(response.status).toBe(400)
+  expect(repository.uploadAvatar).not.toHaveBeenCalled()
+})
+
+it('rejects an oversized avatar before storage', async () => {
+  const s = setup(),
+    repository = s.repository as ProfileRepository & {
+      uploadAvatar: ReturnType<typeof vi.fn>
+    },
+    response = await request(s.app)
+      .put('/profile/me/avatar')
+      .set('Content-Type', 'image/webp')
+      .send(Buffer.concat([webpBytes(), Buffer.alloc(5 * 1024 * 1024)]))
+
+  expect(response.status).toBe(413)
+  expect(repository.uploadAvatar).not.toHaveBeenCalled()
+})
+
+it('removes the current owner avatar when switching to an emoji', async () => {
+  const s = setup()
+  s.auth.profile.avatarType = 'IMAGE'
+  s.auth.profile.avatarValue = '/api/profile/avatar/' + id + '?v=1'
+  const repository = s.repository as ProfileRepository & {
+    deleteAvatar: ReturnType<typeof vi.fn>
+  }
+
+  expect(
+    (
+      await request(s.app)
+        .put('/profile/me')
+        .send({ ...input, avatarType: 'EMOJI', avatarValue: '🌿' })
+    ).status,
+  ).toBe(200)
+  expect(repository.deleteAvatar).toHaveBeenCalledWith(s.auth)
+})
+
+function webpBytes() {
+  return Buffer.from([
+    0x52, 0x49, 0x46, 0x46, 0x16, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+    0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  ])
+}
 it('allows keeping an existing legacy avatar but not replacing it with another arbitrary URL', async () => {
   const s = setup()
   s.profile.avatarType = 'IMAGE' as never

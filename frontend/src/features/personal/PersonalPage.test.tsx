@@ -3,6 +3,12 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PersonalPage } from './PersonalPage'
 import * as api from './profile-api'
+vi.mock('./avatar-image', () => ({
+  AvatarInputError: class AvatarInputError extends Error {},
+  normalizeAvatarImage: vi.fn(async () =>
+    new Blob(['synthetic webp'], { type: 'image/webp' }),
+  ),
+}))
 vi.mock('./profile-api', async (original) => {
   const actual = await original<typeof api>()
   return {
@@ -12,6 +18,7 @@ vi.mock('./profile-api', async (original) => {
     changePin: vi.fn(),
     resetMembers: vi.fn(),
     resetPin: vi.fn(),
+    uploadAvatar: vi.fn(),
   }
 })
 vi.mock('../sharing/ReceivedShares', () => ({
@@ -104,6 +111,60 @@ it('edits own name/avatar, updates shell and collapses after saving', async () =
   })
   expect(updated).toHaveBeenCalled()
   expect(screen.queryByLabelText('Tên hiển thị')).toBeNull()
+})
+it('previews a device photo and uploads it only after saving the profile', async () => {
+  const u = userEvent.setup(),
+    updated = vi.fn(),
+    uploadAvatar = (api as unknown as {
+      uploadAvatar: ReturnType<typeof vi.fn>
+    }).uploadAvatar
+  uploadAvatar.mockResolvedValue({
+    ...profile,
+    avatarType: 'IMAGE',
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=2',
+  })
+  vi.stubGlobal('URL', {
+    createObjectURL: vi.fn(() => 'blob:synthetic-avatar'),
+    revokeObjectURL: vi.fn(),
+  })
+  render(
+    <PersonalPage
+      profile={profile}
+      onExpenses={vi.fn()}
+      onProfileUpdated={updated}
+    />,
+  )
+  await u.click(await screen.findByRole('button', { name: 'Chỉnh sửa hồ sơ' }))
+  const file = new File(['synthetic image'], 'avatar.png', { type: 'image/png' })
+  await u.upload(screen.getByLabelText('Chọn ảnh từ thiết bị'), file)
+  expect(uploadAvatar).not.toHaveBeenCalled()
+  expect(screen.getByAltText('Xem trước ảnh đại diện')).toBeTruthy()
+  await u.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }))
+  await waitFor(() => expect(uploadAvatar).toHaveBeenCalledTimes(1))
+  expect(uploadAvatar.mock.calls[0]?.[0]).toBeInstanceOf(Blob)
+  expect(updated).toHaveBeenCalledWith(
+    expect.objectContaining({ avatarType: 'IMAGE' }),
+  )
+})
+it('cancels a selected device photo without uploading it', async () => {
+  const u = userEvent.setup(),
+    uploadAvatar = (api as unknown as {
+      uploadAvatar: ReturnType<typeof vi.fn>
+    }).uploadAvatar
+  vi.stubGlobal('URL', {
+    createObjectURL: vi.fn(() => 'blob:cancelled-avatar'),
+    revokeObjectURL: vi.fn(),
+  })
+  render(<PersonalPage profile={profile} onExpenses={vi.fn()} />)
+  await u.click(await screen.findByRole('button', { name: 'Chỉnh sửa hồ sơ' }))
+  await u.upload(
+    screen.getByLabelText('Chọn ảnh từ thiết bị'),
+    new File(['synthetic image'], 'avatar.png', { type: 'image/png' }),
+  )
+  expect(screen.getByAltText('Xem trước ảnh đại diện')).toBeTruthy()
+  await u.click(screen.getByRole('button', { name: 'Hủy' }))
+  expect(uploadAvatar).not.toHaveBeenCalled()
+  expect(screen.queryByAltText('Xem trước ảnh đại diện')).toBeNull()
 })
 it('validates PIN mismatch, clears inputs and requires sign-in after successful own change', async () => {
   const u = userEvent.setup(),

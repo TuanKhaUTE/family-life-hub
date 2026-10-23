@@ -79,6 +79,20 @@ export async function fetchSettings(
 export async function saveProfile(input: ProfileInput) {
   return readProfile(object(await request('/me', 'PUT', input)).profile)
 }
+export async function uploadAvatar(blob: Blob) {
+  const response = await fetch('/api/profile/me/avatar', {
+    method: 'PUT',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'image/webp',
+    },
+    body: blob,
+  })
+  if (!response.ok) throw new ProfileApiError(response.status)
+  return readProfile(object(await response.json()).profile)
+}
 export async function changePin(input: PinInput) {
   await request('/me/pin', 'POST', input)
 }
@@ -101,4 +115,11 @@ export function profileError(e: unknown) {
   return e instanceof ProfileApiError && e.status === 401
     ? 'Chưa thể xác minh mã PIN hiện tại hoặc phiên đã hết hạn. Nếu vừa thử sai nhiều lần, hãy chờ 15 phút rồi thử lại.'
     : 'Hiện chưa thể lưu thay đổi. Vui lòng thử lại; nếu vừa đổi PIN, hãy đăng nhập lại bằng mã mới.'
+}
+export function avatarError(e: unknown) {
+  if (e instanceof ProfileApiError && e.status === 413)
+    return 'Ảnh đại diện cần nhỏ hơn 5 MB. Vui lòng chọn ảnh khác.'
+  if (e instanceof ProfileApiError && e.status === 400)
+    return 'Ảnh đại diện không hợp lệ. Vui lòng chọn ảnh JPEG, PNG hoặc WebP.'
+  return 'Chưa thể lưu ảnh đại diện. Vui lòng thử lại.'
 }

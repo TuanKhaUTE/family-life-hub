@@ -7,14 +7,12 @@ import type {
   ProfileInput,
 } from '../services/profile.service.js'
 import type { SafeFamilyProfile } from '../services/family-auth.service.js'
+export const AVATAR_BUCKET = 'family-avatars'
 export class SupabaseProfileRepository implements ProfileRepository {
   private client?: SupabaseClient
   constructor(private readonly factory = createSupabaseServerClient) {}
   private async rpc(name: string, args: Record<string, unknown>) {
-    const { data, error } = await (this.client ??= this.factory()).rpc(
-      name,
-      args,
-    )
+    const { data, error } = await this.getClient().rpc(name, args)
     if (error) {
       const status =
         error.code === '42501'
@@ -35,6 +33,56 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return data as unknown
   }
   async update(auth: AuthenticatedFamilySession, input: ProfileInput) {
+    return this.updateProfile(auth, input)
+  }
+  async uploadAvatar(
+    auth: AuthenticatedFamilySession,
+    body: Buffer,
+    cacheVersion: string,
+  ) {
+    const path = avatarPath(auth.profile.id)
+    const { error } = await this.getClient()
+      .storage.from(AVATAR_BUCKET)
+      .upload(path, body as unknown as ArrayBuffer, {
+        contentType: 'image/webp',
+        cacheControl: '31536000',
+        upsert: true,
+      })
+    if (error) {
+      throw new ApiError(
+        503,
+        'PROFILE_UNAVAILABLE',
+        'Profile settings request could not be completed',
+      )
+    }
+    try {
+      return await this.updateProfile(auth, {
+        displayName: auth.profile.displayName,
+        avatarType: 'IMAGE',
+        avatarValue: avatarRoute(auth.profile.id, cacheVersion),
+      })
+    } catch (error) {
+      // Keep the owner-deterministic object when the profile RPC fails after
+      // an upsert; the old profile reference remains owner-scoped and avoids
+      // leaving an additional orphan path.
+      if (auth.profile.avatarType !== 'IMAGE') {
+        await this.removeAvatarObject(path)
+      }
+      throw error
+    }
+  }
+  async deleteAvatar(auth: AuthenticatedFamilySession) {
+    await this.removeAvatarObject(avatarPath(auth.profile.id))
+  }
+  publicAvatarUrl(memberId: string) {
+    return this.getClient().storage.from(AVATAR_BUCKET).getPublicUrl(
+      avatarPath(memberId),
+    ).data.publicUrl
+  }
+  private async updateProfile(
+    auth: AuthenticatedFamilySession,
+    input: ProfileInput,
+  ) {
     const p = await this.rpc('update_own_family_profile', {
       p_actor_member_id: auth.profile.id,
       p_session_id: auth.sessionId,
@@ -59,6 +107,21 @@ export class SupabaseProfileRepository implements ProfileRepository {
       avatarValue: v.avatarValue as string | null,
     }
   }
+  private async removeAvatarObject(path: string) {
+    const { error } = await this.getClient()
+      .storage.from(AVATAR_BUCKET)
+      .remove([path])
+    if (error) {
+      throw new ApiError(
+        503,
+        'PROFILE_UNAVAILABLE',
+        'Profile settings request could not be completed',
+      )
+    }
+  }
+  private getClient() {
+    return (this.client ??= this.factory())
+  }
   async rotate(
     auth: AuthenticatedFamilySession,
     target: string,
@@ -75,4 +138,12 @@ export class SupabaseProfileRepository implements ProfileRepository {
       p_reset: reset,
     })
   }
+}
+
+function avatarPath(memberId: string) {
+  return `avatars/${memberId}/avatar.webp`
+}
+
+function avatarRoute(memberId: string, cacheVersion: string) {
+  return `/api/profile/avatar/${memberId}?v=${encodeURIComponent(cacheVersion)}`
 }

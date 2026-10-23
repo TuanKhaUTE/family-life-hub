@@ -15,6 +15,10 @@ export const AVATAR_CHOICES = [
   { avatarType: 'EMOJI', avatarValue: '📚', label: 'Sách' },
   { avatarType: 'EMOJI', avatarValue: '☀️', label: 'Nắng ấm' },
 ] as const
+export const AVATAR_MAX_BYTES = 5 * 1024 * 1024
+const AVATAR_CONTENT_TYPE = 'image/webp'
+const MEMBER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 export interface ProfileInput {
   displayName: string
   avatarType: string | null
@@ -32,6 +36,13 @@ export interface ProfileRepository {
     newHash: string,
     reset: boolean,
   ): Promise<void>
+  uploadAvatar(
+    auth: AuthenticatedFamilySession,
+    body: Buffer,
+    cacheVersion: string,
+  ): Promise<SafeFamilyProfile>
+  deleteAvatar(auth: AuthenticatedFamilySession): Promise<void>
+  publicAvatarUrl(memberId: string): string
 }
 export class ProfileService {
   constructor(
@@ -71,15 +82,55 @@ export class ProfileService {
       )
     )
       invalid()
-    return this.run(async () =>
-      safeProfile(
+    const replacingImage =
+      auth.profile.avatarType === 'IMAGE' && value.avatarType !== 'IMAGE'
+    return this.run(async () => {
+      const updated = safeProfile(
         await this.repository.update(auth, {
           displayName: name,
           avatarType: value.avatarType as string | null,
           avatarValue: value.avatarValue as string | null,
         }),
+      )
+      if (replacingImage) {
+        try {
+          await this.repository.deleteAvatar(auth)
+        } catch {
+          // A stale private object is safe to leave behind after the profile
+          // no longer references it; the deterministic path prevents buildup.
+        }
+      }
+      return updated
+    })
+  }
+  async uploadAvatar(
+    auth: AuthenticatedFamilySession,
+    body: unknown,
+    contentType: unknown,
+  ) {
+    if (!Buffer.isBuffer(body)) invalidAvatar()
+    if (body.length > AVATAR_MAX_BYTES) avatarTooLarge()
+    if (
+      typeof contentType !== 'string' ||
+      contentType.split(';', 1)[0]!.trim().toLowerCase() !== AVATAR_CONTENT_TYPE ||
+      !isWebp(body)
+    )
+      invalidAvatar()
+    return this.run(async () =>
+      safeProfile(
+        await this.repository.uploadAvatar(
+          auth,
+          body,
+          this.clock().getTime().toString(),
+        ),
       ),
     )
+  }
+  async publicAvatar(memberId: unknown) {
+    if (typeof memberId !== 'string' || !MEMBER_ID_PATTERN.test(memberId)) {
+      throw new ApiError(404, 'AVATAR_NOT_FOUND', 'Avatar not found')
+    }
+    return this.run(async () => this.repository.publicAvatarUrl(memberId))
   }
   async members(auth: AuthenticatedFamilySession) {
     admin(auth)
@@ -210,4 +261,28 @@ function invalid(): never {
 }
 function rejected(): never {
   throw new ApiError(401, 'PIN_REJECTED', 'Unable to verify current PIN')
+}
+function invalidAvatar(): never {
+  throw new ApiError(
+    400,
+    'AVATAR_INVALID',
+    'Ảnh đại diện không hợp lệ. Vui lòng chọn ảnh WebP rồi thử lại.',
+  )
+}
+function avatarTooLarge(): never {
+  throw new ApiError(
+    413,
+    'AVATAR_TOO_LARGE',
+    'Ảnh đại diện cần nhỏ hơn 5 MB. Vui lòng chọn ảnh khác.',
+  )
+}
+function isWebp(body: Buffer) {
+  if (body.length < 20) return false
+  return (
+    body.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    body.readUInt32LE(4) + 8 <= body.length &&
+    body.subarray(8, 12).toString('ascii') === 'WEBP' &&
+    ['VP8 ', 'VP8L', 'VP8X'].includes(body.subarray(12, 16).toString('ascii')) &&
+    body.readUInt32LE(16) + 20 <= body.length
+  )
 }

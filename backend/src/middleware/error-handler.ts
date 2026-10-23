@@ -28,6 +28,16 @@ export const errorHandler: ErrorRequestHandler = (
     return
   }
 
+  if (isEntityTooLargeError(error)) {
+    response.status(413).json({
+      error: {
+        code: 'AVATAR_TOO_LARGE',
+        message: 'Ảnh đại diện cần nhỏ hơn 5 MB. Vui lòng chọn ảnh khác.',
+      },
+    })
+    return
+  }
+
   response.status(500).json({
     error: {
       code: 'INTERNAL_ERROR',
@@ -44,4 +54,10 @@ function isJsonParseError(error: unknown): boolean {
   const candidate = error as Record<string, unknown>
 
   return candidate.status === 400 && candidate.type === 'entity.parse.failed'
+}
+
+function isEntityTooLargeError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as Record<string, unknown>
+  return candidate.status === 413 && candidate.type === 'entity.too.large'
 }

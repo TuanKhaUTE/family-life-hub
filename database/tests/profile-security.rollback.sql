@@ -17,6 +17,9 @@ begin
  insert into public.auth_sessions(id,member_id,token_hash,expires_at) values(s,a,repeat('a',64),clock_timestamp()+interval '1 day'),(t,b,repeat('b',64),clock_timestamp()+interval '1 day'),(ps,p,repeat('c',64),clock_timestamp()+interval '1 day');
  v=public.update_own_family_profile(a,s,'{"displayName":"Synthetic Updated","avatarType":"EMOJI","avatarValue":"🌿"}');
  if v->>'id'<>a::text or v->>'role'<>'ADMIN' or v ? 'pin_hash' or (select count(*) from jsonb_object_keys(v))<>5 then raise exception 'unsafe profile projection';end if;
+v=public.update_own_family_profile(a,s,'{"displayName":"Synthetic Updated","avatarType":"IMAGE","avatarValue":"/api/profile/avatar/f7000000-0000-4000-8000-000000000001?v=123"}');
+if v->>'avatarType'<>'IMAGE' or v->>'avatarValue' not like '/api/profile/avatar/%?v=123' then raise exception 'safe image avatar rejected';end if;
+begin perform public.update_own_family_profile(a,s,'{"displayName":"Synthetic Updated","avatarType":"IMAGE","avatarValue":"/api/profile/avatar/f7000000-0000-4000-8000-000000000002?v=123"}');raise exception 'foreign avatar path accepted';exception when invalid_parameter_value then null;end;
  begin perform public.update_own_family_profile(b,s,'{"displayName":"Unauthorized","avatarType":null,"avatarValue":null}');raise exception 'foreign session accepted';exception when invalid_authorization_specification then null;end;
  begin perform public.update_own_family_profile(a,s,'{"displayName":"Bad","role":"MEMBER","avatarType":null,"avatarValue":null}');raise exception 'role input accepted';exception when invalid_parameter_value then null;end;
  begin perform public.update_own_family_profile(a,s,'{"displayName":"Bad","avatarType":"IMAGE","avatarValue":"https://invalid.example/avatar"}');raise exception 'arbitrary avatar accepted';exception when invalid_parameter_value then null;end;

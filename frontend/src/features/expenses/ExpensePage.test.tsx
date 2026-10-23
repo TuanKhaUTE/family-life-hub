@@ -204,7 +204,14 @@ it.each(['ADMIN', 'MEMBER'] as const)(
     expect(nav.queryByRole('button', { name: 'Chi tiêu' })).toBeNull()
     fireEvent.click(nav.getByRole('button', { name: 'Cá nhân' }))
     expect(screen.queryByRole('button', { name: 'Thêm chi tiêu' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Mở chi tiêu cá nhân' }))
+    const personalExpenseCard = within(
+      screen.getByRole('heading', { name: 'Chi tiêu cá nhân' }).parentElement!,
+    )
+    fireEvent.click(
+      personalExpenseCard.getAllByRole('button', {
+        name: 'Mở chi tiêu cá nhân',
+      })[0],
+    )
     await ready()
     expect(
       nav.getByRole('button', { name: 'Cá nhân' }).getAttribute('aria-current'),
@@ -225,7 +232,9 @@ it.each(['ADMIN', 'MEMBER'] as const)(
     ).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Về Cá nhân' }))
     expect(
-      screen.getByRole('button', { name: 'Mở chi tiêu cá nhân' }),
+      within(
+        screen.getByRole('heading', { name: 'Chi tiêu cá nhân' }).parentElement!,
+      ).getAllByRole('button', { name: 'Mở chi tiêu cá nhân' })[0],
     ).toBeTruthy()
   },
 )

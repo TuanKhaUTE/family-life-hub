@@ -5,6 +5,7 @@ import {
   changePin,
   resetPin,
   resetMembers,
+  uploadAvatar,
   ProfileApiError,
 } from './profile-api'
 afterEach(() => vi.unstubAllGlobals())
@@ -61,6 +62,34 @@ it('profile save and recovery selector return only safe profiles', async () => {
     }),
   ).toEqual(profile)
   expect(await resetMembers()).toEqual([profile])
+})
+it('uploads normalized WebP bytes through the same-origin profile endpoint', async () => {
+  const fetch = vi.fn(async () =>
+    Response.json({
+      profile: {
+        ...profile,
+        avatarType: 'IMAGE',
+        avatarValue: '/api/profile/avatar/' + profile.id + '?v=2',
+      },
+    }),
+  )
+  vi.stubGlobal('fetch', fetch)
+  const blob = new Blob(['synthetic webp'], { type: 'image/webp' })
+  expect(await uploadAvatar(blob)).toEqual({
+    ...profile,
+    avatarType: 'IMAGE',
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=2',
+  })
+  expect(fetch).toHaveBeenCalledWith(
+    '/api/profile/me/avatar',
+    expect.objectContaining({
+      method: 'PUT',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      body: blob,
+      headers: expect.objectContaining({ 'Content-Type': 'image/webp' }),
+    }),
+  )
 })
 it('PIN commands use POST/204 without returning credentials', async () => {
   const fetch = vi.fn(

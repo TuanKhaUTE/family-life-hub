@@ -101,6 +101,26 @@
   accent-color: #637b56;
   flex-shrink: 0;
 }
+.avatar-upload-option {
+  display: grid !important;
+  gap: 0.35rem;
+  align-content: center;
+}
+.avatar-upload-option input[type='file'] {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  font-size: 0.78rem;
+}
+.profile-avatar-preview {
+  display: block;
+  width: 5rem;
+  height: 5rem;
+  margin-top: 0.7rem;
+  border-radius: 1rem;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px #d4e2cf;
+}
 .personal-actions {
   display: flex;
   flex-wrap: wrap;

@@ -16,11 +16,29 @@ export function createProfileController(service: ProfileService) {
       }
     }
   return {
+    avatar: async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const url = await service.publicAvatar(req.params.memberId)
+        res.set('Cache-Control', 'public, max-age=31536000, immutable')
+        res.redirect(url)
+      } catch (e) {
+        next(e)
+      }
+    },
     summary: handle(async (req, res) => {
       res.json({ settings: service.summary(req.auth!) })
     }),
     update: handle(async (req, res) => {
       res.json({ profile: await service.update(req.auth!, req.body) })
+    }),
+    uploadAvatar: handle(async (req, res) => {
+      res.json({
+        profile: await service.uploadAvatar(
+          req.auth!,
+          req.body,
+          req.get('content-type'),
+        ),
+      })
     }),
     members: handle(async (req, res) => {
       res.json({ members: await service.members(req.auth!) })

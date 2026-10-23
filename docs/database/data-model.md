@@ -30,6 +30,12 @@ avatar_type
 
 avatar_value
 
+`avatar_type` is null for initials, `EMOJI` for a predefined choice, or
+`IMAGE` for an owner-uploaded avatar. For `IMAGE`, `avatar_value` stores only
+the backend avatar route with a cache-busting version; image bytes live in the
+dedicated public-read/service-write Supabase Storage bucket. Uploads are
+normalized to WebP before storage and are always bound to the session owner.
+
 is_active
 
 created_at

@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import express, { Router } from 'express'
 import { createRequireAuth } from '../middleware/require-auth.js'
 import { createProfileController } from '../controllers/profile.controller.js'
 import { ProfileService } from '../services/profile.service.js'
@@ -15,9 +15,18 @@ export function createProfileRouter(
 ) {
   const r = Router(),
     c = createProfileController(service)
+  r.get('/avatar/:memberId', c.avatar)
   r.use(createRequireAuth(sessions))
   r.get('/me', c.summary)
   r.put('/me', c.update)
+  r.put(
+    '/me/avatar',
+    express.raw({
+      type: ['image/webp', 'image/jpeg', 'image/png'],
+      limit: '5mb',
+    }),
+    c.uploadAvatar,
+  )
   r.post('/me/pin', c.change)
   r.get('/members', c.members)
   r.post('/members/:memberId/pin-reset', c.reset)
