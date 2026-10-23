@@ -13,6 +13,41 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('mobile family shell', () => {
+  it('opens an accessible account menu from the avatar and restores focus', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ notifications: [] }))),
+    )
+    render(
+      <AuthenticatedShell
+        profile={{
+          id: '11111111-1111-4111-8111-111111111111',
+          displayName: 'Synthetic Member',
+          role: 'MEMBER',
+          avatarType: null,
+          avatarValue: null,
+        }}
+        isLoggingOut={false}
+        error={null}
+        onLogout={() => {}}
+      />,
+    )
+    const avatar = screen.getByRole('button', {
+      name: 'Mở tài khoản của Synthetic Member',
+    })
+    await user.click(avatar)
+    const menu = screen.getByRole('dialog', { name: 'Tài khoản' })
+    expect(within(menu).getByText('Synthetic Member')).toBeTruthy()
+    expect(within(menu).getByText('Thành viên')).toBeTruthy()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Tài khoản' })).toBeNull()
+    expect(document.activeElement).toBe(avatar)
+    await user.click(avatar)
+    await user.click(document.body)
+    expect(screen.queryByRole('dialog', { name: 'Tài khoản' })).toBeNull()
+  })
+
   it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     'shows role-aware five destinations for %s and switches content',
     async (role) => {

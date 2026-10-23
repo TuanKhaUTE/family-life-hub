@@ -1,5 +1,6 @@
 import type { FamilyProfile } from './auth-api'
 import { useState } from 'react'
+import { AccountMenu } from './AccountMenu'
 import { BreakfastSection } from '../breakfast/BreakfastSection'
 import { NotificationPanel } from '../notifications/NotificationPanel'
 import { MealRequestSection } from '../meals/MealRequestSection'
@@ -11,6 +12,7 @@ import { PersonalPage } from '../personal/PersonalPage'
 import { StudyGrades } from '../study/StudyGrades'
 import { MealFoodCost } from '../expenses/MealFoodCost'
 import { familyDate } from '../meals/family-time'
+import { AppIcon, type AppIconName } from '../../ui/AppIcon'
 import './shell.css'
 
 interface AuthenticatedShellProps {
@@ -32,13 +34,13 @@ export function AuthenticatedShell({
 }: AuthenticatedShellProps) {
   const [destination, setDestination] = useState<HomeDestination>('Trang chủ')
   const destinations = [
-    ['Trang chủ', '⌂'],
-    ['Bếp', '🍲'],
-    ['Lịch', '📅'],
+    ['Trang chủ', 'home'],
+    ['Bếp', 'kitchen'],
+    ['Lịch', 'calendar'],
     profile.role === 'PARENT'
-      ? (['Chi tiêu', '💰'] as const)
-      : (['Học & Luyện', '🌿'] as const),
-    ['Cá nhân', '👤'],
+      ? (['Chi tiêu', 'expense'] as const)
+      : (['Học & Luyện', 'study'] as const),
+    ['Cá nhân', 'personal'],
   ] as const
   return (
     <section className="home-shell" aria-label="Không gian gia đình">
@@ -49,20 +51,18 @@ export function AuthenticatedShell({
           aria-label="Trang chủ Family Life Hub"
         >
           <span className="wordmark-icon" aria-hidden="true">
-            ⌂
+            <AppIcon name="home" size={20} />
           </span>
           <span>Family Life Hub</span>
         </a>
         <div className="header-actions">
           <NotificationPanel />
-          <button
-            className="logout-button"
-            type="button"
-            disabled={isLoggingOut}
-            onClick={onLogout}
-          >
-            {isLoggingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}
-          </button>
+          <AccountMenu
+            profile={profile}
+            isLoggingOut={isLoggingOut}
+            onLogout={onLogout}
+            onOpenPersonal={() => setDestination('Cá nhân')}
+          />
         </div>
       </header>
 
@@ -122,6 +122,8 @@ export function AuthenticatedShell({
             onKitchen={() => setDestination('Bếp')}
             onSharing={() => setDestination('Điểm & bài kiểm tra')}
             profile={profile}
+            isLoggingOut={isLoggingOut}
+            onLogout={onLogout}
             onExpenses={() =>
               setDestination(
                 profile.role === 'PARENT' ? 'Chi tiêu' : 'Chi tiêu cá nhân',
@@ -147,7 +149,9 @@ export function AuthenticatedShell({
             }
             onClick={() => setDestination(label)}
           >
-            <span aria-hidden="true">{icon}</span>
+            <span className="nav-icon" aria-hidden="true">
+              <AppIcon name={icon as AppIconName} size={20} />
+            </span>
             <span>{label}</span>
           </button>
         ))}

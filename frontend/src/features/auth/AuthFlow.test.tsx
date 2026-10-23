@@ -287,27 +287,36 @@ describe('AuthFlow', () => {
 
   it('logs out, clears the in-memory profile, and reloads profile choices', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ profile }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(jsonResponse({ profiles: [profile] }))
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === '/api/auth/me') return jsonResponse({ profile })
+      if (url === '/api/profile/me') {
+        return jsonResponse({ settings: { profile, avatarChoices: [] } })
+      }
+      if (url.startsWith('/api/shares/received')) {
+        return jsonResponse({
+          received: { records: [], page: 1, totalCount: 0, hasMore: false },
+        })
+      }
+      if (url === '/api/auth/logout') return new Response(null, { status: 204 })
+      if (url === '/api/auth/profiles') return jsonResponse({ profiles: [profile] })
+      return new Response(null, { status: 404 })
+    })
     vi.stubGlobal('fetch', fetchMock)
     render(<AuthFlow />)
 
     await screen.findByRole('heading', {
       name: 'Hôm nay nhà mình có gì?',
     })
+    await user.click(screen.getByRole('button', { name: 'Cá nhân' }))
     await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
     expect(
       await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
     ).toBeTruthy()
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      '/api/auth/me',
-      '/api/auth/logout',
-      '/api/auth/profiles',
-    ])
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual(
+      expect.arrayContaining(['/api/auth/logout', '/api/auth/profiles']),
+    )
   })
 
   it('offers a working retry after an initial network error', async () => {
@@ -336,18 +345,33 @@ describe('AuthFlow', () => {
 
   it('keeps logout retryable when the request cannot be confirmed', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ profile }))
-      .mockRejectedValueOnce(new TypeError('network detail'))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(jsonResponse({ profiles: [profile] }))
+    let logoutAttempts = 0
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === '/api/auth/me') return jsonResponse({ profile })
+      if (url === '/api/profile/me') {
+        return jsonResponse({ settings: { profile, avatarChoices: [] } })
+      }
+      if (url.startsWith('/api/shares/received')) {
+        return jsonResponse({
+          received: { records: [], page: 1, totalCount: 0, hasMore: false },
+        })
+      }
+      if (url === '/api/auth/logout') {
+        logoutAttempts += 1
+        if (logoutAttempts === 1) throw new TypeError('network detail')
+        return new Response(null, { status: 204 })
+      }
+      if (url === '/api/auth/profiles') return jsonResponse({ profiles: [profile] })
+      return new Response(null, { status: 404 })
+    })
     vi.stubGlobal('fetch', fetchMock)
     render(<AuthFlow />)
 
     await screen.findByRole('heading', {
       name: 'Hôm nay nhà mình có gì?',
     })
+    await user.click(screen.getByRole('button', { name: 'Cá nhân' }))
     await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
 
     expect(

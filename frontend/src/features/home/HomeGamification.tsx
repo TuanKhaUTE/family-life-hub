@@ -1,4 +1,5 @@
 import type { HomeSummary } from './home-api'
+import { AppIcon } from '../../ui/AppIcon'
 
 export function HomeGamification({
   gamification,
@@ -10,7 +11,12 @@ export function HomeGamification({
   const personal = gamification.personal
   return (
     <section className="home-card home-gamification" aria-labelledby="home-gamification-title">
-      <h2 id="home-gamification-title">Điểm vui tuần này</h2>
+      <div className="home-section-title">
+        <span className="home-section-icon" aria-hidden="true">
+          <AppIcon name="rating" size={19} />
+        </span>
+        <h2 id="home-gamification-title">Điểm vui tuần này</h2>
+      </div>
       <div className="home-gamification-grid">
         {!parent && personal?.study && (
           <p>

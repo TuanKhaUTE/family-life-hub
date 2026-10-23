@@ -8,6 +8,7 @@ import {
 } from './notification-api'
 import './notifications.css'
 import { FAMILY_TIME_ZONE } from '../meals/family-time'
+import { AppIcon } from '../../ui/AppIcon'
 
 export function NotificationPanel() {
   const [unread, setUnread] = useState(0)
@@ -121,7 +122,9 @@ export function NotificationPanel() {
           setOpen((value) => !value)
         }}
       >
-        <span aria-hidden="true">🔔</span>
+        <span className="notification-icon" aria-hidden="true">
+          <AppIcon name="notification" size={20} />
+        </span>
         {state === 'ready' && unread > 0 && (
           <span
             className="notification-badge"
@@ -227,6 +230,9 @@ export function NotificationPanel() {
                         key={item.id}
                         className={item.readAt === null ? 'is-unread' : ''}
                       >
+                        <span className="notification-item-icon" aria-hidden="true">
+                          <AppIcon name="notification" size={17} />
+                        </span>
                         <div className="notification-meta">
                           <strong>{item.title}</strong>
                           <span>{item.readAt === null ? 'Mới' : 'Đã đọc'}</span>

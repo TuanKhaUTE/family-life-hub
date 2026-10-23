@@ -14,6 +14,8 @@ export function PersonalPage({
   onStudy,
   onKitchen,
   onSharing,
+  onLogout,
+  isLoggingOut = false,
 }: {
   profile: FamilyProfile
   onExpenses: () => void
@@ -22,6 +24,8 @@ export function PersonalPage({
   onStudy?: () => void
   onKitchen?: () => void
   onSharing?: () => void
+  onLogout?: () => void
+  isLoggingOut?: boolean
 }) {
   return (
     <section className="personal-page">
@@ -33,6 +37,15 @@ export function PersonalPage({
       <ProfileSettings profile={profile} onUpdated={onProfileUpdated} />
       <PinSettings onSessionEnded={onSessionEnded} />
       <InstallHelp />
+      {onLogout && (
+        <section className="expense-card personal-account-actions">
+          <h2>Tài khoản</h2>
+          <p>Khi dùng xong, bạn có thể đóng phiên trên thiết bị này.</p>
+          <button type="button" onClick={onLogout} disabled={isLoggingOut}>
+            {isLoggingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}
+          </button>
+        </section>
+      )}
       <section className="expense-card personal-privacy">
         <h2>Quyền riêng tư</h2>
         <p>

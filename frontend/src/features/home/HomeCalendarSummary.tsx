@@ -1,6 +1,7 @@
 import { ProfileAvatar } from '../auth/ProfileSelector'
 import { calendarTime } from '../calendar/calendar-time'
 import type { HomeSummary } from './home-api'
+import { AppIcon } from '../../ui/AppIcon'
 
 export function HomeCalendarSummary({
   calendar,
@@ -19,6 +20,9 @@ export function HomeCalendarSummary({
       }
     >
       <div className="home-section-title">
+        <span className="home-section-icon" aria-hidden="true">
+          <AppIcon name="calendar" size={20} />
+        </span>
         <h2
           id={personal ? 'home-personal-calendar-title' : 'home-calendar-title'}
         >
@@ -30,7 +34,7 @@ export function HomeCalendarSummary({
       </div>
       {calendar.events.length ? (
         <ul className="home-calendar-list">
-          {calendar.events.map((item) => (
+          {calendar.events.slice(0, 2).map((item) => (
             <li key={item.id}>
               <ProfileAvatar profile={item.owner} />
               <div>
