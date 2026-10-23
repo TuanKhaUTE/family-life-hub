@@ -14,6 +14,7 @@ import {
 } from './expense-display'
 import { FoodExpenseForm } from './FoodExpenseForm'
 import { GroceryExpenseForm } from './GroceryExpenseForm'
+import { FoodIllustration } from '../../ui/Illustration'
 import './family-food.css'
 export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
   const [month, setMonth] = useState(() => familyDate().slice(0, 7)),
@@ -59,11 +60,16 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
   return (
     <div className="family-food">
       <header>
-        <h2>Tiền ăn gia đình</h2>
-        <p>
-          Chi phí bữa ăn và đi chợ của cả nhà — tách riêng khỏi chi tiêu cá
-          nhân.
-        </p>
+        <div className="family-food-heading">
+          <div>
+            <h2>Tiền ăn gia đình</h2>
+            <p>
+              Chi phí bữa ăn và đi chợ của cả nhà — tách riêng khỏi chi tiêu cá
+              nhân.
+            </p>
+          </div>
+          <FoodIllustration variant="groceries" />
+        </div>
         {!parent && <p>Góc chung để xem; mẹ sẽ ghi và cập nhật chi phí.</p>}
       </header>
       <label className="expense-month">
@@ -178,13 +184,19 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
             <p className="expense-total">
               {formatVnd(data.summary.currentTotal)}
             </p>
-            <h3>So với tháng trước</h3>
-            <p>
-              {expenseMonthLabel(data.summary.previousMonth)}:{' '}
-              {formatVnd(data.summary.previousTotal)}
-            </p>
-            <p>{expenseComparisonText(data.summary)}</p>
-            <div className="food-breakdown">
+            {data.summary.previousTotal !== '0' ? (
+              <>
+                <h3>So với tháng trước</h3>
+                <p>
+                  {expenseMonthLabel(data.summary.previousMonth)}:{' '}
+                  {formatVnd(data.summary.previousTotal)}
+                </p>
+                <p>{expenseComparisonText(data.summary)}</p>
+              </>
+            ) : (
+              <p className="expense-muted">{expenseComparisonText(data.summary)}</p>
+            )}
+            {data.summary.currentTotal !== '0' && <div className="food-breakdown">
               {(data.summary.categories ?? [
                 { category: 'BREAKFAST' as const, amount: data.summary.breakfastTotal },
                 { category: 'DINNER' as const, amount: data.summary.dinnerTotal },
@@ -193,6 +205,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                 const share = proportion(category.amount, data.summary.currentTotal)
                 return (
                   <div className={`food-category food-${category.category.toLowerCase()}`} key={category.category}>
+                    <FoodIllustration variant={category.category === 'GROCERIES' ? 'groceries' : category.category === 'DINNER' ? 'dinner' : 'breakfast'} />
                     <p>
                       <span>{foodCategoryLabel(category.category)}</span>
                       <strong>{formatVnd(category.amount)}</strong>
@@ -203,8 +216,8 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                   </div>
                 )
               })}
-            </div>
-            {data.summary.dailyTrend && data.summary.monthlyTrend && (
+            </div>}
+            {data.summary.currentTotal !== '0' && data.summary.dailyTrend && data.summary.monthlyTrend && (
               <div className="food-trends">
                 <div>
                   <h4>Chi theo ngày</h4>

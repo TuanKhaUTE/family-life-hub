@@ -20,6 +20,8 @@ import {
 import './fitness.css'
 import { WellnessSection } from '../wellness/WellnessSection'
 import { ActivityPlans } from '../activities/ActivityPlans'
+import { AppIcon } from '../../ui/AppIcon'
+import { FitnessIllustration } from '../../ui/Illustration'
 export function FitnessSection() {
   const [data, setData] = useState<FitnessWorkspace | null>(null),
     [state, setState] = useState<'loading' | 'ready' | 'error'>('loading'),
@@ -100,13 +102,16 @@ export function FitnessSection() {
     onActivate: activate,
   }
   return (
-    <section className="fitness-section" aria-label="Rèn luyện">
+    <section id="study-panel-fitness" className="fitness-section" aria-label="Rèn luyện">
       <header className="fitness-heading">
-        <div>
+        <div className="fitness-heading-copy">
           <p className="eyebrow">Chăm chút cho mình 🌿</p>
-          <h2>Rèn luyện</h2>
+          <h2 className="feature-section-title">
+            <span className="icon-well"><AppIcon name="fitness" size={20} /></span>
+            Rèn luyện
+          </h2>
         </div>
-        <span aria-hidden="true">🏃</span>
+        <FitnessIllustration />
       </header>
       <p className="fitness-muted">
         Góc riêng của bạn. Mỗi buổi tập là một chút quan tâm bản thân.
@@ -187,7 +192,7 @@ export function FitnessSection() {
             </section>
           )}
           <section className="fitness-card" aria-label="Rèn luyện trong tuần">
-            <h3>🎯 Tuần này</h3>
+            <h3 className="fitness-card-heading"><span className="icon-well"><AppIcon name="fitness" size={18} /></span>Tuần này</h3>
             <FitnessSummary summary={data.summary} />
             {data.goals.some((g) => g.isActive) && (
               <button

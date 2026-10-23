@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FamilyProfile } from '../auth/auth-api'
 import { ProfileAvatar } from '../auth/ProfileSelector'
+import { AppIcon } from '../../ui/AppIcon'
 import {
   fetchSettings,
   saveProfile,
@@ -74,7 +75,7 @@ export function ProfileSettings({
   }
   return (
     <section className="expense-card profile-settings">
-      <h2>Hồ sơ của bạn</h2>
+      <h2><span className="icon-well"><AppIcon name="personal" size={18} /></span>Hồ sơ của bạn</h2>
       <div className="personal-identity">
         <ProfileAvatar
           key={profile.avatarValue}

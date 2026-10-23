@@ -1,4 +1,5 @@
 import type { StudySummary } from './study-api'
+import { AppIcon } from '../../ui/AppIcon'
 export function studyDuration(minutes: number) {
   const h = Math.floor(minutes / 60),
     m = minutes % 60
@@ -13,9 +14,19 @@ export function StudyProgress({
 }) {
   const goals = compact ? summary.goals.slice(0, 3) : summary.goals
   return (
-    <div className="study-progress">
-      <p className="study-total">{studyDuration(summary.totalMinutes)}</p>
-      <p>{summary.sessionCount} buổi học trong tuần</p>
+    <div className={`study-progress${compact ? ' study-progress-compact' : ''}`}>
+      <div className="study-progress-metrics">
+        <div className="study-progress-metric">
+          <span className="overview-metric-icon"><AppIcon name="study" size={16} /></span>
+          <strong className="study-total">{studyDuration(summary.totalMinutes)}</strong>
+          <span>Tuần này</span>
+        </div>
+        {summary.sessionCount > 0 && <div className="study-progress-metric">
+          <span className="overview-metric-icon"><AppIcon name="calendar" size={16} /></span>
+          <strong>{summary.sessionCount}</strong>
+          <span>Buổi học</span>
+        </div>}
+      </div>
       {summary.sessionCount === 0 && (
         <p className="study-muted">Chưa có buổi học nào trong tuần này</p>
       )}

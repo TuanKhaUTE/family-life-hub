@@ -718,6 +718,692 @@
   }
 }
 
+/* V3 compact local tabs and metric tiles. */
+.study-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid #ead9c8;
+  border-radius: 1rem;
+  background: #fffaf4;
+}
+
+.study-tabs button {
+  min-height: 42px;
+  padding: 0.45rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  color: #75665a;
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.study-tabs button[aria-selected='true'] {
+  border-color: #b5c9ab;
+  color: #405b42;
+  background: #e5eddf;
+  box-shadow: 0 2px 8px rgb(91 110 78 / 0.1);
+}
+
+.study-overview,
+.study-overview-message {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.study-overview-message {
+  padding: 0.85rem;
+  border: 1px dashed #d8cbbd;
+  border-radius: var(--radius-lg);
+  background: #fffaf4;
+}
+
+.study-overview-intro,
+.study-cross-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid #ead9c8;
+  border-radius: var(--radius-lg);
+  background: #fff7ee;
+}
+
+.study-overview-intro h2,
+.study-overview-intro p,
+.study-cross-link h3,
+.study-cross-link p {
+  margin: 0;
+}
+
+.study-overview-intro h2,
+.study-cross-link h3 {
+  font-size: 1.08rem;
+}
+
+.overview-module {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid #ead9c8;
+  border-radius: var(--radius-lg);
+  background: #fffdfa;
+}
+
+.overview-module-fitness { background: #f4f7f0; border-color: #cfdfd1; }
+.overview-module-wellness { background: #f4f1f9; border-color: #d7d3e8; }
+
+.overview-module h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.overview-module h3 .icon-well {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.65rem;
+}
+
+.overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.overview-metric {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.55rem;
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 68%);
+}
+
+.overview-metric-icon {
+  display: grid;
+  grid-row: 1 / -1;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.55rem;
+  color: var(--sage-deep);
+  background: rgb(255 255 255 / 76%);
+}
+
+.overview-metric strong,
+.overview-metric > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.overview-metric strong {
+  color: var(--text);
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.overview-metric > span:last-child {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.overview-metric-text strong { font-size: 0.8rem; }
+.overview-empty { margin: 0; color: var(--text-muted); font-size: 0.78rem; }
+
+.study-cross-link { background: #edf3e9; border-color: #cfdfd1; }
+.study-cross-link button { flex: 0 0 auto; }
+
+.activity-statistics-grid,
+.fitness-summary-metrics,
+.study-progress-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.activity-metric,
+.fitness-summary-metric,
+.study-progress-metric {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.55rem;
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 70%);
+}
+
+.activity-metric .overview-metric-icon,
+.fitness-summary-metric .overview-metric-icon,
+.study-progress-metric .overview-metric-icon {
+  grid-row: 1 / -1;
+}
+
+.activity-metric strong,
+.fitness-summary-metric strong,
+.study-progress-metric strong {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.activity-metric > span:last-child,
+.fitness-summary-metric > span:last-child,
+.study-progress-metric > span:last-child {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.activity-comparison,
+.activity-hint {
+  font-size: 0.78rem;
+}
+
+.study-card-empty,
+.practice-scores:has(> .study-muted:only-of-type) {
+  min-height: 0;
+  padding-block: 0.7rem;
+}
+
+.study-card-empty > h3 { font-size: 0.94rem; }
+.study-card-empty > .study-muted { display: flex; align-items: center; gap: 0.45rem; }
+.study-card-empty > .study-muted::before { content: '✦'; color: var(--terracotta); }
+
+.practice-scores { gap: 0.55rem; }
+.practice-scores > h3 { font-size: 0.96rem; }
+
+.fitness-progress-compact .fitness-summary-metrics { gap: 0.35rem; }
+
+@media (max-width: 360px) {
+  .activity-statistics-grid,
+  .fitness-summary-metrics,
+  .study-progress-metrics { gap: 0.35rem; }
+  .activity-metric,
+  .fitness-summary-metric,
+  .study-progress-metric { padding: 0.45rem; }
+}
+
+/* Turn existing setting cards into a compact, scannable personal list. */
+.personal-group {
+  gap: 0.4rem;
+}
+
+.personal-group > .expense-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem 0.7rem;
+  padding: 0.72rem 0.8rem;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.personal-group > .expense-card::before {
+  display: grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.75rem;
+  color: var(--sage-deep);
+  background: #eef3e9;
+  font-size: 1.05rem;
+}
+
+.personal-group .profile-settings::before { content: '◌'; }
+.personal-group .pin-settings::before { content: '⌁'; }
+
+.personal-group > .expense-card h2,
+.personal-group > .expense-card p {
+  grid-column: 2;
+}
+
+.personal-group > .expense-card h2 { font-size: 0.96rem; }
+.personal-group > .expense-card h2 { display: flex; align-items: center; gap: 0.45rem; }
+.personal-group > .expense-card h2 .icon-well { width: 1.7rem; height: 1.7rem; border-radius: 0.55rem; }
+.personal-group > .expense-card h2::after { content: '›'; margin-left: auto; color: var(--text-muted); font-size: 1.35rem; font-weight: 500; }
+.personal-group > .expense-card > p { color: var(--text-muted); font-size: 0.76rem; }
+.personal-group > .expense-card > button { grid-column: 3; grid-row: 1 / span 2; min-height: 40px; padding: 0.45rem 0.65rem; font-size: 0.78rem; }
+.personal-group .profile-settings .personal-identity { grid-column: 2; margin: 0; }
+.personal-group .profile-settings .personal-identity + button { grid-column: 3; }
+.personal-group .profile-settings > h2 { grid-row: 1; }
+.personal-group .profile-settings > .personal-identity { grid-row: 2; }
+.personal-group .pin-settings > h2 { grid-row: 1; }
+.personal-group .pin-settings > p { grid-row: 2; }
+.personal-group .pin-settings > button { grid-row: 1 / span 2; }
+.personal-group .install-help { grid-template-columns: auto minmax(0, 1fr) auto; }
+.personal-group .install-help::before { content: '⌂'; }
+
+.personal-page .personal-privacy,
+.personal-page > .expense-card:not(.personal-account-actions) {
+  gap: 0.55rem;
+  padding: 0.85rem;
+  box-shadow: none;
+}
+
+.personal-page .personal-privacy h2,
+.personal-page > .expense-card:not(.personal-account-actions) h2 {
+  font-size: 1rem;
+}
+
+.personal-page .personal-privacy h2,
+.personal-page .personal-account-actions h2,
+.personal-data-group > .expense-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.personal-page .personal-privacy h2 .icon-well,
+.personal-page .personal-account-actions h2 .icon-well,
+.personal-data-group > .expense-card h2 .icon-well {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.55rem;
+}
+
+.expense-overview {
+  background: #eaf0e5;
+}
+
+.expense-overview .expense-total {
+  font-size: 1.9rem;
+}
+
+.expense-breakdown li {
+  position: relative;
+  gap: 0.2rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.75rem;
+  background: #fffaf4;
+}
+
+.expense-breakdown li > div {
+  align-items: center;
+}
+
+.expense-breakdown li > div > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.expense-category-icon {
+  display: inline-grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: 0.55rem;
+  color: var(--sage-deep);
+  background: #e5eddf;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.expense-breakdown li small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.family-food .food-total .expense-total {
+  font-size: 1.9rem;
+}
+
+.family-food .food-trends > div {
+  padding: 0.6rem;
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 54%);
+}
+
+@media (max-width: 360px) {
+  .overview-metric { padding: 0.45rem; }
+  .overview-metric-icon { width: 1.5rem; height: 1.5rem; }
+  .study-cross-link { align-items: flex-start; flex-direction: column; }
+  .study-cross-link button { width: 100%; }
+  .personal-group > .expense-card { grid-template-columns: auto minmax(0, 1fr); }
+  .personal-group > .expense-card > button { grid-column: 2; grid-row: auto; width: fit-content; }
+}
+
+/* V3 personal spaces: compact, illustrated overviews for small screens. */
+.icon-well {
+  display: inline-grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 auto;
+  border-radius: 0.75rem;
+  color: var(--sage-deep);
+  background: rgb(255 255 255 / 68%);
+}
+
+.feature-section-title,
+.study-card-heading,
+.fitness-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.study-hero,
+.fitness-heading,
+.wellness-heading,
+.expense-hero,
+.family-food-heading {
+  min-width: 0;
+}
+
+.study-hero,
+.expense-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 170px);
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.study-hero-copy,
+.expense-hero-copy,
+.personal-hero-copy,
+.fitness-heading-copy {
+  min-width: 0;
+}
+
+.study-hero-art,
+.expense-hero > .feature-illustration,
+.personal-page .expense-hero > .feature-illustration {
+  justify-self: end;
+  width: min(100%, 160px);
+}
+
+.study-hero-art .feature-illustration,
+.expense-hero > .feature-illustration,
+.personal-page .expense-hero > .feature-illustration {
+  width: 100%;
+  height: auto;
+}
+
+.study-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.study-card-heading,
+.fitness-card-heading {
+  font-size: 0.98rem;
+}
+
+.study-card-heading .icon-well,
+.fitness-card-heading .icon-well {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.65rem;
+}
+
+.study-page .study-card,
+.fitness-section .fitness-card,
+.wellness-section .wellness-history,
+.wellness-section .wellness-metrics > div {
+  padding: 0.85rem;
+  gap: 0.6rem;
+}
+
+.fitness-heading,
+.wellness-heading {
+  align-items: center;
+}
+
+.fitness-heading > .feature-illustration,
+.wellness-heading > .feature-illustration {
+  width: 112px;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.fitness-section .fitness-next {
+  background: #edf2f8;
+}
+
+.wellness-heading h3 {
+  margin-top: 0.15rem;
+}
+
+.wellness-section .wellness-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.wellness-section .wellness-value {
+  font-size: 1.08rem;
+}
+
+.expense-page,
+.personal-page {
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.expense-hero,
+.personal-page .expense-hero {
+  padding: 0.95rem 1rem;
+}
+
+.expense-hero > .feature-illustration {
+  width: 145px;
+}
+
+.expense-tabs {
+  gap: 0.45rem;
+  padding: 0.35rem;
+  border: 1px solid #e4d9ca;
+  border-radius: 1rem;
+  background: #fffaf4;
+}
+
+.expense-tabs > button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding-inline: 0.6rem;
+  border-color: transparent;
+  border-radius: 0.75rem;
+  background: transparent;
+  font-size: 0.86rem;
+}
+
+.expense-tabs > [aria-selected='true'] {
+  border-color: #aabfa0;
+  background: #dce7d6;
+}
+
+.personal-expenses .expense-intro h2,
+.family-food h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.personal-expenses .expense-intro,
+.family-food > header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.family-food-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.family-food-heading .feature-illustration {
+  width: 96px;
+  height: auto;
+  justify-self: end;
+}
+
+.expense-page .expense-overview,
+.expense-page .expense-breakdown,
+.expense-page .food-total {
+  padding: 0.9rem;
+}
+
+.food-breakdown {
+  gap: 0.55rem;
+}
+
+.food-category {
+  padding: 0.65rem;
+  gap: 0.25rem;
+}
+
+.food-category .food-illustration {
+  width: 48px;
+  height: 38px;
+}
+
+.food-category p {
+  gap: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.food-trends {
+  gap: 0.65rem;
+  padding-top: 0.2rem;
+}
+
+.food-trends li {
+  font-size: 0.8rem;
+}
+
+.personal-page .expense-hero {
+  grid-template-columns: minmax(0, 1fr) 145px;
+}
+
+.personal-hero-copy {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.personal-hero-copy .profile-avatar {
+  width: 3.4rem;
+  height: 3.4rem;
+}
+
+.personal-role-badge {
+  width: fit-content;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  color: #536c47;
+  background: #e5eddf;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.personal-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.personal-group-label {
+  margin: 0 0 -0.15rem;
+  padding-inline: 0.2rem;
+  color: #75665a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.personal-account-actions {
+  padding: 0.9rem;
+}
+
+.personal-page .received-shares,
+.personal-page .personal-privacy {
+  padding: 0.9rem;
+}
+
+.personal-page .share-cards {
+  gap: 0.55rem;
+}
+
+.personal-page .received-share {
+  padding: 0.75rem;
+  gap: 0.35rem;
+}
+
+@media (min-width: 380px) {
+  .study-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .study-hero,
+  .expense-hero,
+  .personal-page .expense-hero {
+    grid-template-columns: minmax(0, 1fr) 112px;
+    padding: 0.85rem;
+  }
+
+  .study-hero-art,
+  .expense-hero > .feature-illustration,
+  .personal-page .expense-hero > .feature-illustration {
+    width: 112px;
+  }
+
+  .fitness-heading > .feature-illustration,
+  .wellness-heading > .feature-illustration {
+    width: 92px;
+  }
+
+  .family-food-heading {
+    grid-template-columns: minmax(0, 1fr) 78px;
+  }
+
+  .family-food-heading .feature-illustration {
+    width: 78px;
+  }
+}
+
+@media (max-width: 360px) {
+  .study-hero,
+  .expense-hero,
+  .personal-page .expense-hero {
+    grid-template-columns: minmax(0, 1fr) 86px;
+  }
+
+  .study-hero-art,
+  .expense-hero > .feature-illustration,
+  .personal-page .expense-hero > .feature-illustration {
+    width: 86px;
+  }
+
+  .fitness-heading > .feature-illustration,
+  .wellness-heading > .feature-illustration {
+    width: 78px;
+  }
+
+  .expense-tabs > button {
+    font-size: 0.78rem;
+  }
+}
+
 /* Structural Home and shell refinements. */
 .header-profile {
   display: grid;

@@ -309,7 +309,7 @@ describe('AuthFlow', () => {
       name: 'Hôm nay nhà mình có gì?',
     })
     await user.click(screen.getByRole('button', { name: 'Cá nhân' }))
-    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
+    await user.click(screen.getByRole('button', { name: /Đăng xuất/ }))
 
     expect(
       await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
@@ -372,14 +372,14 @@ describe('AuthFlow', () => {
       name: 'Hôm nay nhà mình có gì?',
     })
     await user.click(screen.getByRole('button', { name: 'Cá nhân' }))
-    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
+    await user.click(screen.getByRole('button', { name: /Đăng xuất/ }))
 
     expect(
       await screen.findByText(
         'Không thể xác nhận đăng xuất. Vui lòng thử lại.',
       ),
     ).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Đăng xuất' }))
+    await user.click(screen.getByRole('button', { name: /Đăng xuất/ }))
 
     await waitFor(() => {
       expect(

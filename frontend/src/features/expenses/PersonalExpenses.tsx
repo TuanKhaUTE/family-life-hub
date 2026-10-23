@@ -10,6 +10,7 @@ import {
 import { formatVnd, EXPENSE_LABELS, expenseDate } from './expense-display'
 import { ExpenseSummary } from './ExpenseSummary'
 import { ExpenseForm } from './ExpenseForm'
+import { AppIcon } from '../../ui/AppIcon'
 export function PersonalExpenses() {
   const currentMonth = familyDate().slice(0, 7)
   const [month, setMonth] = useState(currentMonth),
@@ -66,7 +67,7 @@ export function PersonalExpenses() {
   return (
     <section className="personal-expenses" aria-label="Chi tiêu cá nhân">
       <div className="expense-intro">
-        <h2>Chi tiêu cá nhân</h2>
+        <h2><span className="icon-well"><AppIcon name="expense" size={19} /></span>Chi tiêu cá nhân</h2>
         <p>Góc riêng của bạn. Chỉ bạn xem và quản lý những khoản chi này.</p>
       </div>
       <label className="expense-month">

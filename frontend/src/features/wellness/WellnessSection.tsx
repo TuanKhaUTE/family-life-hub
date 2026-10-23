@@ -9,6 +9,7 @@ import {
 import { WellnessForm } from './WellnessForm'
 import { WellnessSummary } from './WellnessSummary'
 import { wellnessNumber, wellnessDate } from './wellness-display'
+import { WellnessIllustration } from '../../ui/Illustration'
 import './wellness.css'
 
 export function WellnessSection() {
@@ -69,9 +70,12 @@ export function WellnessSection() {
   }
   return (
     <section className="wellness-section" aria-label="Thể trạng">
-      <header>
-        <p className="eyebrow">Góc riêng cho mình 🌱</p>
-        <h3>Thể trạng</h3>
+      <header className="wellness-heading">
+        <div>
+          <p className="eyebrow">Góc riêng cho mình 🌱</p>
+          <h3>Thể trạng</h3>
+        </div>
+        <WellnessIllustration />
       </header>
       <p>
         Ghi lại khi bạn muốn, để nhìn lại thay đổi của chính mình. Chỉ bạn xem

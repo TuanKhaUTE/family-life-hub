@@ -129,16 +129,13 @@ it('validates PIN mismatch, clears inputs and requires sign-in after successful 
   expect(screen.queryByLabelText('Mã PIN hiện tại')).toBeNull()
 })
 it.each(['MEMBER', 'PARENT'] as const)(
-  '%s has privacy/received shares/role shortcuts but no PIN recovery',
+  '%s has privacy/received shares and the personal expense shortcut but no PIN recovery',
   async (role) => {
-    const study = vi.fn(),
-      kitchen = vi.fn()
+    const expenses = vi.fn()
     render(
       <PersonalPage
         profile={{ ...profile, role }}
-        onExpenses={vi.fn()}
-        onStudy={study}
-        onKitchen={kitchen}
+        onExpenses={expenses}
       />,
     )
     expect(
@@ -151,12 +148,11 @@ it.each(['MEMBER', 'PARENT'] as const)(
     ).toBeTruthy()
     expect(screen.queryByText('Quản lý mã PIN gia đình')).toBeNull()
     const u = userEvent.setup()
-    await u.click(
-      screen.getByRole('button', {
-        name: role === 'PARENT' ? 'Vào bếp nhà mình' : 'Mở Học & Luyện',
-      }),
-    )
-    expect(role === 'PARENT' ? kitchen : study).toHaveBeenCalled()
+    const shortcuts = screen.getAllByRole('button', {
+      name: 'Mở chi tiêu cá nhân',
+    })
+    await u.click(shortcuts[shortcuts.length - 1])
+    expect(expenses).toHaveBeenCalled()
   },
 )
 it('ADMIN recovery re-verifies own PIN and requires target-specific confirmation', async () => {

@@ -16,6 +16,9 @@ import { StudyGrades } from './StudyGrades'
 import { FitnessSection } from '../fitness/FitnessSection'
 import { ActivityPlans } from '../activities/ActivityPlans'
 import { PracticeScores } from './PracticeScores'
+import { AppIcon } from '../../ui/AppIcon'
+import { StudyIllustration } from '../../ui/Illustration'
+import { StudyOverview } from './StudyOverview'
 import './study.css'
 export function StudyPage({ profile }: { profile: FamilyProfile }) {
   return profile.role === 'PARENT' ? (
@@ -26,6 +29,7 @@ export function StudyPage({ profile }: { profile: FamilyProfile }) {
 }
 function MemberStudyPage() {
   const [gradesOpen, setGradesOpen] = useState(false)
+  const [tab, setTab] = useState<'overview' | 'study' | 'fitness'>('study')
   const [data, setData] = useState<StudyWorkspace | null>(null),
     [state, setState] = useState<'loading' | 'ready' | 'error'>('loading'),
     [version, setVersion] = useState(0),
@@ -99,12 +103,44 @@ function MemberStudyPage() {
   return (
     <div className="study-page">
       <header className="study-hero">
-        <p className="eyebrow">Mỗi ngày một chút 📚</p>
-        <h1>Học tập &amp; Rèn luyện</h1>
-        <p>Góc riêng của bạn — học theo nhịp của mình.</p>
+        <div className="study-hero-copy">
+          <p className="eyebrow">Mỗi ngày một chút 📚</p>
+          <h1>Học tập &amp; Rèn luyện</h1>
+          <p>Góc riêng của bạn — học theo nhịp của mình.</p>
+        </div>
+        <div className="study-hero-art"><StudyIllustration /></div>
       </header>
-      <section className="study-section" aria-labelledby="study-title">
-        <h2 id="study-title">Học tập</h2>
+      <div className="study-tabs" role="tablist" aria-label="Góc Học và Luyện">
+        {([
+          ['overview', 'Tổng quan'],
+          ['study', 'Học tập'],
+          ['fitness', 'Rèn luyện'],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={tab === value}
+            aria-controls={`study-panel-${value}`}
+            onClick={() => setTab(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'overview' && (
+        data ? (
+          <StudyOverview study={data} />
+        ) : (
+          <p className="study-overview-message" role="status">Đang mở Tổng quan…</p>
+        )
+      )}
+      {tab === 'study' && (
+      <section id="study-panel-study" className="study-section" aria-labelledby="study-title">
+        <h2 id="study-title" className="feature-section-title">
+          <span className="icon-well"><AppIcon name="study" size={20} /></span>
+          Học tập
+        </h2>
         <p className="study-muted">
           Chỉ bạn xem và quản lý dữ liệu học tập của mình.
         </p>
@@ -173,15 +209,16 @@ function MemberStudyPage() {
                 </button>
               </section>
             )}
+            <div className="study-summary-grid">
             <section className="study-card" aria-label="Thời gian học tuần này">
-              <h3>⏱ Thời gian học tuần này</h3>
+              <h3 className="study-card-heading"><span className="icon-well"><AppIcon name="study" size={18} /></span>Thời gian học tuần này</h3>
               <StudyProgress summary={data.summary} />
               <p className="study-muted">
                 Tuần tính từ thứ Hai đến Chủ nhật, theo giờ gia đình.
               </p>
             </section>
             <section className="study-card" aria-label="Thời gian theo môn">
-              <h3>📖 Thời gian theo môn</h3>
+              <h3 className="study-card-heading"><span className="icon-well"><AppIcon name="study" size={18} /></span>Thời gian theo môn</h3>
               {data.summary.courses.length ? (
                 <ul className="study-breakdown">
                   {data.summary.courses.map((c) => (
@@ -203,7 +240,8 @@ function MemberStudyPage() {
                 </p>
               )}
             </section>
-            <section className="study-card">
+            </div>
+            <section className={`study-card${data.goals.length ? '' : ' study-card-empty'}`}>
               <h3>Mục tiêu của bạn</h3>
               <StudyRecords
                 kind="goals"
@@ -215,7 +253,7 @@ function MemberStudyPage() {
                 onComplete={complete}
               />
             </section>
-            <section className="study-card">
+            <section className={`study-card${data.sessions.length ? '' : ' study-card-empty'}`}>
               <h3>Buổi học gần đây</h3>
               <StudyRecords
                 kind="sessions"
@@ -235,7 +273,9 @@ function MemberStudyPage() {
               courseIds={data.courses.map((course) => course.id)}
               sessionIds={data.sessions.filter((session) => session.courseId !== null).map((session) => session.id)}
             />
-            <section className="study-card">
+            <section className={`study-card${data.courses.filter((c) =>
+              data.semesters.some((s) => s.id === c.semesterId && s.isActive),
+            ).length ? '' : ' study-card-empty'}`}>
               <h3>Môn đang học</h3>
               {data.courses.filter((c) =>
                 data.semesters.some((s) => s.id === c.semesterId && s.isActive),
@@ -297,10 +337,19 @@ function MemberStudyPage() {
                 />
               </section>
             )}
+            <section className="study-cross-link" aria-label="Rèn luyện">
+              <div>
+                <p className="eyebrow">Tiếp theo</p>
+                <h3>Rèn luyện</h3>
+                <p className="study-muted">Ghi buổi tập và xem kế hoạch vận động riêng của bạn.</p>
+              </div>
+              <button className="study-primary" onClick={() => setTab('fitness')}>Ghi buổi tập</button>
+            </section>
           </>
         )}
       </section>
-      <FitnessSection />
+      )}
+      {tab === 'fitness' && <FitnessSection />}
     </div>
   )
 }

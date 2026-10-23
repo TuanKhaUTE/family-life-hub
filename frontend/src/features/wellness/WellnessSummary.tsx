@@ -50,7 +50,7 @@ export function WellnessSummary({ data }: { data: WellnessWorkspace }) {
             {s.bmi === null ? 'Chưa đủ thông tin' : wellnessNumber(s.bmi)}
           </p>
           {s.bmi === null ? (
-            <p>Thêm chiều cao và lần cân để có ước tính BMI.</p>
+            <p>Thêm chiều cao và lần cân để xem tham khảo.</p>
           ) : (
             <p>
               Từ chiều cao đã lưu và lần cân mới nhất; không phân loại hay chấm

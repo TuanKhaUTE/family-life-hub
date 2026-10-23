@@ -387,6 +387,7 @@ it.each(['ADMIN', 'MEMBER'] as const)(
         }}
       />,
     )
+    fireEvent.click(await screen.findByRole('tab', { name: 'Rèn luyện' }))
     const section = await screen.findByRole('region', { name: 'Thể trạng' })
     expect(await within(section).findByText('Ghi chú tổng hợp')).toBeTruthy()
     expect(within(section).queryByRole('combobox')).toBeNull()

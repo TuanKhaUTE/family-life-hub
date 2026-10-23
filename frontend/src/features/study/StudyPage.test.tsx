@@ -117,6 +117,7 @@ function network(data = workspace(), failRead = false, failWrite = false) {
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url, init })
       if (url.startsWith('/api/personal-activities')) return new Response(JSON.stringify({ activities: emptyActivityView() }))
+      if (url === '/api/fitness') return new Response(JSON.stringify({ fitness: { plans: [], days: [], goals: [], sessions: [], summary: { weekStart: '2026-10-19', weekEnd: '2026-10-25', sessionsThisWeek: 0, weeklyTarget: null, completionPercent: null, totalMinutes: 0, unrecordedDurationCount: 0, nextWorkout: null } } }))
       if (!init?.method) {
         if (failRead) throw new Error('private network detail')
         return new Response(JSON.stringify({ study: data }))
@@ -182,6 +183,23 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('private Study destination', () => {
+  it('uses local overview tabs without changing private data requests', async () => {
+    const calls = network()
+    render(<StudyPage profile={profile} />)
+    await ready()
+    expect(document.getElementById('study-panel-fitness')).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: 'Tổng quan' }))
+    const overview = await screen.findByRole('region', {
+      name: 'Tổng quan Học và Luyện',
+    })
+    expect(within(overview).getByRole('heading', { name: 'Học tập' })).toBeTruthy()
+    expect(within(overview).getByRole('heading', { name: 'Rèn luyện' })).toBeTruthy()
+    expect(within(overview).getByRole('heading', { name: 'Thể trạng' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: 'Rèn luyện' }))
+    expect(await screen.findByRole('button', { name: 'Ghi buổi tập' })).toBeTruthy()
+    expect(calls.filter((call) => call.url.startsWith('/api/personal-activities')).length).toBeGreaterThanOrEqual(2)
+  })
+
   it.each(['ADMIN', 'MEMBER'] as const)(
     '%s has functional Study and Fitness destinations',
     async (role) => {

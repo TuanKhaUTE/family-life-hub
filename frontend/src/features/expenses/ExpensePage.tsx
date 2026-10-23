@@ -1,6 +1,8 @@
 import { useState, type KeyboardEvent } from 'react'
 import { PersonalExpenses } from './PersonalExpenses'
 import { FamilyFoodExpenses } from './FamilyFoodExpenses'
+import { AppIcon } from '../../ui/AppIcon'
+import { ExpenseIllustration } from '../../ui/Illustration'
 import './expenses.css'
 export function ExpensePage({
   parent,
@@ -29,11 +31,14 @@ export function ExpensePage({
   return (
     <div className="expense-page">
       <header className="expense-hero">
-        <p className="eyebrow">
-          Khoản riêng của bạn, bữa chung của nhà mình 🌿
-        </p>
-        <h1>{parent || tab === 'family' ? 'Chi tiêu' : 'Chi tiêu cá nhân'}</h1>
-        {onBack && <button onClick={onBack}>Về Cá nhân</button>}
+        <div className="expense-hero-copy">
+          <p className="eyebrow">
+            Khoản riêng của bạn, bữa chung của nhà mình 🌿
+          </p>
+          <h1>{parent || tab === 'family' ? 'Chi tiêu' : 'Chi tiêu cá nhân'}</h1>
+          {onBack && <button onClick={onBack}>Về Cá nhân</button>}
+        </div>
+        <ExpenseIllustration />
       </header>
       <div className="expense-tabs" role="tablist" aria-label="Góc chi tiêu">
         {(['personal', 'family'] as const).map((t) => (
@@ -47,6 +52,7 @@ export function ExpensePage({
             onKeyDown={tabKey}
             onClick={() => setTab(t)}
           >
+            <AppIcon name={t === 'personal' ? 'expense' : 'kitchen'} size={17} />
             {t === 'personal' ? 'Cá nhân' : 'Tiền ăn gia đình'}
           </button>
         ))}

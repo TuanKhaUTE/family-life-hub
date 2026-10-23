@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FamilyProfile } from '../auth/auth-api'
 import { changePin, resetMembers, resetPin, profileError } from './profile-api'
+import { AppIcon } from '../../ui/AppIcon'
 export function PinSettings({
   admin = false,
   onSessionEnded,
@@ -17,7 +18,7 @@ export function PinSettings({
   }
   return (
     <section className="expense-card pin-settings">
-      <h2>{admin ? 'Quản lý mã PIN gia đình' : 'Bảo mật'}</h2>
+      <h2><span className="icon-well"><AppIcon name="personal" size={18} /></span>{admin ? 'Quản lý mã PIN gia đình' : 'Bảo mật'}</h2>
       <p>
         {admin
           ? 'Chỉ để khôi phục đăng nhập. Quyền xem dữ liệu riêng tư không thay đổi.'
