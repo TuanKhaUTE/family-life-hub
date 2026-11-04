@@ -1991,3 +1991,765 @@
     padding: 0.8rem 0.95rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Final visual system pass
+ *
+ * The product already has feature-specific markup and behavior. This layer
+ * gives those pieces one visual language: warm surfaces, small icon wells,
+ * compact blocks, and clear action hierarchy without changing domain flows.
+ */
+:root {
+  --surface-cream-deep: #fff4e6;
+  --surface-sage: #f1f7ee;
+  --surface-peach: #fff0e9;
+  --surface-yellow: #fff8df;
+  --surface-lavender: #f5f0fb;
+  --surface-sky: #eef7fb;
+  --ink-soft: #6f655d;
+  --border-warm: rgb(224 207 193 / 82%);
+  --shadow-card: 0 12px 28px rgb(91 70 56 / 7%);
+  --shadow-float: 0 18px 42px rgb(91 70 56 / 12%);
+  --radius-card: 1.35rem;
+  --radius-pill: 999px;
+}
+
+body {
+  background: var(--cream);
+}
+
+.app-frame,
+.shell-content,
+.family-home,
+.kitchen-page,
+.calendar-page,
+.study-page,
+.expense-page,
+.personal-page {
+  min-width: 0;
+}
+
+.home-header {
+  border-color: var(--border-warm);
+  box-shadow: 0 8px 24px rgb(91 70 56 / 8%);
+}
+
+.wordmark {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.wordmark-icon {
+  background: var(--surface-peach);
+  border: 1px solid rgb(217 122 91 / 12%);
+}
+
+.bottom-nav {
+  border-top-color: var(--border-warm);
+  background: rgb(255 251 246 / 95%);
+}
+
+.bottom-nav button {
+  gap: 0.18rem;
+  border-radius: 1rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.bottom-nav button[aria-current='page'] {
+  color: var(--sage-deep);
+  background: var(--surface-sage);
+}
+
+.bottom-nav .nav-icon {
+  display: grid;
+  width: 2rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 0.75rem;
+}
+
+.bottom-nav button[aria-current='page'] .nav-icon {
+  background: rgb(147 185 149 / 22%);
+}
+
+/* Shared presentation primitives used by every feature page. */
+:where(.home-card, .calendar-panel, .study-card, .fitness-card, .expense-card,
+  .breakfast-card, .meals-card, .final-meal-section, .notification-panel,
+  .profile-settings, .pin-settings, .personal-privacy, .personal-account-actions) {
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+:where(.home-section-title, .feature-section-title, .calendar-section-heading,
+  .study-card-heading, .fitness-card-heading, .family-food-heading,
+  .notification-heading, .breakfast-heading) {
+  gap: 0.7rem;
+}
+
+:where(.home-section-icon, .home-module-icon, .icon-well, .home-card-icon,
+  .overview-metric-icon, .expense-category-icon, .notification-item-icon) {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 0.9rem;
+  background: rgb(255 255 255 / 68%);
+  box-shadow: inset 0 -2px 0 rgb(91 70 56 / 7%);
+}
+
+.icon-well svg,
+.home-section-icon svg,
+.home-module-icon svg,
+.overview-metric-icon svg,
+.expense-category-icon svg,
+.notification-item-icon svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+:where(.home-link, .calendar-link, .study-cross-link, .personal-shortcut) {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-pill);
+  color: var(--sage-deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+:where(.home-link, .calendar-link, .study-cross-link, .personal-shortcut):hover {
+  background: rgb(147 185 149 / 14%);
+}
+
+:where(.primary-button, .study-primary, .fitness-primary, .expense-primary,
+  .calendar-primary) {
+  box-shadow: 0 7px 16px rgb(102 137 107 / 15%);
+}
+
+:where(.secondary-button, .calendar-secondary) {
+  border-color: var(--border-warm);
+  background: rgb(255 255 255 / 72%);
+}
+
+:where(.home-card, .calendar-panel, .study-card, .fitness-card, .expense-card,
+  .notification-item, .profile-card, .action-row, .home-action-row) button,
+:where(.home-card, .calendar-panel, .study-card, .fitness-card, .expense-card,
+  .notification-item, .profile-card, .action-row, .home-action-row) a {
+  min-height: 44px;
+}
+
+/* Home dashboard: a warm hero followed by compact, glanceable blocks. */
+.home-hero {
+  min-height: 188px;
+  padding: clamp(1.15rem, 5vw, 1.8rem);
+  background: #fff4e6;
+  box-shadow: var(--shadow-float);
+}
+
+.home-hero-copy {
+  max-width: 62%;
+}
+
+.home-greeting {
+  font-size: clamp(1.55rem, 7vw, 2.2rem);
+  line-height: 1.06;
+}
+
+.home-eyebrow,
+.eyebrow {
+  color: var(--terracotta);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.home-date-chip,
+.personal-role-badge,
+.notification-count,
+.meal-status-chip,
+.calendar-owner,
+.grade-type {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0.24rem 0.6rem;
+  border: 1px solid rgb(102 137 107 / 16%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 64%);
+  color: var(--sage-deep);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home-action-row,
+.action-row {
+  border: 1px solid var(--border-warm);
+  border-radius: 1.1rem;
+  background: rgb(255 255 255 / 72%);
+  box-shadow: 0 5px 16px rgb(91 70 56 / 5%);
+}
+
+.home-action-row:hover,
+.action-row:hover {
+  border-color: rgb(147 185 149 / 48%);
+  background: #fff;
+}
+
+.home-meals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.home-meal-tile {
+  min-height: 164px;
+  padding: 0.9rem;
+}
+
+.home-meal-tile .home-card-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 78%);
+}
+
+.home-meal-tile h3 {
+  margin-top: 0.15rem;
+  font-size: 1rem;
+}
+
+.home-meal-tile .home-link {
+  justify-self: start;
+  padding-inline: 0.55rem;
+}
+
+.home-calendar-modules {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.home-calendar-modules > * {
+  min-width: 0;
+}
+
+.home-personal-expenses,
+.home-family-food,
+.home-gamification,
+.home-chores,
+.home-calendar {
+  box-shadow: 0 8px 22px rgb(91 70 56 / 5%);
+}
+
+.home-gamification-grid,
+.fitness-summary-metrics,
+.study-progress-metrics,
+.overview-metrics,
+.fitness-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.home-gamification-grid > *,
+.fitness-summary-metric,
+.study-progress-metric,
+.overview-metrics > *,
+.fitness-summary-grid > * {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid rgb(224 207 193 / 70%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 65%);
+}
+
+/* Kitchen: make each meal read as a friendly workflow, not a form stack. */
+.kitchen-hero {
+  min-height: 150px;
+  padding: 1.15rem;
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-2xl);
+  background: #fff3e3;
+  box-shadow: var(--shadow-float);
+}
+
+.kitchen-hero-copy {
+  max-width: 63%;
+}
+
+.kitchen-hero h1 {
+  margin: 0.25rem 0;
+  font-size: clamp(1.6rem, 8vw, 2.25rem);
+}
+
+.kitchen-flow {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.breakfast-card,
+.meals-card,
+.final-meal-section {
+  padding: 1rem;
+}
+
+.breakfast-heading,
+.meal-request-heading,
+.final-meal-heading {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+
+.breakfast-heading-art,
+.breakfast-option-art {
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 72%);
+}
+
+.breakfast-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.breakfast-options button {
+  min-height: 58px;
+  padding: 0.65rem;
+  border: 1px solid rgb(224 207 193 / 80%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 73%);
+  text-align: left;
+}
+
+.breakfast-options button[aria-pressed='true'],
+.breakfast-options button.selected,
+.breakfast-option[aria-pressed='true'] {
+  border-color: var(--sage-deep);
+  background: var(--surface-sage);
+  box-shadow: inset 0 0 0 2px rgb(102 137 107 / 12%);
+}
+
+.breakfast-purchased-banner,
+.meal-request-status,
+.final-meal-ready,
+.breakfast-closed,
+.breakfast-message {
+  border-radius: 1rem;
+}
+
+.breakfast-status-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.breakfast-status-list > * {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgb(224 207 193 / 70%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 68%);
+}
+
+.breakfast-note-field textarea {
+  min-height: 74px;
+}
+
+.meal-request,
+.final-meal-section {
+  background: var(--surface-sage);
+}
+
+.meal-request-options,
+.final-meal-candidates,
+.final-meal-dishes {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.meal-request-option,
+.final-meal-dish,
+.meal-candidate {
+  padding: 0.7rem;
+  border: 1px solid rgb(224 207 193 / 72%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 72%);
+}
+
+/* Calendar: stronger planner controls, quieter panels, and compact empties. */
+.calendar-heading {
+  align-items: flex-end;
+  padding: 0.35rem 0.2rem;
+}
+
+.calendar-heading h1,
+.study-hero h1,
+.expense-hero h1,
+.personal-page h1 {
+  font-size: clamp(1.65rem, 8vw, 2.35rem);
+}
+
+.calendar-tabs,
+.study-tabs,
+.expense-tabs {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0.22rem;
+  padding: 0.22rem;
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 68%);
+}
+
+.calendar-tabs button,
+.study-tabs button,
+.expense-tabs button {
+  min-height: 40px;
+  padding-inline: 0.8rem;
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+}
+
+.calendar-tabs button[aria-selected='true'],
+.study-tabs button[aria-selected='true'],
+.expense-tabs button[aria-selected='true'] {
+  background: var(--sage-soft);
+  color: var(--sage-deep);
+  box-shadow: 0 3px 10px rgb(102 137 107 / 10%);
+}
+
+.calendar-filters,
+.calendar-date-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.calendar-date-nav {
+  justify-content: space-between;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border-warm);
+  border-radius: 1.05rem;
+  background: rgb(255 255 255 / 66%);
+}
+
+.calendar-panel {
+  background: rgb(255 255 255 / 76%);
+}
+
+.calendar-empty-state,
+.overview-empty,
+.home-empty-compact,
+.notification-message {
+  border: 1px dashed rgb(147 185 149 / 44%);
+  border-radius: 1rem;
+  background: var(--surface-sage);
+}
+
+.calendar-timeline--empty {
+  min-height: 128px;
+  padding: 1rem;
+}
+
+.calendar-detail-actions,
+.calendar-form-row,
+.study-actions,
+.fitness-actions,
+.expense-actions,
+.personal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Study, Fitness, and Wellness: compact metric tiles with readable progress. */
+.study-hero {
+  background: #f5f0fb;
+}
+
+.study-section,
+.fitness-section,
+.overview-module {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+  background: rgb(255 255 255 / 74%);
+  box-shadow: var(--shadow-card);
+}
+
+.study-summary-grid,
+.grades-summaries,
+.overview-module .overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.study-card-heading,
+.fitness-card-heading {
+  display: flex;
+  align-items: center;
+}
+
+.study-card,
+.fitness-card,
+.grade-summary,
+.grade-assessment {
+  padding: 0.9rem;
+  background: var(--surface-lavender);
+}
+
+.fitness-card,
+.overview-module-fitness {
+  background: var(--surface-sky);
+}
+
+.overview-module-wellness {
+  background: var(--surface-sage);
+}
+
+.study-total,
+.fitness-total,
+.expense-total,
+.grade-score {
+  color: var(--text);
+  font-size: clamp(1.25rem, 6vw, 1.75rem);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.study-progress-meter,
+.fitness-progress-meter,
+.progress-track,
+.goal-progress {
+  overflow: hidden;
+  height: 0.62rem;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 70%);
+}
+
+.study-progress-meter > *,
+.fitness-progress-meter > *,
+.progress-track > *,
+.goal-progress > * {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sage);
+}
+
+/* Expenses and Personal: grouped, friendly finance/profile blocks. */
+.expense-hero {
+  background: #fff0e9;
+}
+
+.expense-page .expense-card,
+.personal-page .expense-card {
+  padding: 1rem;
+  background: rgb(255 255 255 / 78%);
+}
+
+.expense-overview,
+.food-total {
+  background: var(--surface-yellow) !important;
+}
+
+.expense-breakdown,
+.food-breakdown {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.expense-row,
+.food-items > *,
+.personal-data-group > *,
+.personal-account-actions > * {
+  padding: 0.7rem 0.75rem;
+  border: 1px solid rgb(224 207 193 / 68%);
+  border-radius: 0.95rem;
+  background: rgb(255 255 255 / 72%);
+}
+
+.personal-hero-copy {
+  max-width: 68%;
+}
+
+.personal-group {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.personal-group-label {
+  color: var(--terracotta);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.personal-account-actions {
+  gap: 0.6rem;
+  background: var(--surface-peach);
+}
+
+.profile-card {
+  border-color: var(--border-warm);
+  background: rgb(255 255 255 / 80%);
+}
+
+/* Notifications: make unread state obvious while persistence is in flight. */
+.notification-panel {
+  background: var(--surface-cream-deep);
+}
+
+.notification-heading {
+  align-items: center;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgb(224 207 193 / 65%);
+}
+
+.notification-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.notification-item,
+.notification-list > li {
+  position: relative;
+  padding: 0.75rem;
+  border: 1px solid var(--border-warm);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 70%);
+}
+
+.notification-item[data-read='false'],
+.notification-item[aria-current='true'],
+.notification-list > li.is-unread {
+  border-color: rgb(217 122 91 / 42%);
+  background: #fff7ef;
+  box-shadow: inset 3px 0 0 var(--peach);
+}
+
+.notification-meta {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+}
+
+/* Auth screens use the same family visual language without changing auth flow. */
+.auth-card {
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-2xl);
+  background: rgb(255 255 255 / 83%);
+  box-shadow: var(--shadow-float);
+}
+
+.profile-grid {
+  gap: 0.7rem;
+}
+
+.profile-card {
+  min-height: 132px;
+  padding: 0.9rem;
+}
+
+.profile-action {
+  border-radius: 1rem;
+}
+
+/* Keep the redesign comfortable on the two mobile widths used for review. */
+@media (max-width: 420px) {
+  .app-frame { padding-inline: 8px; }
+
+  .home-shell { padding-top: 0.2rem; }
+
+  .home-header { min-height: 54px; }
+
+  .home-hero,
+  .kitchen-hero { padding: 1rem; }
+
+  .home-hero-copy,
+  .kitchen-hero-copy,
+  .personal-hero-copy { max-width: 70%; }
+
+  .home-card,
+  .calendar-panel,
+  .study-section,
+  .fitness-section,
+  .expense-card,
+  .breakfast-card,
+  .meals-card,
+  .final-meal-section { padding: 0.85rem; }
+
+  .home-actions { gap: 0.5rem; }
+
+  .home-action-row { padding: 0.62rem; }
+
+  .home-meal-tile { min-height: 150px; padding: 0.78rem; }
+
+  .home-meal-tile .home-card-icon { width: 2.7rem; height: 2.7rem; }
+
+  .breakfast-options { gap: 0.45rem; }
+
+  .breakfast-options button { min-height: 54px; padding: 0.55rem; }
+
+  .calendar-tabs,
+  .study-tabs,
+  .expense-tabs { width: 100%; }
+
+  .calendar-tabs button,
+  .study-tabs button,
+  .expense-tabs button { padding-inline: 0.45rem; font-size: 0.78rem; }
+}
+
+@media (max-width: 360px) {
+  .home-greeting { font-size: 1.45rem; }
+
+  .home-hero-copy,
+  .kitchen-hero-copy,
+  .personal-hero-copy { max-width: 76%; }
+
+  .home-meals-grid,
+  .home-actions,
+  .home-gamification-grid,
+  .fitness-summary-metrics,
+  .study-progress-metrics,
+  .study-summary-grid,
+  .grades-summaries { grid-template-columns: 1fr; }
+
+  .home-meal-tile { min-height: 136px; }
+
+  .home-meal-tile .home-meta { display: none; }
+
+  .bottom-nav button { font-size: 0.62rem; }
+}
+
+@media (min-width: 760px) {
+  .home-hero,
+  .kitchen-hero,
+  .study-hero,
+  .expense-hero { padding: 1.65rem; }
+
+  .home-meals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .home-calendar-modules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .kitchen-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+
+  .kitchen-flow > :first-child { grid-column: 1 / -1; }
+}
