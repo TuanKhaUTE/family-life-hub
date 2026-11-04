@@ -69,12 +69,12 @@ interface AvatarProfile {
 }
 
 export function ProfileAvatar({ profile }: { profile: AvatarProfile }) {
-  const [imageFailed, setImageFailed] = useState(false)
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null)
   const avatarValue = profile.avatarValue?.trim() ?? ''
   const avatarType = profile.avatarType?.toUpperCase() ?? ''
   const isEmoji = avatarType === 'EMOJI' && avatarValue.length > 0
   const isImage =
-    !imageFailed &&
+    failedImageUrl !== avatarValue &&
     avatarValue.length > 0 &&
     (avatarValue.startsWith('/') || /^https?:\/\//i.test(avatarValue))
 
@@ -85,7 +85,7 @@ export function ProfileAvatar({ profile }: { profile: AvatarProfile }) {
           src={avatarValue}
           alt=""
           referrerPolicy="no-referrer"
-          onError={() => setImageFailed(true)}
+          onError={() => setFailedImageUrl(avatarValue)}
         />
       </span>
     )

@@ -10,7 +10,7 @@ import {
   uploadAvatar,
   type ProfileSettings as Settings,
 } from './profile-api'
-import { AvatarInputError, normalizeAvatarImage } from './avatar-image'
+import { AvatarCropDialog } from './AvatarCropDialog'
 export function ProfileSettings({
   profile,
   onUpdated,
@@ -29,7 +29,7 @@ export function ProfileSettings({
     }),
     [avatarFile, setAvatarFile] = useState<Blob | null>(null),
     [avatarPreview, setAvatarPreview] = useState<string | null>(null),
-    [processingFile, setProcessingFile] = useState(false),
+    [cropFile, setCropFile] = useState<File | null>(null),
     [pending, setPending] = useState(false),
     [error, setError] = useState<string | null>(null),
     [notice, setNotice] = useState<string | null>(null)
@@ -66,29 +66,22 @@ export function ProfileSettings({
     clearPreview()
     setAvatar({ avatarType, avatarValue })
   }
-  async function chooseFile(file: File | undefined) {
+  function chooseFile(file: File | undefined) {
     if (!file) return
     setError(null)
-    setProcessingFile(true)
-    try {
-      const normalized = await normalizeAvatarImage(file)
-      setAvatarFile(normalized)
-      setAvatarPreview((old) => {
-        if (old) URL.revokeObjectURL(old)
-        return URL.createObjectURL(normalized)
-      })
-      setAvatar({ avatarType: 'IMAGE', avatarValue: currentProfile.avatarValue })
-    } catch (error) {
-      setError(
-        error instanceof AvatarInputError
-          ? error.message
-          : 'Chưa thể đọc ảnh đại diện. Vui lòng thử lại.',
-      )
-    } finally {
-      setProcessingFile(false)
-    }
+    setCropFile(file)
+  }
+  function confirmCrop(blob: Blob) {
+    setAvatarFile(blob)
+    setAvatarPreview((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return URL.createObjectURL(blob)
+    })
+    setAvatar({ avatarType: 'IMAGE', avatarValue: currentProfile.avatarValue })
+    setCropFile(null)
   }
   function close() {
+    setCropFile(null)
     clearPreview()
     setEditing(false)
     requestAnimationFrame(() => trigger.current?.focus())
@@ -195,7 +188,7 @@ export function ProfileSettings({
               required
             />
           </label>
-          <fieldset disabled={pending || processingFile}>
+          <fieldset disabled={pending}>
             <legend>Chọn ảnh đại diện</legend>
             <div className="avatar-choices">
               <label>
@@ -267,13 +260,12 @@ export function ProfileSettings({
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(event) => {
-                    void chooseFile(event.currentTarget.files?.[0])
+                    chooseFile(event.currentTarget.files?.[0])
                     event.currentTarget.value = ''
                   }}
                 />
               </label>
             </div>
-            {processingFile && <p role="status">Đang chuẩn hóa ảnh…</p>}
             {avatarPreview && (
               <img
                 className="profile-avatar-preview"
@@ -292,6 +284,14 @@ export function ProfileSettings({
             </button>
           </div>
         </form>
+      )}
+      {cropFile && (
+        <AvatarCropDialog
+          key={`${cropFile.name}-${cropFile.lastModified}-${cropFile.size}`}
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onConfirm={confirmCrop}
+        />
       )}
     </section>
   )

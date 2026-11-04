@@ -1,6 +1,7 @@
 import request from 'supertest'
 import express from 'express'
 import { expect, it, vi } from 'vitest'
+import type { Request, Response } from 'express'
 import app from '../src/app.js'
 import {
   ProfileService,
@@ -18,6 +19,7 @@ import { FamilyAuthService } from '../src/services/family-auth.service.js'
 import { SupabaseAuthSessionRepository } from '../src/repositories/auth-session.repository.js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { SupabaseProfileRepository } from '../src/repositories/profile.repository.js'
+import { createProfileController } from '../src/controllers/profile.controller.js'
 it('profile repository whitelists safe updates and binds rotation to authenticated actor/session', async () => {
   const s = setup('ADMIN'),
     rpc = vi
@@ -84,6 +86,35 @@ it('profile repository uses a deterministic owner path and service-mediated prof
     },
   })
   expect(r.publicAvatarUrl(id)).toBe('https://synthetic.example/avatar.webp')
+})
+it('preserves the avatar cache version through the public redirect', async () => {
+  const service = {
+      publicAvatar: vi.fn(async () =>
+        'https://synthetic.example/storage/family-avatars/avatars/' + id,
+      ),
+    },
+    controller = createProfileController(service as never),
+    response = {
+      set: vi.fn(),
+      redirect: vi.fn(),
+    },
+    req = {
+      params: { memberId: id },
+      query: { v: '42' },
+    }
+  response.set.mockReturnValue(response)
+  await controller.avatar(
+    req as unknown as Request,
+    response as unknown as Response,
+    vi.fn(),
+  )
+  expect(response.redirect).toHaveBeenCalledWith(
+    'https://synthetic.example/storage/family-avatars/avatars/' + id + '?v=42',
+  )
+  expect(response.set).toHaveBeenCalledWith(
+    'Cache-Control',
+    'public, max-age=31536000, immutable',
+  )
 })
 it.each([
   ['42501', 403],

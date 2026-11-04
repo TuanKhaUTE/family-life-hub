@@ -20,7 +20,11 @@ export function createProfileController(service: ProfileService) {
       try {
         const url = await service.publicAvatar(req.params.memberId)
         res.set('Cache-Control', 'public, max-age=31536000, immutable')
-        res.redirect(url)
+        const version =
+          typeof req.query.v === 'string' && req.query.v.length > 0
+            ? req.query.v
+            : null
+        res.redirect(version ? withCacheVersion(url, version) : url)
       } catch (e) {
         next(e)
       }
@@ -53,4 +57,8 @@ export function createProfileController(service: ProfileService) {
       res.sendStatus(204)
     }),
   }
+}
+
+function withCacheVersion(url: string, version: string) {
+  return `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(version)}`
 }
