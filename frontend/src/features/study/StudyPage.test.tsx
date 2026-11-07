@@ -109,6 +109,61 @@ function workspace(): StudyWorkspace {
     },
   }
 }
+function denseWorkspace(): StudyWorkspace {
+  const data = workspace()
+  data.goals = [
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: `active-goal-${index + 1}`,
+      courseId: id,
+      title: `Mục tiêu đang ${index + 1}`,
+      targetMinutes: 300,
+      targetDate: null,
+      status: 'ACTIVE' as const,
+    })),
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: `completed-goal-${index + 1}`,
+      courseId: id,
+      title: `Mục tiêu xong ${index + 1}`,
+      targetMinutes: 300,
+      targetDate: null,
+      status: 'COMPLETED' as const,
+    })),
+  ]
+  data.sessions = Array.from({ length: 7 }, (_, index) => ({
+    id: `session-${index + 1}`,
+    courseId: id,
+    studiedAt: `2026-10-${String(index + 1).padStart(2, '0')}`,
+    durationMinutes: 30 + index,
+    note: `Buổi ${index + 1}`,
+  }))
+  data.courses = Array.from({ length: 7 }, (_, index) => ({
+    id: `course-${index + 1}`,
+    semesterId: id,
+    name: `Môn ${index + 1}`,
+    code: null,
+    practiceTracking: false,
+  }))
+  data.summary = {
+    ...data.summary,
+    totalMinutes: 231,
+    sessionCount: 7,
+    goals: data.goals
+      .filter((goal) => goal.status === 'ACTIVE')
+      .map((goal) => ({
+        id: goal.id,
+        title: goal.title,
+        targetMinutes: goal.targetMinutes,
+        minutes: 30,
+        targetDate: goal.targetDate,
+      })),
+    courses: data.courses.map((course) => ({
+      courseId: course.id,
+      name: course.name,
+      minutes: 30,
+    })),
+  }
+  return data
+}
 function network(data = workspace(), failRead = false, failWrite = false) {
   let next = 1
   const calls: { url: string; init?: RequestInit }[] = []
@@ -319,6 +374,112 @@ describe('private Study destination', () => {
     expect(writes).toHaveLength(5)
     expect(JSON.parse(String(writes[2]!.init!.body)).courseId).toBeNull()
     expect(JSON.stringify(writes)).not.toMatch(/ownerMemberId|actorMemberId/)
+  })
+  it('keeps one action selected and places its panel directly below the action bar', async () => {
+    network()
+    render(<StudyPage profile={profile} />)
+    await ready()
+
+    const sessionButton = screen.getByRole('button', { name: 'Ghi buổi học' })
+    const goalButton = screen.getByRole('button', { name: 'Thêm mục tiêu' })
+    const manageButton = screen.getByRole('button', {
+      name: 'Quản lý môn học',
+    })
+    const actionBar = sessionButton.parentElement
+
+    expect(actionBar).toBeTruthy()
+    expect(sessionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(goalButton.getAttribute('aria-pressed')).toBe('false')
+    expect(manageButton.getAttribute('aria-expanded')).toBe('false')
+
+    fireEvent.click(manageButton)
+    const management = screen.getByRole('region', { name: 'Quản lý môn học' })
+    expect(manageButton.getAttribute('aria-expanded')).toBe('true')
+    expect(actionBar?.nextElementSibling).toBe(management)
+    expect(sessionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(goalButton.getAttribute('aria-pressed')).toBe('false')
+
+    fireEvent.click(sessionButton)
+    expect(screen.getByRole('form', { name: 'Buổi học' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Quản lý môn học' })).toBeNull()
+    expect(sessionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(goalButton.getAttribute('aria-pressed')).toBe('false')
+    expect(manageButton.getAttribute('aria-expanded')).toBe('false')
+
+    fireEvent.click(goalButton)
+    expect(screen.queryByRole('form', { name: 'Buổi học' })).toBeNull()
+    expect(screen.getByRole('form', { name: 'Mục tiêu học tập' })).toBeTruthy()
+    expect(sessionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(goalButton.getAttribute('aria-pressed')).toBe('true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đóng biểu mẫu' }))
+    expect(screen.queryByRole('form', { name: 'Mục tiêu học tập' })).toBeNull()
+    expect(sessionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(goalButton.getAttribute('aria-pressed')).toBe('false')
+    expect(manageButton.getAttribute('aria-expanded')).toBe('false')
+  })
+  it('keeps long goals, sessions, and course lists compact with accessible expansion', async () => {
+    network(denseWorkspace())
+    render(<StudyPage profile={profile} />)
+    await ready()
+
+    const goalsSection = screen
+      .getByRole('heading', { name: 'Mục tiêu của bạn' })
+      .closest('section') as HTMLElement
+    expect(within(goalsSection).getByText('Mục tiêu đang 1')).toBeTruthy()
+    expect(within(goalsSection).getByText('Mục tiêu đang 3')).toBeTruthy()
+    expect(within(goalsSection).queryByText('Mục tiêu đang 4')).toBeNull()
+    fireEvent.click(
+      within(goalsSection).getByRole('button', { name: 'Xem thêm mục tiêu' }),
+    )
+    expect(within(goalsSection).getByText('Mục tiêu đang 4')).toBeTruthy()
+    fireEvent.click(
+      within(goalsSection).getByRole('button', { name: 'Thu gọn mục tiêu' }),
+    )
+    expect(within(goalsSection).queryByText('Mục tiêu đang 4')).toBeNull()
+
+    const completedToggle = within(goalsSection).getByRole('button', {
+      name: 'Mục tiêu đã hoàn thành',
+    })
+    expect(completedToggle.getAttribute('aria-expanded')).toBe('false')
+    expect(within(goalsSection).queryByText('Mục tiêu xong 1')).toBeNull()
+    fireEvent.click(completedToggle)
+    expect(completedToggle.getAttribute('aria-expanded')).toBe('true')
+    expect(within(goalsSection).getByText('Mục tiêu xong 3')).toBeTruthy()
+    expect(within(goalsSection).queryByText('Mục tiêu xong 4')).toBeNull()
+    fireEvent.click(
+      within(goalsSection).getByRole('button', {
+        name: 'Xem thêm mục tiêu đã hoàn thành',
+      }),
+    )
+    expect(within(goalsSection).getByText('Mục tiêu xong 4')).toBeTruthy()
+
+    const sessionsSection = screen
+      .getByRole('heading', { name: 'Buổi học gần đây' })
+      .closest('section') as HTMLElement
+    expect(within(sessionsSection).getByText('Buổi 7')).toBeTruthy()
+    expect(within(sessionsSection).getByText('Buổi 3')).toBeTruthy()
+    expect(within(sessionsSection).queryByText('Buổi 2')).toBeNull()
+    fireEvent.click(
+      within(sessionsSection).getByRole('button', {
+        name: 'Xem thêm buổi học',
+      }),
+    )
+    expect(within(sessionsSection).getByText('Buổi 2')).toBeTruthy()
+    fireEvent.click(
+      within(sessionsSection).getByRole('button', { name: 'Thu gọn' }),
+    )
+    expect(within(sessionsSection).queryByText('Buổi 2')).toBeNull()
+
+    const coursesSection = screen
+      .getByRole('heading', { name: 'Môn đang học' })
+      .closest('section') as HTMLElement
+    expect(within(coursesSection).getByText('Môn 6')).toBeTruthy()
+    expect(within(coursesSection).queryByText('Môn 7')).toBeNull()
+    fireEvent.click(
+      within(coursesSection).getByRole('button', { name: 'Xem thêm môn' }),
+    )
+    expect(within(coursesSection).getByText('Môn 7')).toBeTruthy()
   })
   it.each(['semesters', 'courses', 'goals', 'sessions'] as const)(
     'edits and explicitly confirms deletion of own %s',

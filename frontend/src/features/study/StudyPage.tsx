@@ -38,6 +38,11 @@ function MemberStudyPage() {
       record: StudyRecord | null
     } | null>(null),
     [manage, setManage] = useState(false),
+    [activeGoalsExpanded, setActiveGoalsExpanded] = useState(false),
+    [completedGoalsOpen, setCompletedGoalsOpen] = useState(false),
+    [completedGoalsExpanded, setCompletedGoalsExpanded] = useState(false),
+    [sessionVisibleCount, setSessionVisibleCount] = useState(5),
+    [coursesExpanded, setCoursesExpanded] = useState(false),
     [message, setMessage] = useState<string | null>(null),
     [error, setError] = useState<string | null>(null),
     [pending, setPending] = useState(false),
@@ -64,12 +69,16 @@ function MemberStudyPage() {
     setVersion((v) => v + 1)
   }
   function saved() {
+    const returnToManagement =
+      form?.kind === 'semesters' || form?.kind === 'courses'
     setForm(null)
+    setManage(returnToManagement)
     setMessage('Đã lưu vào góc học tập của bạn.')
     reload()
   }
   function edit(kind: StudyKind, record: StudyRecord | null) {
     setForm({ kind, record })
+    setManage(false)
     setError(null)
     setMessage(null)
   }
@@ -91,6 +100,7 @@ function MemberStudyPage() {
   function complete(id: string) {
     const goal = data?.goals.find((g) => g.id === id)
     if (goal) {
+      setCompletedGoalsOpen(true)
       const { id: ignored, ...input } = goal
       void ignored
       void action(
@@ -100,6 +110,14 @@ function MemberStudyPage() {
     }
   }
   if (gradesOpen) return <StudyGrades onClose={() => setGradesOpen(false)} />
+  const activeGoals = data?.goals.filter((goal) => goal.status === 'ACTIVE') ?? []
+  const completedGoals = data?.goals.filter((goal) => goal.status === 'COMPLETED') ?? []
+  const sessions = data
+    ? [...data.sessions].sort((a, b) => b.studiedAt.localeCompare(a.studiedAt))
+    : []
+  const activeCourses = data?.courses.filter((course) =>
+    data.semesters.some((semester) => semester.id === course.semesterId && semester.isActive),
+  ) ?? []
   return (
     <div className="study-page">
       <header className="study-hero">
@@ -157,16 +175,70 @@ function MemberStudyPage() {
             <p className="study-muted">Bên dưới là mục tiêu và phần ghi bổ sung cho buổi đã học thực tế. Lên lịch chưa hoàn thành không cộng giờ học.</p>
             <div className="study-actions">
               <button
-                className="study-primary"
+                className={form?.kind === 'sessions' ? 'study-primary' : undefined}
+                aria-pressed={form?.kind === 'sessions'}
                 onClick={() => edit('sessions', null)}
               >
                 Ghi buổi học
               </button>
-              <button onClick={() => edit('goals', null)}>Thêm mục tiêu</button>
-              <button onClick={() => setManage((v) => !v)}>
+              <button
+                className={form?.kind === 'goals' ? 'study-primary' : undefined}
+                aria-pressed={form?.kind === 'goals'}
+                onClick={() => edit('goals', null)}
+              >
+                Thêm mục tiêu
+              </button>
+              <button
+                className={manage ? 'study-primary' : undefined}
+                aria-expanded={manage}
+                aria-controls="study-management"
+                onClick={() => {
+                  setForm(null)
+                  setError(null)
+                  setMessage(null)
+                  setManage((v) => !v)
+                }}
+              >
                 Quản lý môn học
               </button>
             </div>
+            {manage && (
+              <section
+                id="study-management"
+                className="study-card"
+                aria-label="Quản lý môn học"
+              >
+                <h3>Học kỳ và môn học</h3>
+                <div className="study-actions">
+                  <button onClick={() => edit('semesters', null)}>
+                    Thêm học kỳ
+                  </button>
+                  <button onClick={() => edit('courses', null)}>
+                    Thêm môn học
+                  </button>
+                </div>
+                <h4>Học kỳ của bạn</h4>
+                <StudyRecords
+                  kind="semesters"
+                  items={data.semesters}
+                  data={data}
+                  pending={pending}
+                  onEdit={edit}
+                  onDelete={(kind, record) => setRemove({ kind, record })}
+                  onComplete={complete}
+                />
+                <h4>Môn học của bạn</h4>
+                <StudyRecords
+                  kind="courses"
+                  items={data.courses}
+                  data={data}
+                  pending={pending}
+                  onEdit={edit}
+                  onDelete={(kind, record) => setRemove({ kind, record })}
+                  onComplete={complete}
+                />
+              </section>
+            )}
             {message && (
               <p role="status" className="study-success">
                 {message}
@@ -179,7 +251,10 @@ function MemberStudyPage() {
                 kind={form.kind}
                 record={form.record}
                 data={data}
-                onClose={() => setForm(null)}
+                onClose={() => {
+                  setForm(null)
+                  setError(null)
+                }}
                 onSaved={saved}
               />
             )}
@@ -243,58 +318,131 @@ function MemberStudyPage() {
             </div>
             <section className={`study-card${data.goals.length ? '' : ' study-card-empty'}`}>
               <h3>Mục tiêu của bạn</h3>
-              <StudyRecords
-                kind="goals"
-                items={data.goals}
-                data={data}
-                pending={pending}
-                onEdit={edit}
-                onDelete={(kind, record) => setRemove({ kind, record })}
-                onComplete={complete}
-              />
+              {activeGoals.length ? (
+                <>
+                  <StudyRecords
+                    kind="goals"
+                    items={activeGoalsExpanded ? activeGoals : activeGoals.slice(0, 3)}
+                    data={data}
+                    pending={pending}
+                    onEdit={edit}
+                    onDelete={(kind, record) => setRemove({ kind, record })}
+                    onComplete={complete}
+                  />
+                  {activeGoals.length > 3 && (
+                    <div className="study-list-controls">
+                      <button
+                        type="button"
+                        onClick={() => setActiveGoalsExpanded((current) => !current)}
+                      >
+                        {activeGoalsExpanded ? 'Thu gọn mục tiêu' : 'Xem thêm mục tiêu'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="study-muted">
+                  {completedGoals.length
+                    ? 'Chưa có mục tiêu đang thực hiện.'
+                    : 'Chưa có mục nào. Bạn bắt đầu khi sẵn sàng nhé.'}
+                </p>
+              )}
+              {completedGoals.length > 0 && (
+                <section className="study-list-group" aria-label="Mục tiêu đã hoàn thành">
+                  <button
+                    type="button"
+                    aria-expanded={completedGoalsOpen}
+                    onClick={() => setCompletedGoalsOpen((current) => !current)}
+                  >
+                    Mục tiêu đã hoàn thành
+                  </button>
+                  {completedGoalsOpen && (
+                    <>
+                      <StudyRecords
+                        kind="goals"
+                        items={completedGoalsExpanded ? completedGoals : completedGoals.slice(0, 3)}
+                        data={data}
+                        pending={pending}
+                        onEdit={edit}
+                        onDelete={(kind, record) => setRemove({ kind, record })}
+                        onComplete={complete}
+                      />
+                      {completedGoals.length > 3 && (
+                        <div className="study-list-controls">
+                          <button
+                            type="button"
+                            onClick={() => setCompletedGoalsExpanded((current) => !current)}
+                          >
+                            {completedGoalsExpanded
+                              ? 'Thu gọn mục tiêu đã hoàn thành'
+                              : 'Xem thêm mục tiêu đã hoàn thành'}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
+              )}
             </section>
             <section className={`study-card${data.sessions.length ? '' : ' study-card-empty'}`}>
               <h3>Buổi học gần đây</h3>
               <StudyRecords
                 kind="sessions"
-                items={data.sessions}
+                items={sessions.slice(0, sessionVisibleCount)}
                 data={data}
                 pending={pending}
                 onEdit={edit}
                 onDelete={(kind, record) => setRemove({ kind, record })}
                 onComplete={complete}
               />
-              <p className="study-muted">
-                Hiển thị tối đa 50 buổi gần nhất. Tổng tuần vẫn tính tất cả buổi
-                học.
-              </p>
+              {sessions.length > 5 && (
+                <div className="study-list-controls">
+                  {sessionVisibleCount < sessions.length && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSessionVisibleCount((current) =>
+                          Math.min(current + 5, sessions.length),
+                        )
+                      }
+                    >
+                      Xem thêm buổi học
+                    </button>
+                  )}
+                  {sessionVisibleCount > 5 && (
+                    <button type="button" onClick={() => setSessionVisibleCount(5)}>
+                      Thu gọn
+                    </button>
+                  )}
+                </div>
+              )}
             </section>
             <PracticeScores
               courseIds={data.courses.map((course) => course.id)}
-              sessionIds={data.sessions.filter((session) => session.courseId !== null).map((session) => session.id)}
+              sessions={data.sessions}
             />
-            <section className={`study-card${data.courses.filter((c) =>
-              data.semesters.some((s) => s.id === c.semesterId && s.isActive),
-            ).length ? '' : ' study-card-empty'}`}>
+            <section className={`study-card${activeCourses.length ? '' : ' study-card-empty'}`}>
               <h3>Môn đang học</h3>
-              {data.courses.filter((c) =>
-                data.semesters.some((s) => s.id === c.semesterId && s.isActive),
-              ).length ? (
+              {activeCourses.length ? (
                 <ul>
-                  {data.courses
-                    .filter((c) =>
-                      data.semesters.some(
-                        (s) => s.id === c.semesterId && s.isActive,
-                      ),
-                    )
-                    .map((c) => (
-                      <li key={c.id}>{c.name}</li>
-                    ))}
+                  {(coursesExpanded ? activeCourses : activeCourses.slice(0, 6)).map((course) => (
+                    <li key={course.id}>{course.name}</li>
+                  ))}
                 </ul>
               ) : (
                 <p className="study-muted">
                   Chưa có môn trong học kỳ đang học.
                 </p>
+              )}
+              {activeCourses.length > 6 && (
+                <div className="study-list-controls">
+                  <button
+                    type="button"
+                    onClick={() => setCoursesExpanded((current) => !current)}
+                  >
+                    {coursesExpanded ? 'Thu gọn môn' : 'Xem thêm môn'}
+                  </button>
+                </div>
               )}
             </section>
             <section className="study-card grades-entry">
@@ -304,39 +452,6 @@ function MemberStudyPage() {
               </p>
               <button onClick={() => setGradesOpen(true)}>Xem điểm môn học</button>
             </section>
-            {manage && (
-              <section className="study-card" aria-label="Quản lý môn học">
-                <h3>Học kỳ và môn học</h3>
-                <div className="study-actions">
-                  <button onClick={() => edit('semesters', null)}>
-                    Thêm học kỳ
-                  </button>
-                  <button onClick={() => edit('courses', null)}>
-                    Thêm môn học
-                  </button>
-                </div>
-                <h4>Học kỳ của bạn</h4>
-                <StudyRecords
-                  kind="semesters"
-                  items={data.semesters}
-                  data={data}
-                  pending={pending}
-                  onEdit={edit}
-                  onDelete={(kind, record) => setRemove({ kind, record })}
-                  onComplete={complete}
-                />
-                <h4>Môn học của bạn</h4>
-                <StudyRecords
-                  kind="courses"
-                  items={data.courses}
-                  data={data}
-                  pending={pending}
-                  onEdit={edit}
-                  onDelete={(kind, record) => setRemove({ kind, record })}
-                  onComplete={complete}
-                />
-              </section>
-            )}
             <section className="study-cross-link" aria-label="Rèn luyện">
               <div>
                 <p className="eyebrow">Tiếp theo</p>

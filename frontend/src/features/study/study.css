@@ -112,6 +112,19 @@
 .study-heading {
   justify-content: space-between;
 }
+.study-list-controls,
+.study-list-group {
+  display: grid;
+  gap: 0.55rem;
+}
+.study-list-controls {
+  grid-template-columns: repeat(auto-fit, minmax(0, max-content));
+}
+.study-list-controls button,
+.study-list-group > button {
+  min-height: 40px;
+  padding: 0.5rem 0.7rem;
+}
 .study-card,
 .study-form {
   padding: 1rem;
