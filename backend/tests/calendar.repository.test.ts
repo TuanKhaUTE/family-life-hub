@@ -112,6 +112,18 @@ describe('calendar repository security boundary', () => {
     expect(s.calls.map((c) => c.body.p_actor_member_id)).toEqual([id, id])
     expect(s.calls.map((c) => c.body.p_event_id)).toEqual([null, id])
   })
+  it('sends the personal calendar type only for the personal duplicate RPC', async () => {
+    const s = setup(2)
+    await expect(
+      s.repository.duplicateWeek(id, '2099-05-04', 'PERSONAL'),
+    ).resolves.toBe(2)
+    expect(s.calls[0]!.url).toContain('/rpc/calendar_duplicate_week')
+    expect(s.calls[0]!.body).toEqual({
+      p_actor_member_id: id,
+      p_source_week: '2099-05-04',
+      p_calendar_type: 'PERSONAL',
+    })
+  })
   it.each([{}, { members: [owner], occurrences: [null] }])(
     'refuses malformed storage results',
     async (data) => {

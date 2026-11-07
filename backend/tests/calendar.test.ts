@@ -320,6 +320,46 @@ describe('calendar visibility and week copy', () => {
       ).toBe(403)
     },
   )
+  it.each(['ADMIN', 'MEMBER'] as const)(
+    '%s duplicates only their own personal calendar when requested',
+    async (role) => {
+      const { app, repository } = setup(role)
+      const response = await request(app)
+        .post('/api/calendar/duplicate-week')
+        .send({ sourceWeek: '2099-05-04', calendarType: 'PERSONAL' })
+      expect(response.status).toBe(200)
+      expect(response.body).toEqual({ copied: 2 })
+      expect(repository.duplicateWeek).toHaveBeenCalledWith(
+        actor.id,
+        '2099-05-04',
+        'PERSONAL',
+      )
+    },
+  )
+  it('rejects personal duplication for a parent before storage access', async () => {
+    const { service, repository, profile } = setup('PARENT')
+    await expect(
+      service.duplicateWeek(profile, {
+        sourceWeek: '2099-05-04',
+        calendarType: 'PERSONAL',
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    expect(repository.duplicateWeek).not.toHaveBeenCalled()
+  })
+  it('routes personal duplication through the owner-scoped repository call', async () => {
+    const { service, repository, profile } = setup('MEMBER')
+    await expect(
+      service.duplicateWeek(profile, {
+        sourceWeek: '2099-05-04',
+        calendarType: 'PERSONAL',
+      }),
+    ).resolves.toBe(2)
+    expect(repository.duplicateWeek).toHaveBeenCalledWith(
+      actor.id,
+      '2099-05-04',
+      'PERSONAL',
+    )
+  })
   it('does not offer a personal calendar to a parent', async () => {
     const { app, repository } = setup('PARENT')
     expect(
@@ -334,6 +374,14 @@ describe('calendar visibility and week copy', () => {
     ).toBe(403)
     expect(repository.list).not.toHaveBeenCalled()
     expect(repository.save).not.toHaveBeenCalled()
+    expect(
+      (
+        await request(app)
+          .post('/api/calendar/duplicate-week')
+          .send({ sourceWeek: '2099-05-04', calendarType: 'PERSONAL' })
+      ).status,
+    ).toBe(403)
+    expect(repository.duplicateWeek).not.toHaveBeenCalled()
   })
   it('rejects invalid visibility and malformed copy requests', async () => {
     const { app } = setup()
@@ -352,6 +400,13 @@ describe('calendar visibility and week copy', () => {
         await request(app)
           .post('/api/calendar/duplicate-week')
           .send({ sourceWeek: '2099-05-04', ownerMemberId: eventId })
+      ).status,
+    ).toBe(400)
+    expect(
+      (
+        await request(app)
+          .post('/api/calendar/duplicate-week')
+          .send({ sourceWeek: '2099-05-04', calendarType: 'OTHER' })
       ).status,
     ).toBe(400)
   })

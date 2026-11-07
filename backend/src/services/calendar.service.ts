@@ -70,7 +70,11 @@ export interface CalendarRepository {
     input: CalendarInput,
   ): Promise<string>
   remove(actorId: string, eventId: string): Promise<void>
-  duplicateWeek(actorId: string, sourceWeek: string): Promise<number>
+  duplicateWeek(
+    actorId: string,
+    sourceWeek: string,
+    calendarType?: 'FAMILY' | 'PERSONAL',
+  ): Promise<number>
   exception(
     actorId: string,
     eventId: string,
@@ -137,10 +141,22 @@ export class CalendarService {
     )
   }
   async duplicateWeek(actor: SafeFamilyProfile, value: unknown) {
-    if (!object(value) || !keys(value, ['sourceWeek'])) invalid()
+    if (!object(value) || !keys(value, ['sourceWeek', 'calendarType'])) invalid()
     const source = requireMonday(value.sourceWeek)
     if (source > '2199-12-17') invalid()
-    return this.run(() => this.repository.duplicateWeek(actor.id, source))
+    const calendarType = value.calendarType ?? 'FAMILY'
+    if (calendarType !== 'FAMILY' && calendarType !== 'PERSONAL') invalid()
+    if (calendarType === 'PERSONAL' && actor.role === 'PARENT')
+      throw new ApiError(
+        403,
+        'CALENDAR_FORBIDDEN',
+        'Personal calendar is unavailable',
+      )
+    return this.run(() =>
+      calendarType === 'PERSONAL'
+        ? this.repository.duplicateWeek(actor.id, source, calendarType)
+        : this.repository.duplicateWeek(actor.id, source),
+    )
   }
   async remove(actor: SafeFamilyProfile, eventId: unknown) {
     requireId(eventId)

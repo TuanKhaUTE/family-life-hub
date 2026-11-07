@@ -128,9 +128,11 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
           ? 'Lịch nhà để cả nhà biết lịch đi học và những cuộc hẹn cần chia sẻ. Mỗi người chỉ sửa lịch của mình.'
           : 'Góc thời gian riêng của bạn, gồm lịch cá nhân và các kế hoạch Học & Luyện.'}
       </p>
-      {calendarType === 'FAMILY' && (
-        <CalendarWeekCopy date={date} onCopied={changed} />
-      )}
+      <CalendarWeekCopy
+        date={date}
+        calendarType={calendarType}
+        onCopied={changed}
+      />
       <div className="calendar-tabs" aria-label="Chế độ xem lịch">
         <button
           aria-pressed={view === 'DAY'}

@@ -112,10 +112,14 @@ export async function fetchCalendar(
 }
 export async function duplicateCalendarWeek(
   sourceWeek: string,
+  calendarType: 'FAMILY' | 'PERSONAL' = 'FAMILY',
 ): Promise<number> {
   const data = await request('/duplicate-week', {
     method: 'POST',
-    body: JSON.stringify({ sourceWeek }),
+    body: JSON.stringify({
+      sourceWeek,
+      ...(calendarType === 'PERSONAL' ? { calendarType } : {}),
+    }),
   })
   if (
     !object(data) ||

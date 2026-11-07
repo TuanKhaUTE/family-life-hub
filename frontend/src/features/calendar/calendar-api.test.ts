@@ -4,6 +4,7 @@ import {
   saveCalendarEvent,
   deleteCalendarEvent,
   saveCalendarException,
+  duplicateCalendarWeek,
   calendarError,
   CalendarApiError,
 } from './calendar-api'
@@ -158,6 +159,23 @@ describe('calendar API and family time boundary', () => {
     })
     expect(calendarError(new Error('private network detail'))).toBe(
       'Chưa thể cập nhật lịch. Bạn thử lại nhé.',
+    )
+  })
+  it('duplicates a personal week with the calendar type while keeping the response safe', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ copied: 3 })),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(duplicateCalendarWeek('2099-05-04', 'PERSONAL')).resolves.toBe(3)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/calendar/duplicate-week',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          sourceWeek: '2099-05-04',
+          calendarType: 'PERSONAL',
+        }),
+      }),
     )
   })
   it.each([

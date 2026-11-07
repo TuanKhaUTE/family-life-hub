@@ -190,7 +190,31 @@ describe('shared family calendar', () => {
       expect(calls.at(-1)!.url).toContain('calendarType=PERSONAL')
       expect(calls.at(-1)!.url).toContain(`memberId=${id}`)
       expect(screen.queryByRole('button', { name: 'Mọi người' })).toBeNull()
-      expect(screen.queryByRole('button', { name: 'Nhân bản tuần' })).toBeNull()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Nhân bản tuần của tôi' }),
+      )
+      expect(
+        screen.getByRole('form', { name: 'Nhân bản lịch của tôi' }),
+      ).toBeTruthy()
+      expect(
+        screen.getByText(/lịch cá nhân một lần của bạn/),
+      ).toBeTruthy()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Xác nhận nhân bản lịch' }),
+      )
+      await screen.findByText(
+        'Đã thêm 1 lịch riêng vào tuần sau. Lịch đã có không bị nhân đôi.',
+      )
+      const copy = calls.find((c) => c.url.endsWith('/duplicate-week'))!
+      expect(JSON.parse(String(copy.init?.body))).toEqual({
+        sourceWeek: expect.any(String),
+        calendarType: 'PERSONAL',
+      })
+      expect(
+        screen
+          .getByRole('button', { name: 'Lịch của tôi' })
+          .getAttribute('aria-pressed'),
+      ).toBe('true')
     },
   )
   it('parent has family calendar only, with a positioned time axis', async () => {

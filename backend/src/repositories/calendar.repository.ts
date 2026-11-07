@@ -104,10 +104,17 @@ export class SupabaseCalendarRepository implements CalendarRepository {
       p_event_id: eventId,
     })
   }
-  async duplicateWeek(actorId: string, sourceWeek: string) {
+  async duplicateWeek(
+    actorId: string,
+    sourceWeek: string,
+    calendarType: 'FAMILY' | 'PERSONAL' = 'FAMILY',
+  ) {
     const data = await this.rpc('calendar_duplicate_week', {
       p_actor_member_id: actorId,
       p_source_week: sourceWeek,
+      ...(calendarType === 'PERSONAL'
+        ? { p_calendar_type: calendarType }
+        : {}),
     })
     if (typeof data !== 'number' || !Number.isInteger(data) || data < 0)
       throw new Error('Invalid copy result')
