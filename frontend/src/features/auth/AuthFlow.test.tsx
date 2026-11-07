@@ -287,6 +287,11 @@ describe('AuthFlow', () => {
 
   it('logs out, clears the in-memory profile, and reloads profile choices', async () => {
     const user = userEvent.setup()
+    const latestProfile = {
+      ...profile,
+      avatarType: 'IMAGE' as const,
+      avatarValue: '/api/profile/avatar/' + profile.id + '?v=2',
+    }
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
       if (url === '/api/auth/me') return jsonResponse({ profile })
@@ -299,7 +304,8 @@ describe('AuthFlow', () => {
         })
       }
       if (url === '/api/auth/logout') return new Response(null, { status: 204 })
-      if (url === '/api/auth/profiles') return jsonResponse({ profiles: [profile] })
+      if (url === '/api/auth/profiles')
+        return jsonResponse({ profiles: [latestProfile] })
       return new Response(null, { status: 404 })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -314,6 +320,9 @@ describe('AuthFlow', () => {
     expect(
       await screen.findByRole('heading', { name: 'Hôm nay ai đang dùng?' }),
     ).toBeTruthy()
+    expect(
+      Array.from(document.querySelectorAll('img')).map((image) => image.src),
+    ).toEqual([expect.stringContaining('?v=2')])
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual(
       expect.arrayContaining(['/api/auth/logout', '/api/auth/profiles']),
     )

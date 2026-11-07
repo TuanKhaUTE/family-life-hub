@@ -34,14 +34,21 @@ export function ProfileSettings({
     [error, setError] = useState<string | null>(null),
     [notice, setNotice] = useState<string | null>(null)
   const trigger = useRef<HTMLButtonElement>(null)
+  const profileSyncVersion = useRef(0)
+  const onUpdatedRef = useRef(onUpdated)
+  useEffect(() => {
+    onUpdatedRef.current = onUpdated
+  }, [onUpdated])
   useEffect(() => {
     const c = new AbortController()
+    const requestVersion = profileSyncVersion.current
     void fetchSettings(c.signal)
       .then((d) => {
-        if (!c.signal.aborted) {
-          setData(d)
-          setFailed(false)
-        }
+        if (c.signal.aborted || requestVersion !== profileSyncVersion.current)
+          return
+        setData(d)
+        setFailed(false)
+        onUpdatedRef.current?.(d.profile)
       })
       .catch(() => {
         if (!c.signal.aborted) setFailed(true)
@@ -112,6 +119,7 @@ export function ProfileSettings({
           avatarValue: p.avatarValue,
         })
       }
+      profileSyncVersion.current += 1
       setData((d) => (d ? { ...d, profile: p } : d))
       onUpdated?.(p)
       setNotice('Đã cập nhật hồ sơ của bạn.')

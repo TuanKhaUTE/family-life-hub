@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import type { FamilyProfile } from '../auth/auth-api'
 import { PersonalPage } from './PersonalPage'
 import * as api from './profile-api'
 vi.mock('./avatar-image', () => ({
@@ -91,13 +93,20 @@ it('edits own name/avatar, updates shell and collapses after saving', async () =
     avatarType: 'EMOJI',
     avatarValue: '🐱',
   })
-  render(
-    <PersonalPage
-      profile={profile}
-      onExpenses={vi.fn()}
-      onProfileUpdated={updated}
-    />,
-  )
+  function Harness() {
+    const [current, setCurrent] = useState<FamilyProfile>(profile)
+    return (
+      <PersonalPage
+        profile={current}
+        onExpenses={vi.fn()}
+        onProfileUpdated={(next) => {
+          setCurrent(next)
+          updated(next)
+        }}
+      />
+    )
+  }
+  render(<Harness />)
   await u.click(await screen.findByRole('button', { name: 'Chỉnh sửa hồ sơ' }))
   const name = screen.getByLabelText('Tên hiển thị')
   await u.clear(name)
@@ -115,7 +124,101 @@ it('edits own name/avatar, updates shell and collapses after saving', async () =
     avatarValue: '🐱',
   })
   expect(updated).toHaveBeenCalled()
+  expect(
+    screen.getByText('Synthetic Updated, đây là không gian dành riêng cho bạn.'),
+  ).toBeTruthy()
   expect(screen.queryByLabelText('Tên hiển thị')).toBeNull()
+})
+it('synchronizes the canonical profile when settings hydration has a newer avatar', async () => {
+  const oldProfile = {
+    ...profile,
+    avatarType: 'IMAGE',
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=1',
+  }
+  const latestProfile = {
+    ...oldProfile,
+    displayName: 'Synthetic Updated',
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=2',
+  }
+  vi.mocked(api.fetchSettings).mockResolvedValueOnce({
+    profile: latestProfile,
+    avatarChoices: [
+      { avatarType: 'EMOJI', avatarValue: '🌿', label: 'Chiếc lá' },
+    ],
+  })
+
+  function Harness() {
+    const [current, setCurrent] = useState<FamilyProfile>(oldProfile)
+    return (
+      <PersonalPage
+        profile={current}
+        onExpenses={vi.fn()}
+        onProfileUpdated={setCurrent}
+      />
+    )
+  }
+
+  render(<Harness />)
+
+  await waitFor(() => {
+    const avatars = Array.from(document.querySelectorAll('img'))
+    expect(avatars.length).toBeGreaterThanOrEqual(2)
+    expect(avatars.every((avatar) => avatar.src.endsWith('?v=2'))).toBe(true)
+    expect(screen.getByText('Synthetic Updated, đây là không gian dành riêng cho bạn.')).toBeTruthy()
+  })
+})
+it('propagates a successful image replacement to every Personal avatar surface', async () => {
+  const u = userEvent.setup()
+  const oldProfile = {
+    ...profile,
+    avatarType: 'IMAGE',
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=1',
+  }
+  const latestProfile = {
+    ...oldProfile,
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=2',
+  }
+  const croppedBlob = new Blob(['cropped webp'], { type: 'image/webp' })
+  vi.mocked(api.fetchSettings).mockResolvedValueOnce({
+    profile: oldProfile,
+    avatarChoices: [
+      { avatarType: 'EMOJI', avatarValue: '🌿', label: 'Chiếc lá' },
+    ],
+  })
+  vi.mocked(api.uploadAvatar).mockResolvedValueOnce(latestProfile)
+  vi.stubGlobal('URL', {
+    createObjectURL: vi.fn(() => 'blob:latest-avatar'),
+    revokeObjectURL: vi.fn(),
+  })
+  vi.mocked(
+    (await import('./avatar-image')).renderAvatarCrop,
+  ).mockResolvedValueOnce(croppedBlob)
+
+  function Harness() {
+    const [current, setCurrent] = useState<FamilyProfile>(oldProfile)
+    return (
+      <PersonalPage
+        profile={current}
+        onExpenses={vi.fn()}
+        onProfileUpdated={setCurrent}
+      />
+    )
+  }
+
+  render(<Harness />)
+  await u.click(await screen.findByRole('button', { name: 'Chỉnh sửa hồ sơ' }))
+  await u.upload(
+    screen.getByLabelText('Chọn ảnh từ thiết bị'),
+    new File(['synthetic image'], 'avatar.png', { type: 'image/png' }),
+  )
+  await screen.findByRole('dialog', { name: 'Chỉnh ảnh đại diện' })
+  await u.click(screen.getByRole('button', { name: 'Dùng ảnh này' }))
+  await u.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }))
+
+  await waitFor(() => {
+    const avatars = Array.from(document.querySelectorAll('img'))
+    expect(avatars.every((avatar) => avatar.src.endsWith('?v=2'))).toBe(true)
+  })
 })
 it('previews a device photo and uploads it only after saving the profile', async () => {
   const u = userEvent.setup(),
@@ -188,27 +291,39 @@ it('switching a pending cropped image to an emoji clears the upload payload', as
     uploadAvatar = (api as unknown as {
       uploadAvatar: ReturnType<typeof vi.fn>
     }).uploadAvatar
+  const imageProfile = {
+    ...profile,
+    avatarType: 'IMAGE' as const,
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=1',
+  }
+  const emojiProfile = {
+    ...imageProfile,
+    avatarType: 'EMOJI' as const,
+    avatarValue: '🐱',
+  }
   vi.mocked(api.fetchSettings).mockResolvedValueOnce({
-    profile: {
-      ...profile,
-      avatarType: 'IMAGE',
-      avatarValue: '/api/profile/avatar/' + profile.id + '?v=1',
-    },
+    profile: imageProfile,
     avatarChoices: [
       { avatarType: 'EMOJI', avatarValue: '🌿', label: 'Chiếc lá' },
       { avatarType: 'EMOJI', avatarValue: '🐱', label: 'Mèo con' },
     ],
   })
-  vi.mocked(api.saveProfile).mockResolvedValue({
-    ...profile,
-    avatarType: 'EMOJI',
-    avatarValue: '🐱',
-  })
+  vi.mocked(api.saveProfile).mockResolvedValue(emojiProfile)
   vi.stubGlobal('URL', {
     createObjectURL: vi.fn(() => 'blob:pending-avatar'),
     revokeObjectURL: vi.fn(),
   })
-  render(<PersonalPage profile={profile} onExpenses={vi.fn()} />)
+  function Harness() {
+    const [current, setCurrent] = useState<FamilyProfile>(imageProfile)
+    return (
+      <PersonalPage
+        profile={current}
+        onExpenses={vi.fn()}
+        onProfileUpdated={setCurrent}
+      />
+    )
+  }
+  render(<Harness />)
   await u.click(await screen.findByRole('button', { name: 'Chỉnh sửa hồ sơ' }))
   await u.upload(
     screen.getByLabelText('Chọn ảnh từ thiết bị'),
@@ -227,6 +342,47 @@ it('switching a pending cropped image to an emoji clears the upload payload', as
     avatarType: 'EMOJI',
     avatarValue: '🐱',
   })
+  expect(document.querySelectorAll('img')).toHaveLength(0)
+  expect(screen.getAllByText('🐱').length).toBeGreaterThanOrEqual(2)
+})
+it('propagates an image to initials switch without leaving the old avatar', async () => {
+  const u = userEvent.setup()
+  const imageProfile = {
+    ...profile,
+    avatarType: 'IMAGE' as const,
+    avatarValue: '/api/profile/avatar/' + profile.id + '?v=1',
+  }
+  const initialsProfile = {
+    ...imageProfile,
+    avatarType: null,
+    avatarValue: null,
+  }
+  vi.mocked(api.fetchSettings).mockResolvedValueOnce({
+    profile: imageProfile,
+    avatarChoices: [
+      { avatarType: 'EMOJI', avatarValue: '🌿', label: 'Chiếc lá' },
+    ],
+  })
+  vi.mocked(api.saveProfile).mockResolvedValueOnce(initialsProfile)
+
+  function Harness() {
+    const [current, setCurrent] = useState<FamilyProfile>(imageProfile)
+    return (
+      <PersonalPage
+        profile={current}
+        onExpenses={vi.fn()}
+        onProfileUpdated={setCurrent}
+      />
+    )
+  }
+  render(<Harness />)
+  await u.click(await screen.findByRole('button', { name: 'Chỉnh sửa hồ sơ' }))
+  await u.click(screen.getByRole('radio', { name: 'Chữ cái đầu' }))
+  await u.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }))
+
+  await screen.findByText('Đã cập nhật hồ sơ của bạn.')
+  expect(document.querySelectorAll('img')).toHaveLength(0)
+  expect(screen.getAllByText('S').length).toBeGreaterThanOrEqual(2)
 })
 it('validates PIN mismatch, clears inputs and requires sign-in after successful own change', async () => {
   const u = userEvent.setup(),
