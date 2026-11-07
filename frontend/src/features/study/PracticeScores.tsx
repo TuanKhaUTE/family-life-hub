@@ -81,14 +81,16 @@ export function PracticeScores({
     <h3>Điểm luyện tập</h3>
     <p className="study-muted">Theo dõi điểm lặp lại riêng, không trộn với điểm môn học.</p>
     {visibleCourses?.map((course) => <button key={course.id} type="button" onClick={() => { void togglePractice(course.id, !course.practiceTracking).then(load).catch(() => setError('Chưa thể đổi cài đặt môn học.')) }}>{course.practiceTracking ? 'Tắt' : 'Bật'} Theo dõi điểm luyện tập · {course.name}</button>)}
-    {eligibleSessions.length > 0 ? <div className="practice-entry">
+    {eligibleSessions.length > 0 ? <div className="practice-entry practice-entry-form">
       <h4>Thêm kết quả cho buổi học đã hoàn thành</h4>
-        <label>Buổi học<select value={selectedSessionId} onChange={(e) => setForm({ ...form, sessionId: e.target.value })}>{eligibleSessions.map((session) => <option key={session.id} value={session.id}>{data.courses.find((course) => course.id === session.courseId)?.name ?? 'Buổi học'} · {session.studiedAt}</option>)}</select></label>
-      <label>Chỉ số / tên bài<input value={form.metricTitle} onChange={(e) => setForm({ ...form, metricTitle: e.target.value })} /></label>
-      <label>Điểm đạt được<input type="number" min="0" step="0.0001" value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} /></label>
-      <label>Điểm tối đa<input type="number" min="0.0001" step="0.0001" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} /></label>
-      <label>Ghi chú (không bắt buộc)<textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></label>
-      <button className="study-primary" disabled={pending} onClick={() => void submit()}>Lưu điểm luyện tập</button>
+      <div className="practice-entry-fields">
+        <label className="practice-field">Buổi học<select value={selectedSessionId} onChange={(e) => setForm({ ...form, sessionId: e.target.value })}>{eligibleSessions.map((session) => <option key={session.id} value={session.id}>{data.courses.find((course) => course.id === session.courseId)?.name ?? 'Buổi học'} · {session.studiedAt}</option>)}</select></label>
+        <label className="practice-field">Chỉ số / tên bài<input value={form.metricTitle} onChange={(e) => setForm({ ...form, metricTitle: e.target.value })} /></label>
+        <label className="practice-field">Điểm đạt được<input type="number" min="0" step="0.0001" value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} /></label>
+        <label className="practice-field">Điểm tối đa<input type="number" min="0.0001" step="0.0001" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} /></label>
+        <label className="practice-field practice-field-note">Ghi chú (không bắt buộc)<textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></label>
+      </div>
+      <div className="practice-entry-actions"><button className="study-primary" disabled={pending} onClick={() => void submit()}>Lưu điểm luyện tập</button></div>
     </div> : <p className="study-muted practice-entry-hint">Chưa có buổi học đủ điều kiện để ghi điểm luyện tập.</p>}
     {error && <p role="alert">{error}</p>}
     {data.trends.map((trend) => {

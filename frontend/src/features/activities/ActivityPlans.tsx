@@ -6,13 +6,13 @@ import { useFamilyClock } from '../meals/use-family-clock'
 import { calendarDay, calendarTime, shiftDay } from '../calendar/calendar-time'
 import './activities.css'
 export function ActivityPlans({ kind, courses = [], planId, onChanged }: { kind: ActivityKind; courses?: { id: string; name: string }[]; planId?: string; onChanged?: () => void }) {
-  const [data, setData] = useState<ActivityView | null>(null), [state, setState] = useState<'loading'|'ready'|'error'>('loading'), [version, setVersion] = useState(0), [form, setForm] = useState<ActivityPlan | 'new' | null>(null)
+  const [data, setData] = useState<ActivityView | null>(null), [state, setState] = useState<'loading'|'ready'|'error'>('loading'), [version, setVersion] = useState(0), [form, setForm] = useState<ActivityPlan | 'new' | null>(null), [upcomingVisibleCount, setUpcomingVisibleCount] = useState(3), [historyOpen, setHistoryOpen] = useState(false), [historyVisibleCount, setHistoryVisibleCount] = useState(10)
   useEffect(() => {
     const controller = new AbortController()
     void fetchActivities(kind, controller.signal, planId).then(value => { if (!controller.signal.aborted) { setData(value); setState('ready') } }).catch(() => { if (!controller.signal.aborted) setState('error') })
     return () => controller.abort()
   }, [kind, version, planId])
-  function refresh() { setForm(null); setState('loading'); setVersion(v => v + 1); onChanged?.() }
+  function refresh() { setForm(null); setUpcomingVisibleCount(3); setHistoryOpen(false); setHistoryVisibleCount(10); setState('loading'); setVersion(v => v + 1); onChanged?.() }
   return <section className="activity-plans" aria-label={kind === 'STUDY' ? 'Kế hoạch học tập' : 'Kế hoạch buổi tập'}>
     <h3>{kind === 'STUDY' ? 'Hẹn một buổi học cho mình' : 'Hẹn một buổi tập cho mình'}</h3>
     <p className="activity-hint">Lên lịch → Hoàn thành → Tiến bộ. Kế hoạch nằm trong Lịch của tôi, không hiện ở Lịch nhà.</p>
@@ -21,8 +21,37 @@ export function ActivityPlans({ kind, courses = [], planId, onChanged }: { kind:
     {state === 'ready' && data && <>
       {!planId && <><ActivityStatistics progress={data.progress} study={kind === 'STUDY'} /><button className="activity-primary" onClick={() => setForm('new')}>{kind === 'STUDY' ? 'Lên lịch buổi học' : 'Lên lịch buổi tập'}</button></>}
       {form && <ActivityForm key={typeof form === 'string' ? 'new' : form.id} kind={kind} plan={form === 'new' ? null : form} courses={courses} onSaved={refresh} onClose={() => setForm(null)} />}
-      {!data.plans.length && <p>Chưa có buổi nào được lên lịch.</p>}
-      <div className="activity-list">{data.plans.filter(p => !p.cancelled).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>
+      {(() => {
+        const upcoming = data.plans.filter(plan => !plan.cancelled && !plan.completedAt).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+        const completed = data.plans.filter(plan => !plan.cancelled && !!plan.completedAt).sort((a, b) => Date.parse(b.completedAt!) - Date.parse(a.completedAt!))
+        const recentCompleted = completed.slice(0, 3)
+        const history = completed.slice(3)
+        return <>
+          <section aria-label="Sắp tới">
+            <h3>Sắp tới</h3>
+            {upcoming.length === 0 ? <p>Chưa có buổi nào sắp tới.</p> : <div className="activity-list">{upcoming.slice(0, upcomingVisibleCount).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>}
+            {upcoming.length > 3 && <div className="activity-actions">
+              {upcomingVisibleCount < upcoming.length && <button type="button" onClick={() => setUpcomingVisibleCount(count => Math.min(count + 3, upcoming.length))}>Xem thêm kế hoạch</button>}
+              {upcomingVisibleCount > 3 && <button type="button" onClick={() => setUpcomingVisibleCount(3)}>Thu gọn kế hoạch</button>}
+            </div>}
+          </section>
+          {recentCompleted.length > 0 && <section aria-label="Đã hoàn thành gần đây">
+            <h3>Đã hoàn thành gần đây</h3>
+            <div className="activity-list">{recentCompleted.map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>
+          </section>}
+          {history.length > 0 && <section aria-label="Lịch sử">
+            <button type="button" aria-expanded={historyOpen} onClick={() => { setHistoryOpen(open => !open); setHistoryVisibleCount(10) }}>{historyOpen ? 'Thu gọn lịch sử' : 'Xem lịch sử'}</button>
+            {historyOpen && <div>
+              <h3>Lịch sử</h3>
+              <div className="activity-list">{history.slice(0, historyVisibleCount).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>
+              <div className="activity-actions">
+                {historyVisibleCount < history.length && <button type="button" onClick={() => setHistoryVisibleCount(count => Math.min(count + 10, history.length))}>Xem thêm</button>}
+                {historyVisibleCount > 10 && <button type="button" onClick={() => setHistoryVisibleCount(10)}>Thu gọn</button>}
+              </div>
+            </div>}
+          </section>}
+        </>
+      })()}
     </>}
   </section>
 }

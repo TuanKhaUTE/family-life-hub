@@ -199,6 +199,90 @@ it('replaces the Fitness placeholder while keeping Study functional', async () =
   ).toBeTruthy()
   expect(screen.queryByText('Sắp có')).toBeNull()
 })
+it('coordinates the Fitness action bar and places schedule management below it', async () => {
+  network()
+  render(<FitnessSection />)
+  await ready()
+
+  const sessionAction = screen.getByRole('button', { name: 'Ghi buổi tập' })
+  const scheduleAction = screen.getByRole('button', { name: 'Lịch tập' })
+  const goalAction = screen.getByRole('button', { name: 'Mục tiêu tuần' })
+
+  fireEvent.click(sessionAction)
+  expect(sessionAction.getAttribute('aria-pressed')).toBe('true')
+  expect(goalAction.getAttribute('aria-pressed')).toBe('false')
+  expect(scheduleAction.getAttribute('aria-expanded')).toBe('false')
+  expect(screen.getByRole('form', { name: 'Buổi tập đã hoàn thành' })).toBeTruthy()
+
+  fireEvent.click(scheduleAction)
+  expect(sessionAction.getAttribute('aria-pressed')).toBe('false')
+  expect(goalAction.getAttribute('aria-pressed')).toBe('false')
+  expect(scheduleAction.getAttribute('aria-expanded')).toBe('true')
+  expect(screen.queryByRole('form', { name: 'Buổi tập đã hoàn thành' })).toBeNull()
+  const actionBar = sessionAction.parentElement!
+  expect(actionBar.nextElementSibling?.getAttribute('aria-label')).toBe(
+    'Quản lý lịch tập',
+  )
+  expect(screen.getByText('Lịch tập của bạn')).toBeTruthy()
+
+  fireEvent.click(goalAction)
+  expect(sessionAction.getAttribute('aria-pressed')).toBe('false')
+  expect(scheduleAction.getAttribute('aria-expanded')).toBe('false')
+  expect(goalAction.getAttribute('aria-pressed')).toBe('true')
+  expect(screen.queryByText('Lịch tập của bạn')).toBeNull()
+  expect(screen.getByRole('form', { name: 'Mục tiêu rèn luyện tuần' })).toBeTruthy()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Đóng biểu mẫu rèn luyện' }))
+  expect(goalAction.getAttribute('aria-pressed')).toBe('false')
+})
+it('keeps recent sessions and schedule configuration compact', async () => {
+  const data = workspace()
+  data.sessions = Array.from({ length: 7 }, (_, index) => ({
+    id: `session-${index + 1}`,
+    planDayId: null,
+    performedAt: `2026-10-${String(28 - index).padStart(2, '0')}`,
+    durationMinutes: 30 + index,
+    title: `Buổi ${index + 1}`,
+    note: null,
+  }))
+  data.plans = Array.from({ length: 5 }, (_, index) => ({
+    id: `plan-${index + 1}`,
+    name: `Kế hoạch ${index + 1}`,
+    note: null,
+    isActive: index === 0,
+  }))
+  network(data)
+  render(<FitnessSection />)
+  await ready()
+
+  const sessionsSection = screen
+    .getByRole('heading', { name: 'Buổi tập gần đây' })
+    .closest('section') as HTMLElement
+  expect(within(sessionsSection).getByText('Buổi 1')).toBeTruthy()
+  expect(within(sessionsSection).getByText('Buổi 5')).toBeTruthy()
+  expect(within(sessionsSection).queryByText('Buổi 6')).toBeNull()
+  fireEvent.click(
+    within(sessionsSection).getByRole('button', { name: 'Xem thêm buổi tập' }),
+  )
+  expect(within(sessionsSection).getByText('Buổi 6')).toBeTruthy()
+  expect(within(sessionsSection).getByText('Buổi 7')).toBeTruthy()
+  fireEvent.click(within(sessionsSection).getByRole('button', { name: 'Thu gọn' }))
+  expect(within(sessionsSection).queryByText('Buổi 6')).toBeNull()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Lịch tập' }))
+  const management = screen.getByRole('region', { name: 'Quản lý lịch tập' })
+  expect(within(management).getByText('Kế hoạch 1')).toBeTruthy()
+  expect(within(management).getByText('Kế hoạch 3')).toBeTruthy()
+  expect(within(management).queryByText('Kế hoạch 4')).toBeNull()
+  fireEvent.click(
+    within(management).getByRole('button', { name: 'Xem thêm kế hoạch' }),
+  )
+  expect(within(management).getByText('Kế hoạch 5')).toBeTruthy()
+  fireEvent.click(
+    within(management).getByRole('button', { name: 'Thu gọn kế hoạch' }),
+  )
+  expect(within(management).queryByText('Kế hoạch 5')).toBeNull()
+})
 it('creates a plan, configures weekday workouts, sets a goal and logs a free workout', async () => {
   const data = workspace()
   data.plans = []

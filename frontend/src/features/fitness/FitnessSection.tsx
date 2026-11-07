@@ -27,7 +27,8 @@ export function FitnessSection() {
     [state, setState] = useState<'loading' | 'ready' | 'error'>('loading'),
     [version, setVersion] = useState(0),
     [manage, setManage] = useState(false),
-    [history, setHistory] = useState(false),
+    [sessionVisibleCount, setSessionVisibleCount] = useState(5),
+    [plansExpanded, setPlansExpanded] = useState(false),
     [form, setForm] = useState<{
       kind: FitnessKind
       record: FitnessRecord | null
@@ -55,15 +56,20 @@ export function FitnessSection() {
   }, [version])
   function reload() {
     setState('loading')
+    setSessionVisibleCount(5)
+    setPlansExpanded(false)
     setVersion((v) => v + 1)
   }
   function edit(kind: FitnessKind, record: FitnessRecord | null) {
     setForm({ kind, record })
+    setManage(false)
     setMessage(null)
     setError(null)
   }
   function saved() {
+    const returnToManagement = form?.kind === 'plans' || form?.kind === 'days'
     setForm(null)
+    setManage(returnToManagement)
     setMessage('Đã lưu vào góc rèn luyện của bạn.')
     reload()
   }
@@ -101,6 +107,12 @@ export function FitnessSection() {
       setRemove({ kind, record }),
     onActivate: activate,
   }
+  const sessions = data
+    ? [...data.sessions].sort(
+        (a, b) =>
+          b.performedAt.localeCompare(a.performedAt) || b.id.localeCompare(a.id),
+      )
+    : []
   return (
     <section id="study-panel-fitness" className="fitness-section" aria-label="Rèn luyện">
       <header className="fitness-heading">
@@ -133,13 +145,28 @@ export function FitnessSection() {
           <p className="fitness-muted">Ghi bổ sung bên dưới chỉ dành cho buổi đã tập thực tế. Lịch mẫu cũ được giữ lại, chưa tự sinh buổi tập có ngày giờ.</p>
           <div className="fitness-actions">
             <button
-              className="fitness-primary"
+              className={form?.kind === 'sessions' ? 'fitness-primary' : undefined}
+              aria-pressed={form?.kind === 'sessions'}
               onClick={() => edit('sessions', null)}
             >
               Ghi buổi tập
             </button>
-            <button onClick={() => setManage((v) => !v)}>Lịch tập</button>
             <button
+              className={manage ? 'fitness-primary' : undefined}
+              aria-expanded={manage}
+              aria-controls="fitness-management"
+              onClick={() => {
+                setForm(null)
+                setError(null)
+                setMessage(null)
+                setManage((v) => !v)
+              }}
+            >
+              Lịch tập
+            </button>
+            <button
+              className={form?.kind === 'goals' ? 'fitness-primary' : undefined}
+              aria-pressed={form?.kind === 'goals'}
               onClick={() =>
                 edit('goals', data.goals.find((g) => g.isActive) ?? null)
               }
@@ -147,6 +174,42 @@ export function FitnessSection() {
               Mục tiêu tuần
             </button>
           </div>
+          {manage && (
+            <section
+              id="fitness-management"
+              className="fitness-card"
+              aria-label="Quản lý lịch tập"
+            >
+              <h3>Lịch tập của bạn</h3>
+              <div className="fitness-actions">
+                <button onClick={() => edit('plans', null)}>
+                  Thêm kế hoạch
+                </button>
+                <button
+                  disabled={!data.plans.length}
+                  onClick={() => edit('days', null)}
+                >
+                  Thêm ngày tập
+                </button>
+              </div>
+              <h4>Kế hoạch</h4>
+              <FitnessRecords
+                kind="plans"
+                items={plansExpanded ? data.plans : data.plans.slice(0, 3)}
+                {...recordProps}
+              />
+              {data.plans.length > 3 && (
+                <button type="button" onClick={() => setPlansExpanded((v) => !v)}>
+                  {plansExpanded ? 'Thu gọn kế hoạch' : 'Xem thêm kế hoạch'}
+                </button>
+              )}
+              <h4>Các ngày trong tuần</h4>
+              <FitnessRecords kind="days" items={data.days} {...recordProps} />
+              <p className="fitness-muted">
+                Lịch tập chỉ riêng bạn xem, không tự thêm vào Lịch gia đình.
+              </p>
+            </section>
+          )}
           {message && (
             <p role="status" className="fitness-success">
               {message}
@@ -159,7 +222,10 @@ export function FitnessSection() {
               kind={form.kind}
               record={form.record}
               data={data}
-              onClose={() => setForm(null)}
+              onClose={() => {
+                setForm(null)
+                setError(null)
+              }}
               onSaved={saved}
             />
           )}
@@ -228,46 +294,35 @@ export function FitnessSection() {
             <h3>Buổi tập gần đây</h3>
             <FitnessRecords
               kind="sessions"
-              items={history ? data.sessions : data.sessions.slice(0, 5)}
+              items={sessions.slice(0, sessionVisibleCount)}
               {...recordProps}
             />
-            {data.sessions.length > 5 && (
-              <button onClick={() => setHistory((v) => !v)}>
-                {history ? 'Thu gọn' : 'Xem thêm buổi đã ghi'}
-              </button>
+            {sessions.length > 5 && (
+              <div className="fitness-actions">
+                {sessionVisibleCount < sessions.length && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSessionVisibleCount((count) =>
+                        Math.min(count + 5, sessions.length),
+                      )
+                    }
+                  >
+                    Xem thêm buổi tập
+                  </button>
+                )}
+                {sessionVisibleCount > 5 && (
+                  <button type="button" onClick={() => setSessionVisibleCount(5)}>
+                    Thu gọn
+                  </button>
+                )}
+              </div>
             )}
             <p className="fitness-muted">
               Giữ tối đa 20 buổi gần nhất ở đây. Tổng tuần vẫn tính tất cả buổi
               tập.
             </p>
           </section>
-          {manage && (
-            <section className="fitness-card" aria-label="Quản lý lịch tập">
-              <h3>Lịch tập của bạn</h3>
-              <div className="fitness-actions">
-                <button onClick={() => edit('plans', null)}>
-                  Thêm kế hoạch
-                </button>
-                <button
-                  disabled={!data.plans.length}
-                  onClick={() => edit('days', null)}
-                >
-                  Thêm ngày tập
-                </button>
-              </div>
-              <h4>Kế hoạch</h4>
-              <FitnessRecords
-                kind="plans"
-                items={data.plans}
-                {...recordProps}
-              />
-              <h4>Các ngày trong tuần</h4>
-              <FitnessRecords kind="days" items={data.days} {...recordProps} />
-              <p className="fitness-muted">
-                Lịch tập chỉ riêng bạn xem, không tự thêm vào Lịch gia đình.
-              </p>
-            </section>
-          )}
         </>
       )}
       <WellnessSection />

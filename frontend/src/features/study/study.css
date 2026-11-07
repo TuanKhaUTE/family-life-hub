@@ -163,6 +163,45 @@
   min-height: 90px;
   resize: vertical;
 }
+.practice-entry-form {
+  gap: 1rem;
+}
+.practice-entry-fields {
+  display: grid;
+  gap: 0.85rem;
+}
+.practice-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.42rem;
+  font-weight: 650;
+}
+.practice-field input,
+.practice-field select,
+.practice-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.65rem;
+  font: inherit;
+  color: #493b32;
+  background: #fffdfa;
+  border: 1px solid #d8c6b8;
+  border-radius: 0.8rem;
+}
+.practice-field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+.practice-entry-actions {
+  display: flex;
+  gap: 0.6rem;
+  padding-top: 0.15rem;
+}
+.practice-entry-actions button {
+  width: 100%;
+}
 .study-form .study-check {
   display: flex;
   align-items: center;
@@ -252,6 +291,15 @@
   overflow-wrap: anywhere;
 }
 @media (min-width: 640px) {
+  .practice-entry-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .practice-field-note {
+    grid-column: 1 / -1;
+  }
+  .practice-entry-actions button {
+    width: auto;
+  }
   .study-records > li {
     grid-template-columns: minmax(0, 1fr) auto;
   }
