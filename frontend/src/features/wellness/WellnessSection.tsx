@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   fetchWellness,
   deleteWeight,
@@ -25,6 +25,8 @@ export function WellnessSection() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
+  const removeTrigger = useRef<HTMLButtonElement | null>(null)
+  const removeDialog = useRef<HTMLElement | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     void fetchWellness(controller.signal)
@@ -43,6 +45,21 @@ export function WellnessSection() {
     setState('loading')
     setVersion((v) => v + 1)
   }
+  useEffect(() => {
+    if (!remove) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    removeDialog.current?.focus()
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRemove(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+      removeTrigger.current?.focus()
+    }
+  }, [remove])
   function open(mode: 'profile' | 'weight', record: WeightLog | null = null) {
     setForm({ mode, record })
     setMessage(null)
@@ -95,45 +112,75 @@ export function WellnessSection() {
       {state === 'ready' && data && (
         <>
           <div className="wellness-actions">
-            <button className="wellness-primary" onClick={() => open('weight')}>
+            <button
+              className={form?.mode === 'weight' ? 'wellness-primary' : undefined}
+              aria-pressed={form?.mode === 'weight'}
+              onClick={() => open('weight')}
+            >
               Ghi cân nặng
             </button>
-            <button onClick={() => open('profile')}>Cập nhật thông tin</button>
+            <button
+              className={form?.mode === 'profile' ? 'wellness-primary' : undefined}
+              aria-pressed={form?.mode === 'profile'}
+              onClick={() => open('profile')}
+            >
+              Cập nhật thông tin
+            </button>
           </div>
           {message && (
             <p role="status" className="wellness-message">
               {message}
             </p>
           )}
-          {error && <p role="alert">{error}</p>}
+          {error && !remove && <p role="alert">{error}</p>}
           {form && (
             <WellnessForm
               key={`${form.mode}:${form.record?.id ?? 'new'}`}
               {...form}
               data={data}
-              onClose={() => setForm(null)}
+              onClose={() => {
+                setForm(null)
+                setError(null)
+              }}
               onSaved={saved}
             />
           )}
           {remove && (
-            <section
-              className="wellness-form"
-              role="dialog"
-              aria-label="Xác nhận xóa lần cân"
+            <div
+              className="wellness-delete-backdrop"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setRemove(null)
+              }}
             >
-              <p>
-                Xóa lần cân ngày {wellnessDate(remove.loggedDate)}? Không thể
-                hoàn tác thao tác này.
-              </p>
-              <div className="wellness-actions">
-                <button disabled={pending} onClick={() => setRemove(null)}>
-                  Giữ lại
-                </button>
-                <button disabled={pending} onClick={() => void confirmDelete()}>
-                  Đồng ý xóa lần cân
-                </button>
-              </div>
-            </section>
+              <section
+                ref={removeDialog}
+                className="wellness-delete-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="wellness-delete-title"
+                tabIndex={-1}
+              >
+                <h4 id="wellness-delete-title">Xóa lần cân này?</h4>
+                <p>
+                  Bạn có chắc muốn xóa lần cân ngày {wellnessDate(remove.loggedDate)}?{' '}
+                  Thao tác này không thể hoàn tác.
+                </p>
+                {error && <p role="alert">{error}</p>}
+                <div className="wellness-actions wellness-delete-actions">
+                  <button type="button" disabled={pending} onClick={() => setRemove(null)}>
+                    Giữ lại
+                  </button>
+                  <button
+                    type="button"
+                    className="wellness-danger"
+                    disabled={pending}
+                    onClick={() => void confirmDelete()}
+                  >
+                    Xóa lần cân
+                  </button>
+                </div>
+              </section>
+            </div>
           )}
           <WellnessSummary data={data} />
           <section aria-label="Lịch sử cân nặng" className="wellness-history">
@@ -160,7 +207,8 @@ export function WellnessSection() {
                       </button>
                       <button
                         aria-label={`Xóa lần cân ${log.loggedDate}`}
-                        onClick={() => {
+                        onClick={(event) => {
+                          removeTrigger.current = event.currentTarget
                           setRemove(log)
                           setError(null)
                         }}

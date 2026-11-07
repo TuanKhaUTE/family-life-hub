@@ -12,6 +12,7 @@ import { WellnessSection } from './WellnessSection'
 import { StudyPage } from '../study/StudyPage'
 import type { WellnessWorkspace } from './wellness-api'
 import { familyDate } from '../meals/family-time'
+import { wellnessDate } from './wellness-display'
 
 const id = '11111111-1111-4111-8111-111111111111',
   today = familyDate()
@@ -142,6 +143,32 @@ it('places a separate private Thể trạng subsection inside Rèn luyện', asy
     await screen.findByRole('button', { name: 'Ghi buổi tập' }),
   ).toBeTruthy()
 })
+it('keeps Wellness actions mutually exclusive with clear active state', async () => {
+  network()
+  render(<WellnessSection />)
+  await ready()
+  const weightAction = screen.getByRole('button', { name: 'Ghi cân nặng' })
+  const profileAction = screen.getByRole('button', {
+    name: 'Cập nhật thông tin',
+  })
+
+  fireEvent.click(weightAction)
+  expect(weightAction.getAttribute('aria-pressed')).toBe('true')
+  expect(profileAction.getAttribute('aria-pressed')).toBe('false')
+  expect(screen.getByRole('heading', { name: 'Ghi cân nặng' })).toBeTruthy()
+
+  fireEvent.click(profileAction)
+  expect(weightAction.getAttribute('aria-pressed')).toBe('false')
+  expect(profileAction.getAttribute('aria-pressed')).toBe('true')
+  expect(
+    screen.getByRole('heading', { name: 'Thông tin thể trạng của bạn' }),
+  ).toBeTruthy()
+  expect(screen.queryByRole('heading', { name: 'Ghi cân nặng' })).toBeNull()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Đóng biểu mẫu thể trạng' }))
+  expect(weightAction.getAttribute('aria-pressed')).toBe('false')
+  expect(profileAction.getAttribute('aria-pressed')).toBe('false')
+})
 it('updates only explicit optional profile values and collapses the form', async () => {
   const data = workspace(),
     calls = network(data)
@@ -213,12 +240,30 @@ it('edits a saved measurement by identity and requires confirmation before delet
     `/api/wellness/logs/${id}`,
   )
   expect(screen.getByText('63 kg')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: `Xóa lần cân ${today}` }))
+  const deleteAction = screen.getByRole('button', {
+    name: `Xóa lần cân ${today}`,
+  })
+  fireEvent.click(deleteAction)
   expect(calls.some((c) => c.init?.method === 'DELETE')).toBe(false)
-  fireEvent.click(screen.getByRole('button', { name: 'Giữ lại' }))
+  const dialog = screen.getByRole('dialog', { name: 'Xóa lần cân này?' })
+  expect(dialog.getAttribute('aria-modal')).toBe('true')
+  expect(
+    within(dialog).getByText(
+      `Bạn có chắc muốn xóa lần cân ngày ${wellnessDate(today)}? Thao tác này không thể hoàn tác.`,
+    ),
+  ).toBeTruthy()
+  expect(document.body.style.overflow).toBe('hidden')
+  fireEvent.keyDown(document, { key: 'Escape' })
   expect(screen.queryByRole('dialog')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: `Xóa lần cân ${today}` }))
-  fireEvent.click(screen.getByRole('button', { name: 'Đồng ý xóa lần cân' }))
+  expect(document.body.style.overflow).toBe('')
+  expect(document.activeElement).toBe(deleteAction)
+  fireEvent.click(deleteAction)
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: 'Xóa lần cân này?' })).getByRole(
+      'button',
+      { name: 'Xóa lần cân' },
+    ),
+  )
   await ready()
   expect(calls.find((c) => c.init?.method === 'DELETE')!.url).toBe(
     `/api/wellness/logs/${id}`,
