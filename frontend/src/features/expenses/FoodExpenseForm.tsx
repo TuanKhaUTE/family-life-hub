@@ -8,6 +8,12 @@ import {
   type FoodMealType,
 } from './family-food-api'
 import { formatVnd } from './expense-display'
+import {
+  isValidMoneyInput,
+  MONEY_INPUT_ERROR,
+  normalizeMoneyInput,
+  sanitizeMoneyInput,
+} from './money-input'
 export function FoodExpenseForm({
   existing,
   onSaved,
@@ -31,7 +37,10 @@ export function FoodExpenseForm({
   const version = useRef(0)
   const total = items
     .reduce(
-      (s, i) => s + (/^[1-9]\d{0,9}$/.test(i.amount) ? BigInt(i.amount) : 0n),
+      (s, i) => {
+        const amount = normalizeMoneyInput(i.amount)
+        return s + (/^[1-9]\d*$/.test(amount) ? BigInt(amount) : 0n)
+      },
       0n,
     )
     .toString()
@@ -56,18 +65,16 @@ export function FoodExpenseForm({
     event.preventDefault()
     if (busy) return
     setError('')
-    if (
-      !items.length ||
-      items.some(
-        (i) =>
-          !i.name.trim() ||
-          !/^[1-9]\d{0,9}$/.test(i.amount) ||
-          BigInt(i.amount) > 1000000000n,
-      )
-    ) {
-      setError(
-        'Bạn nhập tên món và giá nguyên đồng từ 1 đến 1.000.000.000 đ nhé.',
-      )
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      amount: normalizeMoneyInput(item.amount),
+    }))
+    if (!items.length || normalizedItems.some((item) => !item.name.trim())) {
+      setError('Bạn nhập tên món và giá nguyên đồng từ 1 đến 1.000.000.000 đ nhé.')
+      return
+    }
+    if (normalizedItems.some((item) => !isValidMoneyInput(item.amount))) {
+      setError(MONEY_INPUT_ERROR)
       return
     }
     setBusy(true)
@@ -76,7 +83,7 @@ export function FoodExpenseForm({
         mealDate: date,
         mealType: type,
         note: note.trim() || null,
-        items: items.map((i) => ({ name: i.name.trim(), amount: i.amount })),
+        items: normalizedItems.map((i) => ({ name: i.name.trim(), amount: i.amount })),
       })
       onSaved(date)
     } catch (e) {
@@ -153,16 +160,16 @@ export function FoodExpenseForm({
             <label>
               Giá {index + 1}
               <input
-                required
                 inputMode="numeric"
-                pattern="[1-9][0-9]{0,9}"
-                maxLength={10}
+                maxLength={20}
                 placeholder="Nhập giá thực tế (đ)"
                 value={item.amount}
                 onChange={(e) =>
                   setItems((v) =>
                     v.map((i, n) =>
-                      n === index ? { ...i, amount: e.target.value } : i,
+                      n === index
+                        ? { ...i, amount: sanitizeMoneyInput(e.target.value) }
+                        : i,
                     ),
                   )
                 }

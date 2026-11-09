@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { familyDate } from '../meals/family-time'
 import { saveFood, FoodApiError, type FoodExpense } from './family-food-api'
+import {
+  isValidMoneyInput,
+  MONEY_INPUT_ERROR,
+  normalizeMoneyInput,
+  sanitizeMoneyInput,
+} from './money-input'
 
 export function GroceryExpenseForm({
   existing,
@@ -22,13 +28,17 @@ export function GroceryExpenseForm({
     event.preventDefault()
     if (busy) return
     setError('')
+    const normalizedAmount = normalizeMoneyInput(amount)
     if (
-      !/^([1-9]\d{0,9})$/.test(amount) ||
-      BigInt(amount) > 1000000000n ||
+      !isValidMoneyInput(normalizedAmount) ||
       !date ||
       date > familyDate()
     ) {
-      setError('Bạn nhập ngày hợp lệ và số tiền nguyên đồng từ 1 đến 1.000.000.000 đ nhé.')
+      setError(
+        !isValidMoneyInput(normalizedAmount)
+          ? MONEY_INPUT_ERROR
+          : 'Bạn nhập ngày hợp lệ và số tiền nguyên đồng từ 1 đến 1.000.000.000 đ nhé.',
+      )
       return
     }
     setBusy(true)
@@ -36,7 +46,7 @@ export function GroceryExpenseForm({
       await saveFood(existing?.id ?? null, {
         mealDate: date,
         category: 'GROCERIES',
-        amount,
+        amount: normalizedAmount,
         note: note.trim() || null,
       })
       onSaved(date)
@@ -72,13 +82,11 @@ export function GroceryExpenseForm({
         <label>
           Số tiền
           <input
-            required
             inputMode="numeric"
-            pattern="[1-9][0-9]{0,9}"
-            maxLength={10}
+            maxLength={20}
             placeholder="Nhập số tiền (đ)"
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={(event) => setAmount(sanitizeMoneyInput(event.target.value))}
           />
         </label>
         <label>

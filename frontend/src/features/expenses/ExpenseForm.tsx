@@ -8,6 +8,12 @@ import {
   type PersonalExpense,
 } from './expense-api'
 import { EXPENSE_LABELS } from './expense-display'
+import {
+  isValidMoneyInput,
+  MONEY_INPUT_ERROR,
+  normalizeMoneyInput,
+  sanitizeMoneyInput,
+} from './money-input'
 export function ExpenseForm({
   record,
   onClose,
@@ -30,11 +36,16 @@ export function ExpenseForm({
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (pending) return
+    const normalizedAmount = normalizeMoneyInput(amount)
+    if (!isValidMoneyInput(normalizedAmount)) {
+      setError(MONEY_INPUT_ERROR)
+      return
+    }
     setPending(true)
     setError(null)
     try {
       await savePersonalExpense(record?.id ?? null, {
-        amount: amount.trim().replace(/^0+(?=\d)/, ''),
+        amount: normalizedAmount,
         spentOn: date,
         category,
         note: note.trim() || null,
@@ -58,13 +69,11 @@ export function ExpenseForm({
           <label>
             Số tiền (đ)
             <input
-              required
               type="text"
               inputMode="numeric"
-              pattern="[0-9]+"
-              maxLength={10}
+              maxLength={20}
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount(sanitizeMoneyInput(e.target.value))}
             />
           </label>
           <p className="expense-muted">

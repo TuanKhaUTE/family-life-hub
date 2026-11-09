@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { familyDate } from '../meals/family-time'
 import {
   fetchPersonalExpenses,
@@ -11,6 +11,7 @@ import { formatVnd, EXPENSE_LABELS, expenseDate } from './expense-display'
 import { ExpenseSummary } from './ExpenseSummary'
 import { ExpenseForm } from './ExpenseForm'
 import { AppIcon } from '../../ui/AppIcon'
+import './expense-delete.css'
 export function PersonalExpenses() {
   const currentMonth = familyDate().slice(0, 7)
   const [month, setMonth] = useState(currentMonth),
@@ -22,13 +23,17 @@ export function PersonalExpenses() {
     [remove, setRemove] = useState<PersonalExpense | null>(null),
     [pending, setPending] = useState(false),
     [error, setError] = useState<string | null>(null),
-    [message, setMessage] = useState<string | null>(null)
+    [message, setMessage] = useState<string | null>(null),
+    [visibleCount, setVisibleCount] = useState(3)
+  const removeTrigger = useRef<HTMLButtonElement | null>(null)
+  const removeDialog = useRef<HTMLElement | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     void fetchPersonalExpenses(month, page, controller.signal)
       .then((view) => {
         if (!controller.signal.aborted) {
           setData(view)
+          setVisibleCount(3)
           setState('ready')
         }
       })
@@ -38,13 +43,30 @@ export function PersonalExpenses() {
     return () => controller.abort()
   }, [month, page, version])
   function refresh() {
+    setVisibleCount(3)
     setState('loading')
     setVersion((v) => v + 1)
   }
+  useEffect(() => {
+    if (!remove) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    removeDialog.current?.focus()
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRemove(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+      removeTrigger.current?.focus()
+    }
+  }, [remove])
   function saved(savedMonth: string) {
     setForm(null)
     setMonth(savedMonth)
     setPage(1)
+    setVisibleCount(3)
     setMessage('Đã lưu khoản chi của bạn.')
     refresh()
   }
@@ -82,6 +104,7 @@ export function PersonalExpenses() {
             if (!e.target.value) return
             setMonth(e.target.value)
             setPage(1)
+            setVisibleCount(3)
             setMessage(null)
             setError(null)
             setState('loading')
@@ -116,7 +139,7 @@ export function PersonalExpenses() {
               {message}
             </p>
           )}
-          {error && <p role="alert">{error}</p>}
+          {error && !remove && <p role="alert">{error}</p>}
           {form && (
             <ExpenseForm
               key={form.record?.id ?? 'new'}
@@ -126,24 +149,41 @@ export function PersonalExpenses() {
             />
           )}
           {remove && (
-            <section
-              className="expense-card"
-              role="dialog"
-              aria-label="Xác nhận xóa khoản chi"
+            <div
+              className="expense-delete-backdrop"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setRemove(null)
+              }}
             >
-              <p>
-                Xóa khoản chi {formatVnd(remove.amount)} ngày{' '}
-                {expenseDate(remove.spentOn)}? Không thể hoàn tác thao tác này.
-              </p>
-              <div className="expense-actions">
-                <button disabled={pending} onClick={() => setRemove(null)}>
-                  Giữ lại
-                </button>
-                <button disabled={pending} onClick={() => void confirmDelete()}>
-                  Đồng ý xóa khoản chi
-                </button>
-              </div>
-            </section>
+              <section
+                ref={removeDialog}
+                className="expense-delete-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="personal-expense-delete-title"
+                tabIndex={-1}
+              >
+                <h3 id="personal-expense-delete-title">Xóa khoản chi này?</h3>
+                <p>
+                  Bạn có chắc muốn xóa khoản chi {formatVnd(remove.amount)} ngày{' '}
+                  {expenseDate(remove.spentOn)}? Thao tác này không thể hoàn tác.
+                </p>
+                {error && <p role="alert">{error}</p>}
+                <div className="expense-actions expense-delete-actions">
+                  <button type="button" disabled={pending} onClick={() => setRemove(null)}>
+                    Giữ lại
+                  </button>
+                  <button
+                    type="button"
+                    className="expense-danger"
+                    disabled={pending}
+                    onClick={() => void confirmDelete()}
+                  >
+                    Xóa khoản chi
+                  </button>
+                </div>
+              </section>
+            </div>
           )}
           <ExpenseSummary
             summary={data.summary}
@@ -154,7 +194,13 @@ export function PersonalExpenses() {
             <h3>Gần đây</h3>
             {data.expenses.length ? (
               <ol className="expense-records">
-                {data.expenses.map((expense, i) => (
+                {[...data.expenses]
+                  .sort(
+                    (a, b) =>
+                      b.spentOn.localeCompare(a.spentOn) || b.id.localeCompare(a.id),
+                  )
+                  .slice(0, visibleCount)
+                  .map((expense, i) => (
                   <li key={expense.id}>
                     <div className="expense-row">
                       <strong>{formatVnd(expense.amount)}</strong>
@@ -179,7 +225,8 @@ export function PersonalExpenses() {
                       </button>
                       <button
                         aria-label={`Xóa khoản chi ${(page - 1) * 20 + i + 1}`}
-                        onClick={() => {
+                        onClick={(event) => {
+                          removeTrigger.current = event.currentTarget
                           setRemove(expense)
                           setError(null)
                         }}
@@ -188,12 +235,26 @@ export function PersonalExpenses() {
                       </button>
                     </div>
                   </li>
-                ))}
+                  ))}
               </ol>
             ) : (
               <p className="expense-muted">
                 Chưa có khoản chi nào trong tháng này.
               </p>
+            )}
+            {data.expenses.length > 3 && (
+              <div className="expense-actions">
+                {visibleCount < data.expenses.length && (
+                  <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + 3, data.expenses.length))}>
+                    Xem thêm khoản chi
+                  </button>
+                )}
+                {visibleCount > 3 && (
+                  <button type="button" onClick={() => setVisibleCount(3)}>
+                    Thu gọn
+                  </button>
+                )}
+              </div>
             )}
             <p className="expense-muted">
               Trang {data.page} · {data.totalCount} khoản chi trong tháng. Tổng

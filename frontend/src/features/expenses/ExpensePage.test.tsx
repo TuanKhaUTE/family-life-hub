@@ -11,6 +11,7 @@ import { AuthenticatedShell } from '../auth/AuthenticatedShell'
 import { ExpensePage } from './ExpensePage'
 import type { PersonalExpenseWorkspace } from './expense-api'
 import { familyDate } from '../meals/family-time'
+import { expenseDate } from './expense-display'
 
 const id = '11111111-1111-4111-8111-111111111111',
   today = familyDate(),
@@ -287,6 +288,38 @@ it('creates an expense with exact whole-dong money, refreshes totals and persist
   await ready()
   expect(screen.getByText('Khoản chi dùng thử')).toBeTruthy()
 })
+it('sanitizes pasted personal expense amounts before saving', async () => {
+  const calls = network()
+  render(<ExpensePage parent={false} />)
+  await ready()
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm chi tiêu' }))
+  const amount = screen.getByLabelText('Số tiền (đ)') as HTMLInputElement
+  fireEvent.change(amount, { target: { value: '85 000' } })
+  expect(amount.value).toBe('85000')
+  fireEvent.submit(screen.getByRole('form'))
+  await waitFor(() =>
+    expect(calls.some((call) => call.init?.method === 'POST')).toBe(true),
+  )
+  const write = calls.find((call) => call.init?.method === 'POST')!
+  expect(JSON.parse(String(write.init!.body)).amount).toBe('85000')
+})
+it.each(['', '0', '1000000001'])(
+  'rejects invalid personal expense amount %s with a Vietnamese message',
+  async (value) => {
+    const calls = network()
+    render(<ExpensePage parent={false} />)
+    await ready()
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm chi tiêu' }))
+    fireEvent.change(screen.getByLabelText('Số tiền (đ)'), {
+      target: { value },
+    })
+    fireEvent.submit(screen.getByRole('form'))
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Số tiền phải từ 1 đến 1.000.000.000 đ.',
+    )
+    expect(calls.some((call) => call.init?.method === 'POST')).toBe(false)
+  },
+)
 it('edits the saved identity and requires confirmation before deletion', async () => {
   const calls = network()
   render(<ExpensePage parent={false} />)
@@ -299,17 +332,66 @@ it('edits the saved identity and requires confirmation before deletion', async (
     `/api/expenses/personal/${id}`,
   )
   expect(screen.getByText('130.000 đ')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Xóa khoản chi 1' }))
+  const deleteAction = screen.getByRole('button', { name: 'Xóa khoản chi 1' })
+  fireEvent.click(deleteAction)
   expect(calls.some((c) => c.init?.method === 'DELETE')).toBe(false)
-  fireEvent.click(screen.getByRole('button', { name: 'Giữ lại' }))
+  const dialog = screen.getByRole('dialog', { name: 'Xóa khoản chi này?' })
+  expect(
+    dialog.textContent,
+  ).toContain(
+    `Bạn có chắc muốn xóa khoản chi 130.000 đ ngày ${expenseDate(today)}? Thao tác này không thể hoàn tác.`,
+  )
+  expect(document.body.style.overflow).toBe('hidden')
+  fireEvent.keyDown(document, { key: 'Escape' })
   expect(screen.queryByRole('dialog')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Xóa khoản chi 1' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Đồng ý xóa khoản chi' }))
+  expect(document.body.style.overflow).toBe('')
+  expect(document.activeElement).toBe(deleteAction)
+  fireEvent.click(deleteAction)
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: 'Xóa khoản chi này?' })).getByRole(
+      'button',
+      { name: 'Giữ lại' },
+    ),
+  )
+  expect(screen.queryByRole('dialog')).toBeNull()
+  fireEvent.click(deleteAction)
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: 'Xóa khoản chi này?' })).getByRole(
+      'button',
+      { name: 'Xóa khoản chi' },
+    ),
+  )
   await ready()
   expect(calls.find((c) => c.init?.method === 'DELETE')!.url).toBe(
     `/api/expenses/personal/${id}`,
   )
   expect(screen.queryByText('Khoản chi tổng hợp')).toBeNull()
+})
+it('keeps personal expense history compact, sorted and paginated', async () => {
+  const data = workspace()
+  data.totalCount = 25
+  data.hasMore = true
+  data.expenses = [1, 2, 3, 4, 5].map((index) => ({
+    id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    amount: `${index}00000`,
+    spentOn: `2026-11-0${index}`,
+    category: 'TRANSPORT' as const,
+    note: null,
+  }))
+  const calls = network(data)
+  render(<ExpensePage parent={false} />)
+  await ready()
+  const recent = screen.getByRole('region', { name: 'Khoản chi gần đây' })
+  expect(within(recent).getAllByRole('listitem')).toHaveLength(3)
+  expect(within(recent).getByText('500.000 đ')).toBeTruthy()
+  expect(within(recent).queryByText('100.000 đ')).toBeNull()
+  expect(within(recent).getByRole('button', { name: 'Trang sau' })).toBeTruthy()
+  fireEvent.click(within(recent).getByRole('button', { name: 'Xem thêm khoản chi' }))
+  expect(within(recent).getAllByRole('listitem')).toHaveLength(5)
+  expect(within(recent).getByText('100.000 đ')).toBeTruthy()
+  fireEvent.click(within(recent).getByRole('button', { name: 'Thu gọn' }))
+  expect(within(recent).getAllByRole('listitem')).toHaveLength(3)
+  expect(calls.some((call) => call.url.includes('page=1'))).toBe(true)
 })
 it('shows neutral month comparison and only actual category totals', async () => {
   network()

@@ -1,5 +1,6 @@
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   within,
@@ -10,6 +11,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { FamilyFoodExpenses } from './FamilyFoodExpenses'
 import { MealFoodCost } from './MealFoodCost'
 import { familyDate } from '../meals/family-time'
+import { expenseDate } from './expense-display'
 const id = '11111111-1111-4111-8111-111111111111'
 const today = familyDate(),
   month = today.slice(0, 7),
@@ -48,10 +50,10 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
-function api() {
+function api(data = view) {
   const fetcher = vi.fn(
     async (_url: unknown, init?: RequestInit) =>
-      new Response(init?.method ? null : JSON.stringify({ familyFood: view }), {
+      new Response(init?.method ? null : JSON.stringify({ familyFood: data }), {
         status: init?.method ? 204 : 200,
       }),
   )
@@ -112,12 +114,53 @@ it('Mom adds multiple items without guessed prices, collapses save, edits and co
   await user.click(screen.getByRole('button', { name: 'Lưu chi phí' }))
   await waitFor(() => expect(screen.queryByRole('form')).toBeNull())
   expect(f.mock.calls.some((c) => c[1]?.method === 'PUT')).toBe(true)
-  await user.click(screen.getByRole('button', { name: 'Xóa chi phí' }))
+  const deleteAction = screen.getByRole('button', { name: 'Xóa chi phí' })
+  await user.click(deleteAction)
   expect(f.mock.calls.some((c) => c[1]?.method === 'DELETE')).toBe(false)
-  await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+  const dialog = screen.getByRole('dialog', { name: 'Xóa chi phí này?' })
+  expect(
+    dialog.textContent,
+  ).toContain(
+    `Bạn có chắc muốn xóa chi phí ngày ${expenseDate(today)}? Thao tác này không thể hoàn tác.`,
+  )
+  expect(document.body.style.overflow).toBe('hidden')
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(document.body.style.overflow).toBe('')
+  expect(document.activeElement).toBe(deleteAction)
+  await user.click(deleteAction)
+  await user.click(
+    within(screen.getByRole('dialog', { name: 'Xóa chi phí này?' })).getByRole(
+      'button',
+      { name: 'Xóa chi phí' },
+    ),
+  )
   await waitFor(() =>
     expect(f.mock.calls.some((c) => c[1]?.method === 'DELETE')).toBe(true),
   )
+})
+it('keeps shared family-food history compact and newest-first for read-only members', async () => {
+  const records = [1, 2, 3, 4, 5].map((index) => ({
+    ...expense,
+    id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    mealDate: `2026-11-0${index}`,
+    items: [{ name: `Món ${index}`, amount: `${index}00000` }],
+    total: `${index}00000`,
+  }))
+  api({ ...view, expenses: records, totalCount: 5 })
+  render(<FamilyFoodExpenses parent={false} />)
+  await screen.findByRole('heading', { name: 'Các bữa ăn đã ghi' })
+  const section = screen.getByRole('heading', { name: 'Các bữa ăn đã ghi' }).closest('section') as HTMLElement
+  expect(section.querySelectorAll('.food-records > li')).toHaveLength(3)
+  expect(within(section).getByText('Món 5')).toBeTruthy()
+  expect(within(section).queryByText('Món 1')).toBeNull()
+  expect(within(section).queryByRole('button', { name: 'Sửa chi phí' })).toBeNull()
+  expect(within(section).getByRole('button', { name: 'Xem thêm chi phí' })).toBeTruthy()
+  await userEvent.click(within(section).getByRole('button', { name: 'Xem thêm chi phí' }))
+  expect(section.querySelectorAll('.food-records > li')).toHaveLength(5)
+  expect(within(section).getByText('Món 1')).toBeTruthy()
+  await userEvent.click(within(section).getByRole('button', { name: 'Thu gọn' }))
+  expect(section.querySelectorAll('.food-records > li')).toHaveLength(3)
 })
 it('Mom can quickly add and edit a standalone grocery expense', async () => {
   const f = api(),
@@ -125,7 +168,10 @@ it('Mom can quickly add and edit a standalone grocery expense', async () => {
   render(<FamilyFoodExpenses parent />)
   await screen.findByText('Soup')
   await user.click(screen.getByRole('button', { name: 'Thêm chi phí đi chợ' }))
-  await user.type(screen.getByLabelText('Số tiền'), '350000')
+  await user.type(screen.getByLabelText('Số tiền'), '350,000')
+  expect((screen.getByLabelText('Số tiền') as HTMLInputElement).value).toBe(
+    '350000',
+  )
   await user.type(screen.getByLabelText('Ghi chú (không bắt buộc)'), 'Thịt, rau, trứng')
   await user.click(screen.getByRole('button', { name: 'Lưu chi phí đi chợ' }))
   await waitFor(() => expect(screen.queryByRole('form')).toBeNull())
@@ -138,6 +184,36 @@ it('Mom can quickly add and edit a standalone grocery expense', async () => {
     amount: '350000',
     note: 'Thịt, rau, trứng',
   })
+})
+it('sanitizes meal item prices and rejects invalid amounts with a Vietnamese message', async () => {
+  const f = api()
+  render(<FamilyFoodExpenses parent />)
+  await screen.findByText('Soup')
+  await userEvent.click(screen.getByRole('button', { name: 'Thêm chi phí ăn uống' }))
+  await userEvent.type(screen.getByLabelText('Món / khoản chi 1'), 'Dish')
+  const price = screen.getByLabelText('Giá 1') as HTMLInputElement
+  fireEvent.change(price, { target: { value: '85.000' } })
+  expect(price.value).toBe('85000')
+  await userEvent.click(screen.getByRole('button', { name: 'Lưu chi phí' }))
+  await waitFor(() => expect(screen.queryByRole('form')).toBeNull())
+  const sent = JSON.parse(
+    f.mock.calls.find((call) => call[1]?.method === 'POST')![1]!.body as string,
+  )
+  expect(sent.items).toEqual([{ name: 'Dish', amount: '85000' }])
+
+  await userEvent.click(screen.getByRole('button', { name: 'Thêm chi phí ăn uống' }))
+  await userEvent.clear(screen.getByLabelText('Món / khoản chi 1'))
+  await userEvent.type(screen.getByLabelText('Món / khoản chi 1'), 'Dish')
+  fireEvent.change(screen.getByLabelText('Giá 1'), {
+    target: { value: '0' },
+  })
+  await userEvent.click(screen.getByRole('button', { name: 'Lưu chi phí' }))
+  expect((await screen.findByRole('alert')).textContent).toContain(
+    'Số tiền phải từ 1 đến 1.000.000.000 đ.',
+  )
+  expect(
+    f.mock.calls.filter((call) => call[1]?.method === 'POST'),
+  ).toHaveLength(1)
 })
 it('network failure is safe and retry restores real data', async () => {
   const f = api()

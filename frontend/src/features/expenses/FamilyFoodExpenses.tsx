@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { familyDate } from '../meals/family-time'
 import {
   fetchFood,
@@ -16,6 +16,7 @@ import { FoodExpenseForm } from './FoodExpenseForm'
 import { GroceryExpenseForm } from './GroceryExpenseForm'
 import { FoodIllustration } from '../../ui/Illustration'
 import './family-food.css'
+import './expense-delete.css'
 export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
   const [month, setMonth] = useState(() => familyDate().slice(0, 7)),
     [page, setPage] = useState(1),
@@ -27,13 +28,17 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
     [deleting, setDeleting] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    [visibleCount, setVisibleCount] = useState(3)
+  const deleteTrigger = useRef<HTMLButtonElement | null>(null)
+  const deleteDialog = useRef<HTMLElement | null>(null)
   useEffect(() => {
     const c = new AbortController()
     void fetchFood(month, page, c.signal)
       .then((d) => {
         if (!c.signal.aborted) {
           setData(d)
+          setVisibleCount(3)
           setState('ready')
         }
       })
@@ -42,12 +47,28 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
       })
     return () => c.abort()
   }, [month, page, reload])
+  useEffect(() => {
+    if (!deleting) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    deleteDialog.current?.focus()
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDeleting(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+      deleteTrigger.current?.focus()
+    }
+  }, [deleting])
   async function remove(id: string) {
     setBusy(true)
     setError('')
     try {
       await removeFood(id)
       setDeleting(null)
+      setVisibleCount(3)
       setMessage('Đã xóa chi phí bữa ăn.')
       setState('loading')
       setReload((v) => v + 1)
@@ -84,6 +105,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
               setMonth(e.target.value)
               setState('loading')
               setPage(1)
+              setVisibleCount(3)
               setEditing(undefined)
               setDeleting(null)
             }
@@ -153,7 +175,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
           {message}
         </p>
       )}
-      {error && <p role="alert">{error}</p>}
+      {error && !deleting && <p role="alert">{error}</p>}
       {state === 'loading' && (
         <p role="status">Đang xem tiền ăn của nhà mình…</p>
       )}
@@ -260,7 +282,13 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
               </>
             ) : (
               <ul className="food-records">
-                {data.expenses.map((e) => (
+                {[...data.expenses]
+                  .sort(
+                    (a, b) =>
+                      b.mealDate.localeCompare(a.mealDate) || b.id.localeCompare(a.id),
+                  )
+                  .slice(0, visibleCount)
+                  .map((e) => (
                   <li
                     className={
                       e.mealType === 'BREAKFAST'
@@ -285,34 +313,41 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                         >
                           Sửa chi phí
                         </button>
-                        <button onClick={() => setDeleting(e.id)}>
+                        <button
+                          onClick={(event) => {
+                            deleteTrigger.current = event.currentTarget
+                            setDeleting(e.id)
+                            setError('')
+                          }}
+                        >
                           Xóa chi phí
                         </button>
                       </div>
                     )}
-                    {parent && deleting === e.id && (
-                      <div role="group" aria-label="Xác nhận xóa chi phí">
-                        <p>
-                          Xóa chi phí bữa ăn này? Các khoản trong bữa cũng sẽ
-                          được xóa.
-                        </p>
-                        <button
-                          disabled={busy}
-                          onClick={() => void remove(e.id)}
-                        >
-                          Xác nhận xóa
-                        </button>
-                        <button
-                          disabled={busy}
-                          onClick={() => setDeleting(null)}
-                        >
-                          Giữ lại
-                        </button>
-                      </div>
-                    )}
                   </li>
-                ))}
+                  ))}
               </ul>
+            )}
+            {data.totalCount > 3 && (
+              <div className="expense-actions">
+                {visibleCount < data.expenses.length && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCount((count) =>
+                        Math.min(count + 3, data.expenses.length),
+                      )
+                    }
+                  >
+                    Xem thêm chi phí
+                  </button>
+                )}
+                {visibleCount > 3 && (
+                  <button type="button" onClick={() => setVisibleCount(3)}>
+                    Thu gọn
+                  </button>
+                )}
+              </div>
             )}
             <div className="expense-actions">
               {page > 1 && (
@@ -337,6 +372,47 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
               )}
             </div>
           </section>
+          {parent && deleting && data && (() => {
+            const expense = data.expenses.find((item) => item.id === deleting)
+            if (!expense) return null
+            return (
+              <div
+                className="expense-delete-backdrop"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) setDeleting(null)
+                }}
+              >
+                <section
+                  ref={deleteDialog}
+                  className="expense-delete-dialog"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="family-food-delete-title"
+                  tabIndex={-1}
+                >
+                  <h3 id="family-food-delete-title">Xóa chi phí này?</h3>
+                  <p>
+                    Bạn có chắc muốn xóa chi phí ngày {expenseDate(expense.mealDate)}?{' '}
+                    Thao tác này không thể hoàn tác.
+                  </p>
+                  {error && <p role="alert">{error}</p>}
+                  <div className="expense-actions expense-delete-actions">
+                    <button type="button" disabled={busy} onClick={() => setDeleting(null)}>
+                      Giữ lại
+                    </button>
+                    <button
+                      type="button"
+                      className="expense-danger"
+                      disabled={busy}
+                      onClick={() => void remove(expense.id)}
+                    >
+                      Xóa chi phí
+                    </button>
+                  </div>
+                </section>
+              </div>
+            )
+          })()}
         </>
       )}
     </div>
