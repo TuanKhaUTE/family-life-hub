@@ -31,6 +31,35 @@ const view = {
     dinnerTotal: '170000',
   },
 }
+const zeroView = {
+  ...view,
+  totalCount: 0,
+  hasMore: false,
+  expenses: [],
+  summary: {
+    ...view.summary,
+    currentTotal: '0',
+    previousTotal: '0',
+    differenceAmount: '0',
+    percentageChange: null,
+    breakfastTotal: '0',
+    dinnerTotal: '0',
+    groceriesTotal: '0',
+    categories: [
+      { category: 'BREAKFAST' as const, amount: '0' },
+      { category: 'DINNER' as const, amount: '0' },
+      { category: 'GROCERIES' as const, amount: '0' },
+    ],
+    dailyTrend: Array.from({ length: 31 }, (_, index) => ({
+      date: `2026-10-${String(index + 1).padStart(2, '0')}`,
+      amount: '0',
+    })),
+    monthlyTrend: Array.from({ length: 6 }, (_, index) => ({
+      month: `2026-${String(index + 5).padStart(2, '0')}`,
+      amount: '0',
+    })),
+  },
+}
 afterEach(() => vi.unstubAllGlobals())
 it('uses session REST only and projects item snapshots without private metadata', async () => {
   const f = vi.fn(
@@ -53,7 +82,7 @@ it('uses session REST only and projects item snapshots without private metadata'
     expect.objectContaining({ credentials: 'same-origin', signal }),
   )
 })
-it('parses grocery records and exact category/day/month trend totals', async () => {
+it('parses grocery records without a mealType and exact category/day/month totals', async () => {
   const f = vi.fn(async () =>
     new Response(
       JSON.stringify({
@@ -63,28 +92,27 @@ it('parses grocery records and exact category/day/month trend totals', async () 
             {
               id: expense.id,
               mealDate: expense.mealDate,
-              mealType: null,
               category: 'GROCERIES',
-              amount: '350000',
+              amount: '420000',
               note: 'Thịt, rau, trứng',
-              total: '350000',
+              total: '420000',
             },
           ],
           summary: {
             ...view.summary,
-            currentTotal: '350000',
+            currentTotal: '420000',
             previousTotal: '0',
-            differenceAmount: '350000',
-            groceriesTotal: '350000',
+            differenceAmount: '420000',
+            groceriesTotal: '420000',
             breakfastTotal: '0',
             dinnerTotal: '0',
             categories: [
               { category: 'BREAKFAST', amount: '0' },
               { category: 'DINNER', amount: '0' },
-              { category: 'GROCERIES', amount: '350000' },
+              { category: 'GROCERIES', amount: '420000' },
             ],
-            dailyTrend: [{ date: expense.mealDate, amount: '350000' }],
-            monthlyTrend: [{ month: '2026-10', amount: '350000' }],
+            dailyTrend: [{ date: expense.mealDate, amount: '420000' }],
+            monthlyTrend: [{ month: '2026-10', amount: '420000' }],
           },
         },
       }),
@@ -95,15 +123,83 @@ it('parses grocery records and exact category/day/month trend totals', async () 
   expect(result.expenses[0]).toMatchObject({
     category: 'GROCERIES',
     mealType: null,
-    total: '350000',
+    total: '420000',
   })
   expect(result.summary.categories?.[2]).toEqual({
     category: 'GROCERIES',
-    amount: '350000',
+    amount: '420000',
   })
   expect(result.summary.dailyTrend).toEqual([
-    { date: expense.mealDate, amount: '350000' },
+    { date: expense.mealDate, amount: '420000' },
   ])
+})
+it('accepts null mealType for GROCERIES but rejects a meal type string', async () => {
+  const grocery = {
+    id: expense.id,
+    mealDate: '2026-11-09',
+    category: 'GROCERIES',
+    amount: '420000',
+    note: null,
+    total: '420000',
+  }
+  const summary = {
+    ...view.summary,
+    currentTotal: '420000',
+    differenceAmount: '420000',
+    groceriesTotal: '420000',
+    breakfastTotal: '0',
+    dinnerTotal: '0',
+    categories: [
+      { category: 'BREAKFAST' as const, amount: '0' },
+      { category: 'DINNER' as const, amount: '0' },
+      { category: 'GROCERIES' as const, amount: '420000' },
+    ],
+    dailyTrend: [{ date: grocery.mealDate, amount: '420000' }],
+    monthlyTrend: [{ month: '2026-11', amount: '420000' }],
+  }
+  const makeResponse = (mealType: null | 'DINNER') => ({
+    familyFood: {
+      ...view,
+      month: '2026-11',
+      expenses: [{ ...grocery, mealType }],
+      summary: { ...summary, previousMonth: '2026-10' },
+    },
+  })
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify(makeResponse(null)))),
+  )
+  await expect(fetchFood('2026-11', 1, new AbortController().signal)).resolves.toMatchObject({
+    expenses: [{ category: 'GROCERIES', mealType: null, total: '420000' }],
+  })
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify(makeResponse('DINNER')))),
+  )
+  await expect(
+    fetchFood('2026-11', 1, new AbortController().signal),
+  ).rejects.toThrow('Invalid grocery expense')
+})
+it('accepts the canonical empty family-food workspace without FOOD_UNAVAILABLE', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      new Response(JSON.stringify({ familyFood: zeroView })),
+    ),
+  )
+  await expect(fetchFood('2026-10', 1, new AbortController().signal)).resolves.toMatchObject({
+    month: '2026-10',
+    totalCount: 0,
+    expenses: [],
+    summary: expect.objectContaining({
+      currentTotal: '0',
+      previousTotal: '0',
+      groceriesTotal: '0',
+      categories: zeroView.summary.categories,
+      dailyTrend: zeroView.summary.dailyTrend,
+      monthlyTrend: zeroView.summary.monthlyTrend,
+    }),
+  })
 })
 it.each([
   { ...view, summary: { ...view.summary, currentTotal: '170001' } },

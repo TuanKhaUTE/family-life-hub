@@ -25,6 +25,28 @@ const input = {
     { name: 'Soup', amount: '70000' },
   ],
 }
+const zeroFoodRead = {
+  expenses: [],
+  totalCount: 0,
+  currentTotal: '0',
+  previousTotal: '0',
+  breakfastTotal: '0',
+  dinnerTotal: '0',
+  groceriesTotal: '0',
+  categories: [
+    { category: 'BREAKFAST' as const, amount: '0' },
+    { category: 'DINNER' as const, amount: '0' },
+    { category: 'GROCERIES' as const, amount: '0' },
+  ],
+  dailyTrend: Array.from({ length: 31 }, (_, index) => ({
+    date: `2026-10-${String(index + 1).padStart(2, '0')}`,
+    amount: '0',
+  })),
+  monthlyTrend: Array.from({ length: 6 }, (_, index) => ({
+    month: `2026-${String(index + 5).padStart(2, '0')}`,
+    amount: '0',
+  })),
+}
 function setup(role: SafeFamilyProfile['role'] = 'PARENT') {
   const actor = {
     id,
@@ -92,6 +114,34 @@ it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
     })
     expect(res.headers['cache-control']).toBe('no-store')
     expect(s.repository.read).toHaveBeenCalledWith(id, '2026-10', 1)
+  },
+)
+it.each(['PARENT', 'ADMIN', 'MEMBER'] as const)(
+  '%s reads the canonical empty shared family-food workspace',
+  async (role) => {
+    const s = setup(role)
+    vi.mocked(s.repository.read).mockResolvedValue(zeroFoodRead)
+    const res = await request(s.app).get('/food?month=2026-10&page=1')
+    expect(res.status).toBe(200)
+    expect(res.body.familyFood).toMatchObject({
+      month: '2026-10',
+      page: 1,
+      totalCount: 0,
+      hasMore: false,
+      expenses: [],
+      summary: {
+        currentTotal: '0',
+        previousTotal: '0',
+        breakfastTotal: '0',
+        dinnerTotal: '0',
+        groceriesTotal: '0',
+        categories: zeroFoodRead.categories,
+        dailyTrend: zeroFoodRead.dailyTrend,
+        monthlyTrend: zeroFoodRead.monthlyTrend,
+        differenceAmount: '0',
+        percentageChange: null,
+      },
+    })
   },
 )
 it('PARENT creates, edits and deletes itemized meals with normalized inputs', async () => {
@@ -323,4 +373,11 @@ it('repository validates exact totals and whitelists database rows', async () =>
   await expect(repo.read(id, '2026-10', 1)).rejects.toThrow(
     'Invalid food summary',
   )
+})
+it('repository accepts the canonical empty family-food RPC response', async () => {
+  const rpc = vi.fn(async () => ({ data: zeroFoodRead, error: null }))
+  const repo = new SupabaseFamilyFoodRepository(
+    () => ({ rpc }) as unknown as SupabaseClient,
+  )
+  await expect(repo.read(id, '2026-10', 1)).resolves.toEqual(zeroFoodRead)
 })

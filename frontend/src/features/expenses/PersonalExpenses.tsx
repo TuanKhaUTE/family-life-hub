@@ -33,7 +33,6 @@ export function PersonalExpenses() {
       .then((view) => {
         if (!controller.signal.aborted) {
           setData(view)
-          setVisibleCount(3)
           setState('ready')
         }
       })
@@ -42,8 +41,8 @@ export function PersonalExpenses() {
       })
     return () => controller.abort()
   }, [month, page, version])
-  function refresh() {
-    setVisibleCount(3)
+  function refresh(resetHistory = true) {
+    if (resetHistory) setVisibleCount(3)
     setState('loading')
     setVersion((v) => v + 1)
   }
@@ -62,13 +61,16 @@ export function PersonalExpenses() {
       removeTrigger.current?.focus()
     }
   }, [remove])
-  function saved(savedMonth: string) {
+  function saved(savedMonth: string, editedId: string | null) {
+    const preservingContext = editedId !== null && savedMonth === month
     setForm(null)
     setMonth(savedMonth)
-    setPage(1)
-    setVisibleCount(3)
+    if (!preservingContext) {
+      setPage(1)
+      setVisibleCount(3)
+    }
     setMessage('Đã lưu khoản chi của bạn.')
-    refresh()
+    refresh(!preservingContext)
   }
   async function confirmDelete() {
     if (!remove || pending) return
@@ -119,7 +121,7 @@ export function PersonalExpenses() {
       {state === 'error' && (
         <div>
           <p role="alert">Chưa tải được chi tiêu. Bạn thử lại nhé.</p>
-          <button onClick={refresh}>Thử lại chi tiêu</button>
+          <button onClick={() => refresh()}>Thử lại chi tiêu</button>
         </div>
       )}
       {state === 'ready' && data && (
@@ -140,12 +142,12 @@ export function PersonalExpenses() {
             </p>
           )}
           {error && !remove && <p role="alert">{error}</p>}
-          {form && (
+          {form?.record === null && (
             <ExpenseForm
-              key={form.record?.id ?? 'new'}
-              record={form.record}
+              key="new"
+              record={null}
               onClose={() => setForm(null)}
-              onSaved={saved}
+              onSaved={(savedMonth) => saved(savedMonth, null)}
             />
           )}
           {remove && (
@@ -234,6 +236,16 @@ export function PersonalExpenses() {
                         Xóa
                       </button>
                     </div>
+                    {form?.record?.id === expense.id && (
+                      <ExpenseForm
+                        key={expense.id}
+                        record={form.record}
+                        onClose={() => setForm(null)}
+                        onSaved={(savedMonth) =>
+                          saved(savedMonth, form.record?.id ?? null)
+                        }
+                      />
+                    )}
                   </li>
                   ))}
               </ol>
@@ -249,7 +261,7 @@ export function PersonalExpenses() {
                     Xem thêm khoản chi
                   </button>
                 )}
-                {visibleCount > 3 && (
+                {visibleCount > 3 && !form?.record && (
                   <button type="button" onClick={() => setVisibleCount(3)}>
                     Thu gọn
                   </button>
@@ -265,6 +277,7 @@ export function PersonalExpenses() {
                 <button
                   disabled={page === 1 || !!form || pending}
                   onClick={() => {
+                    setVisibleCount(3)
                     setPage((p) => p - 1)
                     setState('loading')
                   }}
@@ -274,6 +287,7 @@ export function PersonalExpenses() {
                 <button
                   disabled={!data.hasMore || !!form || pending}
                   onClick={() => {
+                    setVisibleCount(3)
                     setPage((p) => p + 1)
                     setState('loading')
                   }}

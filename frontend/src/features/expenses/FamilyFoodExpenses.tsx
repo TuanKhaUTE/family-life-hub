@@ -38,7 +38,6 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
       .then((d) => {
         if (!c.signal.aborted) {
           setData(d)
-          setVisibleCount(3)
           setState('ready')
         }
       })
@@ -77,6 +76,52 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
     } finally {
       setBusy(false)
     }
+  }
+  function cancelEditing() {
+    setEditing(undefined)
+    setEditingKind('MEAL')
+  }
+  function savedEditing(
+    date: string,
+    existingId: string | null,
+    kind: 'MEAL' | 'GROCERIES',
+  ) {
+    const preservingContext =
+      existingId !== null && date.slice(0, 7) === month
+    setEditing(undefined)
+    setEditingKind('MEAL')
+    setState('loading')
+    setMonth(date.slice(0, 7))
+    if (!preservingContext) {
+      setPage(1)
+      setVisibleCount(3)
+    }
+    setReload((v) => v + 1)
+    setMessage(
+      kind === 'GROCERIES'
+        ? 'Đã lưu chi phí đi chợ.'
+        : 'Đã lưu chi phí bữa ăn.',
+    )
+  }
+  function renderEditor(record: FoodExpense | null, existingId: string | null) {
+    if (editingKind === 'GROCERIES') {
+      return (
+        <GroceryExpenseForm
+          key={record?.id ?? 'new-grocery'}
+          existing={record}
+          onCancel={cancelEditing}
+          onSaved={(date) => savedEditing(date, existingId, 'GROCERIES')}
+        />
+      )
+    }
+    return (
+      <FoodExpenseForm
+        key={record?.id ?? 'new-meal'}
+        existing={record}
+        onCancel={cancelEditing}
+        onSaved={(date) => savedEditing(date, existingId, 'MEAL')}
+      />
+    )
   }
   return (
     <div className="family-food">
@@ -135,41 +180,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
           </button>
         </div>
       )}
-      {parent && editing !== undefined && (
-        editingKind === 'GROCERIES' ? (
-          <GroceryExpenseForm
-            key={editing?.id ?? 'new-grocery'}
-            existing={editing}
-            onCancel={() => {
-              setEditing(undefined)
-              setEditingKind('MEAL')
-            }}
-            onSaved={(date) => {
-              setEditing(undefined)
-              setEditingKind('MEAL')
-              setState('loading')
-              setMonth(date.slice(0, 7))
-              setPage(1)
-              setReload((v) => v + 1)
-              setMessage('Đã lưu chi phí đi chợ.')
-            }}
-          />
-        ) : (
-          <FoodExpenseForm
-            key={editing?.id ?? 'new'}
-            existing={editing}
-            onCancel={() => setEditing(undefined)}
-            onSaved={(date) => {
-              setEditing(undefined)
-              setState('loading')
-              setMonth(date.slice(0, 7))
-              setPage(1)
-              setReload((v) => v + 1)
-              setMessage('Đã lưu chi phí bữa ăn.')
-            }}
-          />
-        )
-      )}
+      {parent && editing === null && renderEditor(null, null)}
       {message && (
         <p role="status" className="expense-message">
           {message}
@@ -324,6 +335,8 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                         </button>
                       </div>
                     )}
+                    {parent && editing?.id === e.id &&
+                      renderEditor(editing, e.id)}
                   </li>
                   ))}
               </ul>
@@ -342,7 +355,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
                     Xem thêm chi phí
                   </button>
                 )}
-                {visibleCount > 3 && (
+                {visibleCount > 3 && !editing && (
                   <button type="button" onClick={() => setVisibleCount(3)}>
                     Thu gọn
                   </button>
@@ -353,6 +366,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
               {page > 1 && (
                 <button
                   onClick={() => {
+                    setVisibleCount(3)
                     setState('loading')
                     setPage((p) => p - 1)
                   }}
@@ -363,6 +377,7 @@ export function FamilyFoodExpenses({ parent }: { parent: boolean }) {
               {data.hasMore && (
                 <button
                   onClick={() => {
+                    setVisibleCount(3)
                     setState('loading')
                     setPage((p) => p + 1)
                   }}

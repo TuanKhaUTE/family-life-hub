@@ -367,6 +367,45 @@ it('edits the saved identity and requires confirmation before deletion', async (
   )
   expect(screen.queryByText('Khoản chi tổng hợp')).toBeNull()
 })
+it('opens personal edits inline at the selected record and keeps one editor', async () => {
+  const data = workspace()
+  data.totalCount = 5
+  data.expenses = [1, 2, 3, 4, 5].map((index) => ({
+    id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    amount: `${index}00000`,
+    spentOn: `2026-11-${String(12 - index).padStart(2, '0')}`,
+    category: 'TRANSPORT' as const,
+    note: `Khoản chi ${index}`,
+  }))
+  const calls = network(data)
+  render(<ExpensePage parent={false} />)
+  await ready()
+  const recent = screen.getByRole('region', { name: 'Khoản chi gần đây' })
+  fireEvent.click(
+    within(recent).getByRole('button', { name: 'Xem thêm khoản chi' }),
+  )
+  expect(within(recent).getAllByRole('listitem')).toHaveLength(5)
+  const second = within(recent).getByRole('button', {
+    name: 'Sửa khoản chi 2',
+  })
+  const secondRecord = second.closest('li') as HTMLElement
+  fireEvent.click(second)
+  expect(within(secondRecord).getByRole('form', { name: 'Khoản chi cá nhân' })).toBeTruthy()
+  expect(within(recent).getAllByRole('form')).toHaveLength(1)
+  expect(within(recent).getAllByRole('listitem')).toHaveLength(5)
+  const third = within(recent).getByRole('button', {
+    name: 'Sửa khoản chi 3',
+  })
+  const thirdRecord = third.closest('li') as HTMLElement
+  fireEvent.click(third)
+  expect(within(secondRecord).queryByRole('form')).toBeNull()
+  expect(within(thirdRecord).getByRole('form', { name: 'Khoản chi cá nhân' })).toBeTruthy()
+  fireEvent.click(
+    within(thirdRecord).getByRole('button', { name: 'Đóng biểu mẫu chi tiêu' }),
+  )
+  expect(within(recent).queryByRole('form')).toBeNull()
+  expect(calls.some((call) => call.init?.method === 'PUT')).toBe(false)
+})
 it('keeps personal expense history compact, sorted and paginated', async () => {
   const data = workspace()
   data.totalCount = 25

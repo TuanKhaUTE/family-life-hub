@@ -15,6 +15,9 @@ import { expenseDate } from './expense-display'
 const id = '11111111-1111-4111-8111-111111111111'
 const today = familyDate(),
   month = today.slice(0, 7),
+  daysInMonth = new Date(
+    Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0),
+  ).getUTCDate(),
   priorDate = new Date(month + '-01T12:00:00Z')
 priorDate.setUTCMonth(priorDate.getUTCMonth() - 1)
 const expense = {
@@ -50,7 +53,7 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
-function api(data = view) {
+function api(data: unknown = view) {
   const fetcher = vi.fn(
     async (_url: unknown, init?: RequestInit) =>
       new Response(init?.method ? null : JSON.stringify({ familyFood: data }), {
@@ -70,6 +73,63 @@ it('Mom sees item prices, exact totals, breakdown and comparison', async () => {
   expect(
     screen.getByRole('button', { name: 'Thêm chi phí ăn uống' }),
   ).toBeTruthy()
+})
+it('renders the real populated grocery response shape without a read error', async () => {
+  const breakfast = {
+    ...expense,
+    id: '22222222-2222-4222-8222-222222222222',
+    mealDate: '2026-11-08',
+    mealType: 'BREAKFAST',
+    category: 'BREAKFAST',
+    items: [{ name: 'Bữa sáng', amount: '65000' }],
+    total: '65000',
+  }
+  const dinner = {
+    ...expense,
+    id: '33333333-3333-4333-8333-333333333333',
+    mealDate: '2026-11-07',
+    mealType: 'DINNER',
+    category: 'DINNER',
+  }
+  const groceries = {
+    id: '44444444-4444-4444-8444-444444444444',
+    mealDate: '2026-11-09',
+    category: 'GROCERIES',
+    amount: '420000',
+    note: 'Thịt, rau, trứng',
+    total: '420000',
+  }
+  api({
+    ...view,
+    month: '2026-11',
+    totalCount: 3,
+    expenses: [breakfast, dinner, groceries],
+    summary: {
+      ...view.summary,
+      currentTotal: '665000',
+      previousTotal: '0',
+      previousMonth: '2026-10',
+      differenceAmount: '665000',
+      percentageChange: null,
+      breakfastTotal: '65000',
+      dinnerTotal: '180000',
+      groceriesTotal: '420000',
+      categories: [
+        { category: 'BREAKFAST', amount: '65000' },
+        { category: 'DINNER', amount: '180000' },
+        { category: 'GROCERIES', amount: '420000' },
+      ],
+      dailyTrend: [{ date: '2026-11-09', amount: '420000' }],
+      monthlyTrend: [{ month: '2026-11', amount: '665000' }],
+    },
+  })
+  render(<FamilyFoodExpenses parent />)
+  const totals = await screen.findByRole('region', { name: 'Tổng tiền ăn' })
+  expect(totals.querySelector('.expense-total')?.textContent).toBe('665.000 đ')
+  expect(totals.querySelector('.food-breakfast')?.textContent).toContain('65.000 đ')
+  expect(totals.querySelector('.food-dinner')?.textContent).toContain('180.000 đ')
+  expect(totals.querySelector('.food-groceries')?.textContent).toContain('420.000 đ')
+  expect(screen.queryByText('Chưa xem được tiền ăn gia đình. Bạn thử lại nhé.')).toBeNull()
 })
 it.each([false])(
   'shared read-only view exposes no mutation controls',
@@ -185,6 +245,81 @@ it('Mom can quickly add and edit a standalone grocery expense', async () => {
     note: 'Thịt, rau, trứng',
   })
 })
+it('Mom edits breakfast, dinner and groceries inline with one active editor', async () => {
+  const breakfast = {
+    ...expense,
+    id: '22222222-2222-4222-8222-222222222222',
+    mealDate: '2026-11-09',
+    mealType: 'BREAKFAST' as const,
+    category: 'BREAKFAST' as const,
+    items: [{ name: 'Bữa sáng', amount: '65000' }],
+    total: '65000',
+  }
+  const groceries = {
+    id: '44444444-4444-4444-8444-444444444444',
+    mealDate: '2026-11-08',
+    category: 'GROCERIES' as const,
+    amount: '420000',
+    note: 'Thịt, rau, trứng',
+    total: '420000',
+  }
+  const dinner = { ...expense, mealDate: '2026-11-10' }
+  const f = api({
+    ...view,
+    totalCount: 3,
+    expenses: [breakfast, dinner, groceries],
+    summary: {
+      ...view.summary,
+      currentTotal: '655000',
+      previousTotal: '0',
+      differenceAmount: '655000',
+      percentageChange: null,
+      breakfastTotal: '65000',
+      dinnerTotal: '170000',
+      groceriesTotal: '420000',
+      categories: [
+        { category: 'BREAKFAST', amount: '65000' },
+        { category: 'DINNER', amount: '170000' },
+        { category: 'GROCERIES', amount: '420000' },
+      ],
+    },
+  })
+  const user = userEvent.setup()
+  render(<FamilyFoodExpenses parent />)
+  const section = (await screen
+    .findByRole('heading', { name: 'Các bữa ăn đã ghi' }))
+    .closest('section') as HTMLElement
+  const breakfastRecord = within(section)
+    .getAllByRole('heading', { level: 4 })
+    .find((heading) => heading.textContent?.includes('Bữa sáng'))!
+    .closest('li') as HTMLElement
+  const dinnerRecord = within(section)
+    .getAllByRole('heading', { level: 4 })
+    .find((heading) => heading.textContent?.includes('Bữa tối'))!
+    .closest('li') as HTMLElement
+  const groceryRecord = within(section)
+    .getAllByRole('heading', { level: 4 })
+    .find((heading) => heading.textContent?.includes('Đi chợ / nguyên liệu'))!
+    .closest('li') as HTMLElement
+  await user.click(within(breakfastRecord).getByRole('button', { name: 'Sửa chi phí' }))
+  expect(within(breakfastRecord).getByRole('form', { name: 'Chi phí bữa ăn' })).toBeTruthy()
+  expect(within(section).getAllByRole('form')).toHaveLength(1)
+  await user.click(within(dinnerRecord).getByRole('button', { name: 'Sửa chi phí' }))
+  expect(within(breakfastRecord).queryByRole('form')).toBeNull()
+  expect(within(dinnerRecord).getByRole('form', { name: 'Chi phí bữa ăn' })).toBeTruthy()
+  await user.click(
+    within(dinnerRecord).getByRole('button', { name: 'Đóng biểu mẫu' }),
+  )
+  expect(within(section).queryByRole('form')).toBeNull()
+  await user.click(within(groceryRecord).getByRole('button', { name: 'Sửa chi phí' }))
+  expect(within(dinnerRecord).queryByRole('form')).toBeNull()
+  expect(within(groceryRecord).getByRole('form', { name: 'Chi phí đi chợ' })).toBeTruthy()
+  await user.click(
+    within(groceryRecord).getByRole('button', { name: 'Lưu chi phí đi chợ' }),
+  )
+  await waitFor(() => expect(screen.queryByRole('form')).toBeNull())
+  expect(f.mock.calls.some((call) => call[1]?.method === 'PUT')).toBe(true)
+})
 it('sanitizes meal item prices and rejects invalid amounts with a Vietnamese message', async () => {
   const f = api()
   render(<FamilyFoodExpenses parent />)
@@ -256,6 +391,20 @@ it.each([true, false])(
                   percentageChange: null,
                   breakfastTotal: '0',
                   dinnerTotal: '0',
+                  groceriesTotal: '0',
+                  categories: [
+                    { category: 'BREAKFAST', amount: '0' },
+                    { category: 'DINNER', amount: '0' },
+                    { category: 'GROCERIES', amount: '0' },
+                  ],
+                  dailyTrend: Array.from({ length: daysInMonth }, (_, index) => ({
+                    date: `${month}-${String(index + 1).padStart(2, '0')}`,
+                    amount: '0',
+                  })),
+                  monthlyTrend: Array.from({ length: 6 }, (_, index) => ({
+                    month: `2026-${String(index + 5).padStart(2, '0')}`,
+                    amount: '0',
+                  })),
                 },
               },
             }),

@@ -91,7 +91,7 @@ function parseExpense(v: unknown): FoodExpense {
     throw new Error('Invalid food expense')
   if (v.category === 'GROCERIES') {
     if (
-      v.mealType !== null ||
+      (v.mealType !== undefined && v.mealType !== null) ||
       !(v.note === null || typeof v.note === 'string') ||
       !money(v.amount) ||
       !money(v.total) ||
