@@ -8,6 +8,44 @@
   gap: 0.65rem;
   min-width: 0;
 }
+.final-meal-section .final-dishes > li {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+.final-meal-section .final-dishes > li > .dish-feedback-card {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  align-items: start;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.final-meal-section .dish-feedback-card > .food-illustration {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 2.3rem;
+}
+.final-meal-section .dish-feedback-card > .dish-category,
+.final-meal-section .dish-feedback-card > strong {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.final-meal-section .dish-feedback-card > .dish-category {
+  grid-row: 1;
+}
+.final-meal-section .dish-feedback-card > strong {
+  grid-row: 2;
+}
+.final-meal-section
+  .dish-feedback-card
+  > :is(.member-dish-summary, .dish-rating-form, .parent-dish-feedback) {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
 .dish-feedback p {
   margin: 0;
   white-space: pre-wrap;
@@ -71,7 +109,11 @@
   box-shadow: var(--shadow-soft);
 }
 .member-dish-summary button {
-  justify-self: start;
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .dish-rating-form button {
   min-height: 44px;

@@ -153,6 +153,10 @@ describe('daily dinner finalization', () => {
       ).toBe(false)
       await user.click(button)
       const dialog = screen.getByRole('dialog')
+      expect(dialog.classList.contains('meal-feedback-sheet--scrollable')).toBe(
+        true,
+      )
+      expect(document.body.style.overflow).toBe('hidden')
       expect(await within(dialog).findByText('Cơm gà rô ti')).toBeTruthy()
       if (role === 'PARENT')
         expect(

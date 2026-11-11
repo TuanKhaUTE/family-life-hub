@@ -43,12 +43,27 @@
 .meal-feedback-sheet.final-meal-section {
   margin: 0;
   width: min(100%, 42rem);
+  height: 90vh;
+  height: 90dvh;
+  min-width: 0;
+  min-height: 0;
   max-height: 90dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   border-radius: 1.5rem 1.5rem 0 0;
   padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
   box-sizing: border-box;
+  background: #fff9f3;
+}
+.meal-feedback-sheet--scrollable .meal-feedback-header {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
+  margin-inline: -1rem;
+  padding: 1rem;
   background: #fff9f3;
 }
 .meal-feedback-header {

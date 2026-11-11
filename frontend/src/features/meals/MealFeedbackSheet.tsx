@@ -34,7 +34,7 @@ export function MealFeedbackSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="meal-feedback-sheet final-meal-section"
+        className="meal-feedback-sheet meal-feedback-sheet--scrollable final-meal-section"
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
