@@ -77,12 +77,6 @@ export function PersonalPage({
         <button className="expense-primary" onClick={onExpenses}>
           Mở chi tiêu cá nhân
         </button>
-        <button
-          className="personal-shortcut"
-          onClick={onExpenses}
-        >
-          Mở chi tiêu cá nhân
-        </button>
       </section>
       <div id="personal-received">
         <ReceivedShares />

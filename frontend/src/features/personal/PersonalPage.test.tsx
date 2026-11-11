@@ -427,10 +427,10 @@ it.each(['MEMBER', 'PARENT'] as const)(
     ).toBeTruthy()
     expect(screen.queryByText('Quản lý mã PIN gia đình')).toBeNull()
     const u = userEvent.setup()
-    const shortcuts = screen.getAllByRole('button', {
-      name: 'Mở chi tiêu cá nhân',
-    })
-    await u.click(shortcuts[shortcuts.length - 1])
+    expect(
+      screen.getAllByRole('button', { name: 'Mở chi tiêu cá nhân' }),
+    ).toHaveLength(1)
+    await u.click(screen.getByRole('button', { name: 'Mở chi tiêu cá nhân' }))
     expect(expenses).toHaveBeenCalled()
   },
 )
