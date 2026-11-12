@@ -1,0 +1,19 @@
+{
+  "name": "family-life-hub",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "npm@10.9.3",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace family-life-hub-frontend",
+    "build:frontend": "npm run build --workspace family-life-hub-frontend",
+    "build:backend": "npm run build --workspace family-life-hub-backend"
+  }
+}

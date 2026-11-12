@@ -130,3 +130,11 @@ npm run dev
 The frontend runs at `http://localhost:5174` and proxies `/api` requests to
 the backend at `http://localhost:3001` by default. Copy either `.env.example`
 to `.env` when local port or origin overrides are needed.
+
+## Production deployment
+
+The repository is prepared for a single-root Vercel deployment: Vercel builds
+`frontend/`, serves its PWA assets, and routes `/api/*` to the existing
+Express app through `api/[...path].ts`. See
+`docs/deployment/vercel.md` for the required dashboard settings and server-only
+environment variables.

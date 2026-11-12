@@ -15,6 +15,9 @@ coverage/
 # Tool caches
 *.tsbuildinfo
 
+# Vercel local project metadata
+.vercel/
+
 # Editor and operating system files
 .DS_Store
 Thumbs.db

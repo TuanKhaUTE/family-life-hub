@@ -1,6 +1,6 @@
 import express from 'express'
 import request from 'supertest'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { SESSION_COOKIE_NAME } from '../src/http/session-cookie.js'
 import { errorHandler } from '../src/middleware/error-handler.js'
@@ -26,6 +26,15 @@ const memberId = '11111111-1111-4111-8111-111111111111'
 const syntheticPin = '123456'
 const syntheticHash = '$argon2id$synthetic-test-hash-value'
 const now = new Date('2026-10-21T00:00:00.000Z')
+
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(now)
+})
+
+afterAll(() => {
+  vi.useRealTimers()
+})
 
 const profile: SafeFamilyProfile = {
   id: memberId,
