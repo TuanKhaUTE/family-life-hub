@@ -34,6 +34,19 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
     occurrenceOnly: boolean
   } | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  useEffect(() => {
+    if (!form?.item) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setForm(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [form?.item])
   const { from, to } =
     view === 'WEEK' ? weekRange(date) : { from: date, to: date }
   useEffect(() => {
@@ -221,9 +234,9 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
           {message}
         </p>
       )}
-      {form && (
+      {form && !form.item && (
         <CalendarForm
-          key={`${form.item?.event.id ?? 'new'}:${form.occurrenceOnly}`}
+          key={`new:${form.occurrenceOnly}`}
           date={date}
           item={form.item}
           occurrenceOnly={form.occurrenceOnly}
@@ -236,19 +249,6 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
             setMemberId(profile.id)
             changed('Đã lưu lịch của bạn.')
           }}
-        />
-      )}
-      {!form && selected && (
-        <CalendarDetails
-          key={`${selected.event.id}:${selected.date}`}
-          item={selected}
-          memberId={profile.id}
-          onClose={() => setSelected(null)}
-          onEdit={(occurrenceOnly) => {
-            setForm({ item: selected, occurrenceOnly })
-            setSelected(null)
-          }}
-          onChanged={changed}
         />
       )}
       {state === 'loading' && (
@@ -298,6 +298,51 @@ export function CalendarPage({ profile }: { profile: FamilyProfile }) {
             />
           )}
         </section>
+      )}
+      {(selected || (form && form.item)) && (
+        <div
+          className="calendar-sheet-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={form?.item ? 'Chỉnh sửa lịch' : 'Chi tiết lịch'}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelected(null)
+              setForm(null)
+            }
+          }}
+        >
+          {!form && selected && (
+            <CalendarDetails
+              key={`${selected.event.id}:${selected.date}`}
+              item={selected}
+              memberId={profile.id}
+              onClose={() => setSelected(null)}
+              onEdit={(occurrenceOnly) => {
+                setForm({ item: selected, occurrenceOnly })
+                setSelected(null)
+              }}
+              onChanged={changed}
+            />
+          )}
+          {form?.item && (
+            <CalendarForm
+              key={`${form.item.event.id}:${form.occurrenceOnly}`}
+              date={date}
+              item={form.item}
+              occurrenceOnly={form.occurrenceOnly}
+              calendarType={calendarType}
+              allowPersonal={profile.role !== 'PARENT'}
+              onClose={() => setForm(null)}
+              onSaved={(day, kind) => {
+                setCalendarType(kind)
+                setDate(day)
+                setMemberId(profile.id)
+                changed('Đã lưu lịch của bạn.')
+              }}
+            />
+          )}
+        </div>
       )}
       <HouseholdDutySection
         key={`${from}:${to}`}

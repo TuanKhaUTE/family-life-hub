@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { StudyKind, StudyRecord, StudyWorkspace } from './study-api'
 import { studyDuration } from './StudyProgress'
 function date(value: string) {
@@ -23,6 +24,7 @@ export function StudyRecords({
   onEdit,
   onDelete,
   onComplete,
+  editor,
 }: {
   kind: StudyKind
   items: StudyRecord[]
@@ -31,6 +33,7 @@ export function StudyRecords({
   onEdit: (kind: StudyKind, record: StudyRecord) => void
   onDelete: (kind: StudyKind, record: StudyRecord) => void
   onComplete: (id: string) => void
+  editor?: (record: StudyRecord) => ReactNode
 }) {
   return items.length ? (
     <ul className="study-records">
@@ -97,6 +100,7 @@ export function StudyRecords({
               Xóa
             </button>
           </div>
+          {editor?.(item)}
         </li>
       ))}
     </ul>

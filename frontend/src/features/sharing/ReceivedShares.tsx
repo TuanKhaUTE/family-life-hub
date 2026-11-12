@@ -12,13 +12,15 @@ export function ReceivedShares() {
   const [data, setData] = useState<ReceivedSharesView | null>(null),
     [state, setState] = useState('loading'),
     [page, setPage] = useState(1),
-    [version, setVersion] = useState(0)
+    [version, setVersion] = useState(0),
+    [visibleCount, setVisibleCount] = useState(3)
   useEffect(() => {
     const c = new AbortController()
     void fetchReceivedShares(page, c.signal)
       .then((d) => {
         if (!c.signal.aborted) {
           setData(d)
+          setVisibleCount(3)
           setState('ready')
         }
       })
@@ -56,7 +58,7 @@ export function ReceivedShares() {
             <p>Chưa có kết quả nào được chia sẻ với bạn.</p>
           )}
           <ul className="share-cards">
-            {data.records.map((r) => (
+            {data.records.slice(0, visibleCount).map((r) => (
               <li className="received-share" key={r.id}>
                 <div className="share-owner">
                   <ProfileAvatar profile={r.owner} />
@@ -97,6 +99,20 @@ export function ReceivedShares() {
               </li>
             ))}
           </ul>
+          {data.records.length > 3 && (
+            <div className="share-pages share-list-controls">
+              {visibleCount < data.records.length && (
+                <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + 3, data.records.length))}>
+                  Xem thêm
+                </button>
+              )}
+              {visibleCount > 3 && (
+                <button type="button" onClick={() => setVisibleCount(3)}>
+                  Thu gọn
+                </button>
+              )}
+            </div>
+          )}
           <div className="share-pages">
             {page > 1 && (
               <button

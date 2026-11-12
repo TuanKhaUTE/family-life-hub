@@ -366,11 +366,11 @@ it('keeps history compact with only recorded observations and explicit expansion
   const history = within(
     screen.getByRole('region', { name: 'Lịch sử cân nặng' }),
   )
-  expect(history.getAllByRole('listitem')).toHaveLength(7)
+  expect(history.getAllByRole('listitem')).toHaveLength(3)
   fireEvent.click(history.getByRole('button', { name: 'Xem thêm lần cân' }))
   expect(history.getAllByRole('listitem')).toHaveLength(14)
   fireEvent.click(history.getByRole('button', { name: 'Thu gọn lần cân' }))
-  expect(history.getAllByRole('listitem')).toHaveLength(7)
+  expect(history.getAllByRole('listitem')).toHaveLength(3)
 })
 it.each(['ADMIN', 'MEMBER'] as const)(
   '%s sees only the returned personal workspace without member switching',

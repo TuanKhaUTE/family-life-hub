@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type {
   FitnessKind,
   FitnessRecord,
@@ -18,6 +19,7 @@ export function FitnessRecords({
   onEdit,
   onRemove,
   onActivate,
+  editor,
 }: {
   kind: FitnessKind
   items: FitnessRecord[]
@@ -26,6 +28,7 @@ export function FitnessRecords({
   onEdit: (kind: FitnessKind, record: FitnessRecord) => void
   onRemove: (kind: FitnessKind, record: FitnessRecord) => void
   onActivate: (plan: FitnessPlan) => void
+  editor?: (record: FitnessRecord) => ReactNode
 }) {
   return items.length ? (
     <ul className="fitness-records">
@@ -73,6 +76,7 @@ export function FitnessRecords({
               Xóa
             </button>
           </div>
+          {editor?.(row)}
         </li>
       ))}
     </ul>

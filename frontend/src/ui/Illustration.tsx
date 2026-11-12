@@ -18,6 +18,10 @@ export function HomeIllustration({
         <path className="illustration-ink" d="M102 78c3-8 9-8 12 0M108 75c-1-9 4-11 7-2" />
         <circle className="illustration-yellow" cx="42" cy="34" r="9" />
         <path className="illustration-yellow" d="m42 18 1 5M42 45l1 5M26 34h5M53 34h5" />
+        <path className="illustration-sage-dark" d="M25 101c0-12 7-21 15-27 2 11-2 22-13 29Z" />
+        <path className="illustration-sage" d="M18 103c7-9 15-11 23-7-5 9-13 12-23 10Z" />
+        <circle className="illustration-terracotta" cx="151" cy="86" r="4" />
+        <circle className="illustration-yellow" cx="160" cy="90" r="3" />
       </svg>
     )
   }
@@ -34,6 +38,10 @@ export function HomeIllustration({
       <path className="illustration-ink" d="M44 100v11M77 100v11M44 111h-8M77 111h8" />
       <path className="illustration-yellow" d="M57 73h10v8H57z" />
       <path className="illustration-yellow" d="M62 58c-5 6-5 10 0 14 5-4 5-8 0-14Z" />
+      <path className="illustration-lavender" d="M25 97h27l-4-15H29Z" />
+      <path className="illustration-ink" d="M30 87h17M34 92h11M64 78h17v19H64z" />
+      <path className="illustration-sage-dark" d="M144 98c0-12 6-21 14-27 2 11-2 22-12 29Z" />
+      <path className="illustration-sage" d="M151 100c7-10 15-12 23-8-5 10-13 13-23 11Z" />
     </svg>
   )
 }
@@ -52,6 +60,10 @@ export function KitchenIllustration() {
       <path className="illustration-sage-dark" d="M137 61c5-8 11-10 16-10-2 7-7 11-15 13M143 64c-2-8 1-13 5-17 3 7 0 13-5 17" />
       <path className="illustration-yellow" d="M62 83c8-8 16-8 24 0-7 7-15 7-24 0Z" />
       <path className="illustration-ink" d="M70 83c4-4 8-4 12 0" />
+      <path className="illustration-terracotta" d="M45 64h11v18H45zM132 64h11v18h-11z" />
+      <path className="illustration-ink" d="M43 62h15M130 62h15M96 42c5-6 10-6 15 0M103 34v6" />
+      <circle className="illustration-yellow" cx="35" cy="73" r="3" />
+      <circle className="illustration-sage-dark" cx="149" cy="73" r="3" />
     </svg>
   )
 }
@@ -70,6 +82,8 @@ export function CalendarIllustration() {
       <path className="illustration-ink" d="M72 61h23M72 61l7-7M86 61l7-7" />
       <path className="illustration-terracotta" d="M142 82c0-15 7-28 15-35 3 14 1 27-7 37Z" />
       <path className="illustration-sage-dark" d="M149 86c0-13 7-22 15-28-1 14-5 24-14 31Z" />
+      <path className="illustration-ink" d="M52 31v7M105 31v7M62 49h12M94 49h12" />
+      <path className="illustration-yellow" d="m93 72 5 5 10-11" />
     </svg>
   )
 }
@@ -100,6 +114,9 @@ export function StudyIllustration() {
       <path className="illustration-sage-dark" d="M130 83c-1-12 5-20 13-26 1 12-3 22-12 29Z" />
       <circle className="illustration-yellow" cx="42" cy="35" r="8" />
       <path className="illustration-ink" d="M42 21v5M28 35h5M51 35h5M42 44v5" />
+      <path className="illustration-ink" d="M67 84h36M73 78v12M97 78v12" />
+      <circle className="illustration-terracotta" cx="62" cy="90" r="4" />
+      <circle className="illustration-sage-dark" cx="108" cy="90" r="4" />
     </svg>
   )
 }
@@ -142,6 +159,9 @@ export function ExpenseIllustration() {
       <circle className="illustration-yellow" cx="76" cy="31" r="5" />
       <path className="illustration-peach" d="M136 84c3-17 12-26 23-32 0 17-6 28-17 36Z" />
       <path className="illustration-sage-dark" d="M145 89c0-12 7-20 16-26-1 13-6 22-16 29Z" />
+      <circle className="illustration-yellow" cx="52" cy="80" r="7" />
+      <circle className="illustration-yellow" cx="67" cy="87" r="5" />
+      <path className="illustration-ink" d="M48 80h8M52 76v8M62 87h10" />
     </svg>
   )
 }
@@ -155,6 +175,8 @@ export function ProfileIllustration() {
       <path className="illustration-ink" d="M75 39c3-12 23-17 28 1-7-4-17-4-28-1M83 43h1M93 43h1M83 50c3 2 7 2 10 0" />
       <path className="illustration-sage-dark" d="M55 91c3-23 16-32 33-32s30 9 33 32Z" />
       <path className="illustration-yellow" d="M42 31c-4-8 0-14 6-18 2 7 0 13-6 18M136 74c7-7 14-7 19-4-4 7-11 10-19 9" />
+      <path className="illustration-sage" d="M125 88c0-12 6-20 15-26 1 13-4 23-14 29Z" />
+      <path className="illustration-ink" d="M130 86h14M137 79v14" />
     </svg>
   )
 }

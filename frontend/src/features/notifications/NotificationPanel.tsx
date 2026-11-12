@@ -27,6 +27,7 @@ export function NotificationPanel() {
     }
   }, [open])
   const [items, setItems] = useState<AppNotification[]>([])
+  const [visibleCount, setVisibleCount] = useState(5)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [reloadKey, setReloadKey] = useState(0)
   const attempted = useRef(new Set<string>())
@@ -55,6 +56,7 @@ export function NotificationPanel() {
             }))
             .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
         )
+        setVisibleCount(5)
         setState('ready')
         setUnread(
           Math.max(
@@ -76,7 +78,7 @@ export function NotificationPanel() {
 
   useEffect(() => {
     if (!open || state !== 'ready') return
-    for (const item of items) {
+    for (const item of items.slice(0, visibleCount)) {
       if (item.readAt !== null || attempted.current.has(item.id)) continue
       attempted.current.add(item.id)
       void markNotificationRead(item.id)
@@ -105,7 +107,9 @@ export function NotificationPanel() {
             )
         })
     }
-  }, [open, state, items, readRetry])
+  }, [open, state, items, readRetry, visibleCount])
+
+  const visibleItems = items.slice(0, visibleCount)
 
   return (
     <>
@@ -225,7 +229,7 @@ export function NotificationPanel() {
                 )}
                 {state === 'ready' && items.length > 0 && (
                   <ul className="notification-list">
-                    {items.map((item) => (
+                    {visibleItems.map((item) => (
                       <li
                         key={item.id}
                         className={item.readAt === null ? 'is-unread' : ''}
@@ -249,6 +253,28 @@ export function NotificationPanel() {
                       </li>
                     ))}
                   </ul>
+                )}
+                {state === 'ready' && items.length > 5 && (
+                  <div className="notification-list-controls">
+                    {visibleCount < items.length && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setVisibleCount((count) => Math.min(count + 5, items.length))}
+                      >
+                        Xem thêm thông báo
+                      </button>
+                    )}
+                    {visibleCount > 5 && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setVisibleCount(5)}
+                      >
+                        Thu gọn
+                      </button>
+                    )}
+                  </div>
                 )}
                 {actionError && (
                   <div className="notification-action-error">

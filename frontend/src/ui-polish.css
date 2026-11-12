@@ -468,6 +468,20 @@
   box-shadow: inset 3px 0 0 var(--peach);
 }
 
+.notification-list-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.notification-list-controls .secondary-button {
+  min-height: 40px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  color: #4e7253;
+}
+
 .notification-list li:not(.is-unread) {
   background: rgb(255 255 255 / 72%);
 }
@@ -2752,4 +2766,627 @@ body {
   .kitchen-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 
   .kitchen-flow > :first-child { grid-column: 1 / -1; }
+}
+
+/* --------------------------------------------------------------------------
+ * Final reference polish
+ *
+ * Keep the existing feature markup and data contracts intact, but give every
+ * screen the same calm, block-based rhythm seen in the approved mobile
+ * references. This is intentionally presentation-only.
+ */
+:root {
+  --ink-strong: #2f251f;
+  --ink-body: #4f4741;
+  --line-soft: rgb(225 210 197 / 78%);
+  --surface-glass: rgb(255 253 249 / 92%);
+  --surface-peach-strong: #fff0e5;
+  --surface-green-strong: #eef7e9;
+  --surface-blue-strong: #eef6fb;
+  --surface-purple-strong: #f6effc;
+  --shadow-reference: 0 12px 30px rgb(79 61 49 / 8%);
+}
+
+body {
+  color: var(--ink-body);
+  background: #fff9f4;
+}
+
+.app-frame {
+  padding-top: max(8px, env(safe-area-inset-top));
+  background:
+    radial-gradient(circle at 92% 4%, rgb(255 224 198 / 45%), transparent 30%),
+    radial-gradient(circle at 4% 92%, rgb(219 237 215 / 35%), transparent 28%);
+}
+
+.home-shell {
+  padding-bottom: calc(94px + env(safe-area-inset-bottom));
+}
+
+.home-header {
+  min-height: 60px;
+  padding: 0.45rem 0.55rem 0.45rem 0.7rem;
+  border-color: var(--line-soft);
+  background: var(--surface-glass);
+  box-shadow: 0 9px 24px rgb(79 61 49 / 8%);
+}
+
+.wordmark {
+  font-size: clamp(0.98rem, 4.5vw, 1.18rem);
+  font-weight: 900;
+}
+
+.wordmark-icon {
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 0.95rem;
+  color: #bf644a;
+  background: #fff0e4;
+}
+
+.header-actions {
+  gap: 0.35rem;
+}
+
+.notification-bell,
+.account-menu-wrap > .header-profile {
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(79 61 49 / 8%);
+}
+
+.notification-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: #b8614b;
+  background: #fff1e8;
+}
+
+.notification-badge {
+  top: -0.2rem;
+  right: -0.15rem;
+  min-width: 1.15rem;
+  min-height: 1.15rem;
+  border: 2px solid #fff;
+  color: #fff;
+  background: #db6653;
+  font-size: 0.66rem;
+}
+
+.shell-content {
+  padding-top: 0.9rem;
+}
+
+:where(.home-hero, .kitchen-hero, .study-hero, .expense-hero,
+  .personal-page > .expense-hero, .calendar-heading) {
+  border-color: var(--line-soft);
+  box-shadow: var(--shadow-reference);
+}
+
+:where(.home-hero, .kitchen-hero, .study-hero, .expense-hero) h1,
+.calendar-heading h1 {
+  color: var(--ink-strong);
+  font-weight: 950;
+}
+
+:where(.home-hero, .kitchen-hero, .study-hero, .expense-hero) p:not(.eyebrow),
+.calendar-heading p:not(.eyebrow) {
+  color: var(--ink-body);
+}
+
+.home-hero {
+  min-height: 198px;
+  background: #fff2e7;
+}
+
+.home-hero::before,
+.kitchen-hero::before,
+.study-hero::before,
+.expense-hero::before,
+.calendar-heading::before {
+  position: absolute;
+  inset: auto -1.5rem -2rem auto;
+  width: 9rem;
+  height: 5rem;
+  border-radius: 50%;
+  content: '';
+  background: rgb(255 255 255 / 44%);
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.home-section-title,
+.feature-section-title,
+.calendar-section-heading,
+.study-card-heading,
+.fitness-card-heading,
+.dashboard-tile-heading,
+.home-meal-tile-heading {
+  color: var(--ink-strong);
+}
+
+:where(.home-section-title, .feature-section-title, .calendar-section-heading,
+  .study-card-heading, .fitness-card-heading, .dashboard-tile-heading) h2,
+:where(.home-section-title, .feature-section-title, .calendar-section-heading,
+  .study-card-heading, .fitness-card-heading, .dashboard-tile-heading) h3 {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+:where(.home-card, .calendar-panel, .study-section, .fitness-section,
+  .expense-card, .breakfast-card, .meals-card, .final-meal-section,
+  .personal-page > .expense-card, .notification-panel) {
+  border-color: var(--line-soft);
+  box-shadow: var(--shadow-reference);
+}
+
+.home-card,
+.dashboard-tile,
+.study-section,
+.fitness-section,
+.expense-card {
+  background: var(--surface-glass);
+}
+
+.home-attention { background: #fff7ec; }
+.home-breakfast { background: #fff8e6; }
+.home-dinner { background: #fff0e7; }
+.home-study { background: var(--surface-purple-strong); }
+.home-fitness { background: var(--surface-green-strong) !important; }
+.home-calendar { background: var(--surface-blue-strong); }
+.home-personal-expenses { background: #f2f8ec; }
+.home-family-food { background: #fff7df; }
+.home-recent { background: #fbf4ef; }
+
+.home-section-icon,
+.home-module-icon,
+.dashboard-tile-icon,
+.home-card-icon,
+.icon-well {
+  border-color: rgb(255 255 255 / 90%);
+  box-shadow: 0 4px 10px rgb(79 61 49 / 7%);
+}
+
+.home-actions {
+  gap: 0.6rem;
+}
+
+.home-action-row button {
+  min-height: 64px;
+  border-color: rgb(226 204 187 / 84%);
+  background: rgb(255 252 247 / 88%);
+}
+
+.home-action-row button:active,
+.home-link:active,
+.calendar-primary:active,
+.study-primary:active,
+.fitness-primary:active,
+.expense-primary:active {
+  transform: translateY(1px);
+}
+
+.home-meals-grid {
+  gap: 0.65rem;
+}
+
+.home-meal-tile {
+  min-height: 170px;
+  border-radius: 1.25rem;
+}
+
+.home-meal-tile .home-card-icon {
+  width: 3.15rem;
+  height: 3.15rem;
+  color: #c56d51;
+}
+
+.home-meal-state {
+  min-height: 34px;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border: 1px solid rgb(102 137 107 / 12%);
+  background: rgb(255 255 255 / 72%);
+}
+
+.home-calendar-modules {
+  gap: 0.65rem;
+}
+
+.home-calendar-modules .home-card,
+.home-chores,
+.home-personal-expenses,
+.home-family-food,
+.home-gamification {
+  padding: 0.8rem;
+  border-radius: 1.15rem;
+}
+
+.home-empty-compact {
+  min-height: 42px;
+  color: var(--ink-body);
+}
+
+.home-empty-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgb(255 255 255 / 92%);
+  box-shadow: 0 3px 8px rgb(79 61 49 / 7%);
+}
+
+.bottom-nav {
+  padding-top: 0.35rem;
+  padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
+  border-top-color: var(--line-soft);
+  background: rgb(255 253 250 / 96%);
+  box-shadow: 0 -10px 26px rgb(79 61 49 / 10%);
+}
+
+.bottom-nav button {
+  min-height: 60px;
+  color: #7c7068;
+}
+
+.bottom-nav button[aria-current='page'] {
+  color: #3f7547;
+  background: #eaf4e4;
+}
+
+.bottom-nav button[aria-current='page'] .nav-icon {
+  color: #3f7547;
+  background: rgb(255 255 255 / 78%);
+}
+
+.kitchen-hero {
+  min-height: 164px;
+  background: #fff1e5;
+}
+
+.kitchen-flow > :where(.breakfast-card, .meals-card, .final-meal-section) {
+  border-radius: 1.35rem;
+}
+
+.breakfast-card { background: #fff8e4; }
+.meals-card { background: #eef7e9; }
+.final-meal-section { background: #fff2e7; }
+
+.breakfast-options button,
+.meal-request-option,
+.final-meal-dish,
+.meal-candidate {
+  border-color: rgb(224 207 193 / 70%);
+  background: rgb(255 255 255 / 74%);
+  box-shadow: 0 4px 10px rgb(79 61 49 / 5%);
+}
+
+.calendar-heading {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  padding: 1rem;
+  background: #eff6fb;
+}
+
+.calendar-heading-copy,
+.calendar-heading > .calendar-illustration,
+.calendar-heading > .calendar-primary {
+  position: relative;
+  z-index: 1;
+}
+
+.calendar-heading .calendar-primary {
+  border-color: #b5d3b5;
+  color: #3e7046;
+  background: #e4f2df;
+}
+
+.calendar-tabs,
+.study-tabs,
+.expense-tabs {
+  border-color: var(--line-soft);
+  background: rgb(255 253 249 / 88%);
+  box-shadow: 0 4px 12px rgb(79 61 49 / 4%);
+}
+
+.calendar-tabs button,
+.study-tabs button,
+.expense-tabs button {
+  min-height: 42px;
+  color: #655b55;
+  font-weight: 850;
+}
+
+.calendar-tabs button[aria-pressed='true'],
+.study-tabs button[aria-selected='true'],
+.expense-tabs button[aria-selected='true'] {
+  color: #3f7547;
+  background: #e8f3e2;
+}
+
+.calendar-date-nav {
+  min-height: 58px;
+  background: rgb(255 253 249 / 88%);
+}
+
+.calendar-date-nav .calendar-secondary {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #3f7547;
+  background: #f0f7ed;
+}
+
+.calendar-empty-state {
+  min-height: 136px;
+  border-style: solid;
+  border-color: rgb(178 207 179 / 66%);
+  background: #f3f8ef;
+}
+
+.study-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 164px;
+  background: #f5effc;
+}
+
+.study-hero-copy,
+.study-hero-art { position: relative; z-index: 1; }
+.study-section { background: rgb(255 253 249 / 88%); }
+.study-card { background: #fbf7ff; }
+.study-primary { background: #f4c8a7 !important; border-color: #dfa57f !important; }
+
+.fitness-section { background: #f1f7ee; }
+.fitness-card { background: #fbfdf8; }
+.fitness-primary { background: #dcefd4 !important; border-color: #afcda5 !important; }
+
+.wellness-section {
+  border-color: var(--line-soft);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-reference);
+}
+
+.expense-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 164px;
+  background: #fff0e8;
+}
+
+.expense-hero-copy,
+.expense-hero > .feature-illustration,
+.personal-hero-copy { position: relative; z-index: 1; }
+.expense-overview,
+.food-total { background: #fff6df !important; }
+.expense-total { color: #8f5d32 !important; }
+.expense-breakdown li,
+.food-category,
+.expense-records li { background: rgb(255 253 249 / 78%); }
+
+.personal-page > .expense-hero {
+  background: #eef7ea;
+}
+
+.personal-role-badge {
+  color: #3f7547;
+  background: #e4f1df;
+}
+
+.personal-group-label {
+  padding-inline: 0.15rem;
+  color: #b7674d;
+  font-size: 0.72rem;
+}
+
+.personal-page .expense-card,
+.personal-page .personal-privacy,
+.personal-page .personal-account-actions {
+  background: rgb(255 253 249 / 88%);
+}
+
+.personal-page .personal-account-actions {
+  background: #fff1ec;
+}
+
+.notification-overlay {
+  padding: 0.65rem;
+  background: rgb(45 35 29 / 32%);
+}
+
+.notification-overlay > [role='dialog'] {
+  max-height: min(88dvh, 720px);
+  border: 1px solid var(--line-soft);
+  background: #fffaf5;
+  box-shadow: 0 -16px 48px rgb(79 61 49 / 18%);
+}
+
+.notification-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: -0.5rem -0.5rem 0;
+  padding: 0.6rem 0.5rem 0.75rem;
+  background: rgb(255 250 245 / 94%);
+  backdrop-filter: blur(12px);
+}
+
+.notification-list li {
+  border-color: var(--line-soft);
+  background: rgb(255 255 255 / 76%);
+}
+
+.notification-list li.is-unread {
+  border-color: rgb(217 122 91 / 36%);
+  background: #fff4e8;
+  box-shadow: inset 3px 0 0 #d97a5b;
+}
+
+.account-menu {
+  border-color: var(--line-soft);
+  background: rgb(255 253 249 / 98%);
+  box-shadow: 0 20px 52px rgb(79 61 49 / 18%);
+}
+
+@media (max-width: 420px) {
+  .home-header { min-height: 56px; }
+  .wordmark-icon,
+  .notification-bell,
+  .account-menu-wrap > .header-profile { width: 2.35rem; height: 2.35rem; }
+  .notification-icon { width: 2.05rem; height: 2.05rem; }
+  .home-hero { min-height: 180px; padding: 0.9rem; }
+  .home-hero-copy { max-width: 69%; }
+  .home-hero-art { margin-right: -0.7rem; }
+  .home-illustration { width: 142px; }
+  .kitchen-hero,
+  .calendar-heading,
+  .study-hero,
+  .expense-hero { min-height: 148px; }
+  .home-card,
+  .study-section,
+  .fitness-section,
+  .expense-card,
+  .breakfast-card,
+  .meals-card,
+  .final-meal-section { border-radius: 1.15rem; }
+  .home-action-row button { min-height: 60px; }
+  .home-action-copy strong { font-size: 0.78rem; }
+  .home-action-copy small { font-size: 0.67rem; }
+  .home-action-cta { font-size: 0.66rem; }
+  .bottom-nav button { min-height: 58px; font-size: 0.64rem; }
+}
+
+@media (max-width: 360px) {
+  .home-hero-copy { max-width: 74%; }
+  .home-illustration { width: 126px; }
+  .home-actions,
+  .home-meals-grid { grid-template-columns: 1fr; }
+  .home-meal-tile { min-height: 138px; }
+  .home-action-row button { grid-template-columns: 2.1rem minmax(0, 1fr); }
+  .home-action-cta { display: none; }
+  .calendar-tabs button,
+  .study-tabs button,
+  .expense-tabs button { font-size: 0.73rem; padding-inline: 0.35rem; }
+}
+
+/* Contextual editors and destructive actions stay with the item the user chose. */
+.study-records > li,
+.fitness-records > li,
+.wellness-history li,
+.activity-plan {
+  overflow: hidden;
+  border: 1px solid rgb(224 207 193 / 68%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 72%);
+}
+
+.study-records > li,
+.fitness-records > li,
+.wellness-history li {
+  padding: 0.78rem;
+}
+
+.study-records > li > .study-form,
+.fitness-records > li > .fitness-form,
+.wellness-history li > .wellness-form,
+.activity-inline-editor {
+  margin: 0.7rem -0.2rem -0.2rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(224 207 193 / 70%);
+  border-radius: 0.9rem;
+  background: #fffaf5;
+  box-shadow: inset 0 2px 0 rgb(217 122 91 / 12%);
+}
+
+.study-records > li:has(> .study-form),
+.fitness-records > li:has(> .fitness-form),
+.wellness-history li:has(> .wellness-form),
+.grade-assessment:has(> .study-form),
+.activity-plan:has(.activity-inline-editor) {
+  border-color: rgb(217 122 91 / 42%);
+  background: #fff7ef;
+}
+
+.grade-assessment > .study-form {
+  margin-top: 0.7rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(224 207 193 / 70%);
+  border-radius: 0.9rem;
+  background: #fffaf5;
+  box-shadow: inset 0 2px 0 rgb(217 122 91 / 12%);
+}
+
+.study-delete-confirm,
+.fitness-delete-confirm {
+  position: fixed !important;
+  z-index: 130;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  left: 0.75rem;
+  width: min(440px, calc(100vw - 1.5rem));
+  margin: 0 auto;
+  border-color: rgb(217 122 91 / 48%) !important;
+  background: #fff7f2 !important;
+  box-shadow: 0 18px 48px rgb(79 61 49 / 22%) !important;
+}
+
+.calendar-sheet-backdrop {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem 0.6rem calc(0.6rem + env(safe-area-inset-bottom));
+  background: rgb(45 35 29 / 32%);
+  backdrop-filter: blur(3px);
+}
+
+.calendar-sheet-backdrop > .calendar-panel {
+  width: min(680px, 100%);
+  max-height: min(88dvh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 1.35rem 1.35rem 1rem 1rem;
+  box-shadow: 0 18px 52px rgb(79 61 49 / 20%);
+}
+
+.calendar-sheet-backdrop .calendar-delete-confirm {
+  margin-top: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid rgb(217 122 91 / 35%);
+  border-radius: 1rem;
+  background: #fff2ed;
+}
+
+.calendar-sheet-backdrop .calendar-delete-confirm button:last-child,
+.study-delete-confirm button:last-child,
+.fitness-delete-confirm button:last-child,
+.wellness-danger {
+  color: #9b443d;
+  border-color: #e6b7ae;
+  background: #fff0ed;
+}
+
+.activity-inline-editor .activity-plan {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (min-width: 760px) {
+  .calendar-sheet-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .calendar-sheet-backdrop > .calendar-panel {
+    max-height: calc(100dvh - 3rem);
+    border-radius: 1.35rem;
+  }
 }

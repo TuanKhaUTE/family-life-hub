@@ -64,6 +64,19 @@ function MemberStudyPage() {
       })
     return () => controller.abort()
   }, [version])
+  useEffect(() => {
+    if (!remove) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRemove(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [remove])
   function reload() {
     setState('loading')
     setVersion((v) => v + 1)
@@ -78,7 +91,7 @@ function MemberStudyPage() {
   }
   function edit(kind: StudyKind, record: StudyRecord | null) {
     setForm({ kind, record })
-    setManage(false)
+    setManage(kind === 'semesters' || kind === 'courses')
     setError(null)
     setMessage(null)
   }
@@ -118,6 +131,23 @@ function MemberStudyPage() {
   const activeCourses = data?.courses.filter((course) =>
     data.semesters.some((semester) => semester.id === course.semesterId && semester.isActive),
   ) ?? []
+  function editorFor(kind: StudyKind, record: StudyRecord) {
+    if (!form || form.kind !== kind || !form.record || form.record.id !== record.id)
+      return null
+    return (
+      <StudyForm
+        key={`${form.kind}:${form.record.id}`}
+        kind={form.kind}
+        record={form.record}
+        data={data!}
+        onClose={() => {
+          setForm(null)
+          setError(null)
+        }}
+        onSaved={saved}
+      />
+    )
+  }
   return (
     <div className="study-page">
       <header className="study-hero">
@@ -226,6 +256,7 @@ function MemberStudyPage() {
                   onEdit={edit}
                   onDelete={(kind, record) => setRemove({ kind, record })}
                   onComplete={complete}
+                  editor={(record) => editorFor('semesters', record)}
                 />
                 <h4>Môn học của bạn</h4>
                 <StudyRecords
@@ -236,6 +267,7 @@ function MemberStudyPage() {
                   onEdit={edit}
                   onDelete={(kind, record) => setRemove({ kind, record })}
                   onComplete={complete}
+                  editor={(record) => editorFor('courses', record)}
                 />
               </section>
             )}
@@ -245,9 +277,9 @@ function MemberStudyPage() {
               </p>
             )}
             {error && <p role="alert">{error}</p>}
-            {form && (
+            {form && (form.record === null) && (
               <StudyForm
-                key={`${form.kind}:${form.record?.id ?? 'new'}`}
+                key={`${form.kind}:new`}
                 kind={form.kind}
                 record={form.record}
                 data={data}
@@ -262,7 +294,8 @@ function MemberStudyPage() {
               <section
                 role="dialog"
                 aria-label="Xác nhận xóa"
-                className="study-form"
+                aria-modal="true"
+                className="study-form study-delete-confirm"
               >
                 <p>
                   Xóa {recordName(remove.record)}? Thao tác này không thể hoàn
@@ -328,6 +361,7 @@ function MemberStudyPage() {
                     onEdit={edit}
                     onDelete={(kind, record) => setRemove({ kind, record })}
                     onComplete={complete}
+                    editor={(record) => editorFor('goals', record)}
                   />
                   {activeGoals.length > 3 && (
                     <div className="study-list-controls">
@@ -366,6 +400,7 @@ function MemberStudyPage() {
                         onEdit={edit}
                         onDelete={(kind, record) => setRemove({ kind, record })}
                         onComplete={complete}
+                        editor={(record) => editorFor('goals', record)}
                       />
                       {completedGoals.length > 3 && (
                         <div className="study-list-controls">
@@ -394,6 +429,7 @@ function MemberStudyPage() {
                 onEdit={edit}
                 onDelete={(kind, record) => setRemove({ kind, record })}
                 onComplete={complete}
+                editor={(record) => editorFor('sessions', record)}
               />
               {sessions.length > 5 && (
                 <div className="study-list-controls">

@@ -31,18 +31,33 @@ export function StudyGrades({
     [remove, setRemove] = useState<Assessment | null>(null),
     [pending, setPending] = useState(false),
     [error, setError] = useState<string | null>(null),
-    [message, setMessage] = useState<string | null>(null)
+    [message, setMessage] = useState<string | null>(null),
+    [assessmentVisibleCount, setAssessmentVisibleCount] = useState(3)
   // Keep the full course selector stable while the server filters owned results.
   const [courses, setCourses] = useState<GradeView['courses']>([])
   const key = `${course}:${version}`,
     heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
   useEffect(() => {
+    if (!remove) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRemove(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [remove])
+  useEffect(() => {
     const controller = new AbortController()
     void fetchGrades(course, controller.signal)
       .then((view) => {
         if (!controller.signal.aborted) {
           setData(view)
+          setAssessmentVisibleCount(3)
           if (course === null) setCourses(view.courses)
           setFailed(false)
           setLoaded(key)
@@ -75,6 +90,19 @@ export function StudyGrades({
     } finally {
       setPending(false)
     }
+  }
+  function assessmentEditor(assessment: Assessment) {
+    if (form?.assessment?.id !== assessment.id) return null
+    return (
+      <AssessmentForm
+        key={assessment.id}
+        assessment={assessment}
+        courses={courses}
+        defaultCourse={course}
+        onClose={() => setForm(null)}
+        onSaved={saved}
+      />
+    )
   }
   const loading = loaded !== key
   return (
@@ -136,9 +164,9 @@ export function StudyGrades({
                 </p>
               )}
               {error && <p role="alert">{error}</p>}
-              {form && (
+              {form && form.assessment === null && (
                 <AssessmentForm
-                  key={form.assessment?.id ?? 'new'}
+                  key="new"
                   assessment={form.assessment}
                   courses={courses}
                   defaultCourse={course}
@@ -150,7 +178,8 @@ export function StudyGrades({
                 <section
                   role="dialog"
                   aria-label="Xác nhận xóa điểm"
-                  className="study-form"
+                    aria-modal="true"
+                    className="study-form study-delete-confirm"
                 >
                   <p>
                     Xóa bài “{remove.title}”? Thao tác này không thể hoàn tác.
@@ -219,7 +248,7 @@ export function StudyGrades({
               </section>
               {data.assessments.length ? (
                 <section aria-label="Các bài của bạn" className="grades-list">
-                  {data.assessments.map((a) => (
+                  {data.assessments.slice(0, assessmentVisibleCount).map((a) => (
                     <article className="study-card grade-assessment" key={a.id}>
                       <div className="study-heading">
                         <h2>{a.title}</h2>
@@ -265,8 +294,23 @@ export function StudyGrades({
                           Xóa
                         </button>
                       </div>
+                      {assessmentEditor(a)}
                     </article>
                   ))}
+                  {data.assessments.length > 3 && (
+                    <div className="study-list-controls">
+                      {assessmentVisibleCount < data.assessments.length && (
+                        <button type="button" onClick={() => setAssessmentVisibleCount((count) => Math.min(count + 3, data.assessments.length))}>
+                          Xem thêm kết quả
+                        </button>
+                      )}
+                      {assessmentVisibleCount > 3 && (
+                        <button type="button" onClick={() => setAssessmentVisibleCount(3)}>
+                          Thu gọn
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </section>
               ) : (
                 <div className="study-card">

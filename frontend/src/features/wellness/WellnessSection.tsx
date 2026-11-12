@@ -70,6 +70,23 @@ export function WellnessSection() {
     setMessage('Đã lưu vào góc thể trạng của bạn.')
     reload()
   }
+  function weightEditor(log: WeightLog) {
+    if (form?.mode !== 'weight' || !form.record || form.record.id !== log.id)
+      return null
+    return (
+      <WellnessForm
+        key={`weight:${form.record.id}`}
+        mode="weight"
+        record={form.record}
+        data={data!}
+        onClose={() => {
+          setForm(null)
+          setError(null)
+        }}
+        onSaved={saved}
+      />
+    )
+  }
   async function confirmDelete() {
     if (!remove || pending) return
     setPending(true)
@@ -133,7 +150,7 @@ export function WellnessSection() {
             </p>
           )}
           {error && !remove && <p role="alert">{error}</p>}
-          {form && (
+          {form && (form.mode === 'profile' || form.record === null) && (
             <WellnessForm
               key={`${form.mode}:${form.record?.id ?? 'new'}`}
               {...form}
@@ -189,7 +206,7 @@ export function WellnessSection() {
               <p>Chưa có lần cân nào</p>
             ) : (
               <ol>
-                {(expanded ? data.logs : data.logs.slice(0, 7)).map((log) => (
+                {(expanded ? data.logs : data.logs.slice(0, 3)).map((log) => (
                   <li key={log.id}>
                     <div className="wellness-observation">
                       <time dateTime={log.loggedDate}>
@@ -216,11 +233,12 @@ export function WellnessSection() {
                         Xóa
                       </button>
                     </div>
+                    {weightEditor(log)}
                   </li>
                 ))}
               </ol>
             )}
-            {data.logs.length > 7 && (
+            {data.logs.length > 3 && (
               <button onClick={() => setExpanded((v) => !v)}>
                 {expanded ? 'Thu gọn lần cân' : 'Xem thêm lần cân'}
               </button>

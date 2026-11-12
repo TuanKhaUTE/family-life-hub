@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { fetchActivities, saveActivity, completeActivity, cancelActivity, activityError, type ActivityKind, type ActivityPlan, type ActivityView } from './activity-api'
 import { ActivityStatistics } from './ActivityStatistics'
 import { familyDate, localInputToUtc, toLocalDateTimeInput } from '../meals/family-time'
@@ -20,7 +20,7 @@ export function ActivityPlans({ kind, courses = [], planId, onChanged }: { kind:
     {state === 'error' && <><p role="alert">Chưa tải được kế hoạch. Bạn thử lại nhé.</p><button onClick={() => { setState('loading'); setVersion(v => v + 1) }}>Tải lại kế hoạch</button></>}
     {state === 'ready' && data && <>
       {!planId && <><ActivityStatistics progress={data.progress} study={kind === 'STUDY'} /><button className="activity-primary" onClick={() => setForm('new')}>{kind === 'STUDY' ? 'Lên lịch buổi học' : 'Lên lịch buổi tập'}</button></>}
-      {form && <ActivityForm key={typeof form === 'string' ? 'new' : form.id} kind={kind} plan={form === 'new' ? null : form} courses={courses} onSaved={refresh} onClose={() => setForm(null)} />}
+      {form === 'new' && <ActivityForm key="new" kind={kind} plan={null} courses={courses} onSaved={refresh} onClose={() => setForm(null)} />}
       {(() => {
         const upcoming = data.plans.filter(plan => !plan.cancelled && !plan.completedAt).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
         const completed = data.plans.filter(plan => !plan.cancelled && !!plan.completedAt).sort((a, b) => Date.parse(b.completedAt!) - Date.parse(a.completedAt!))
@@ -29,7 +29,7 @@ export function ActivityPlans({ kind, courses = [], planId, onChanged }: { kind:
         return <>
           <section aria-label="Sắp tới">
             <h3>Sắp tới</h3>
-            {upcoming.length === 0 ? <p>Chưa có buổi nào sắp tới.</p> : <div className="activity-list">{upcoming.slice(0, upcomingVisibleCount).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>}
+            {upcoming.length === 0 ? <p>Chưa có buổi nào sắp tới.</p> : <div className="activity-list">{upcoming.slice(0, upcomingVisibleCount).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} editor={form !== 'new' && form?.id === plan.id ? <ActivityForm key={form.id} kind={kind} plan={form} courses={courses} onSaved={refresh} onClose={() => setForm(null)} /> : null} />)}</div>}
             {upcoming.length > 3 && <div className="activity-actions">
               {upcomingVisibleCount < upcoming.length && <button type="button" onClick={() => setUpcomingVisibleCount(count => Math.min(count + 3, upcoming.length))}>Xem thêm kế hoạch</button>}
               {upcomingVisibleCount > 3 && <button type="button" onClick={() => setUpcomingVisibleCount(3)}>Thu gọn kế hoạch</button>}
@@ -37,13 +37,13 @@ export function ActivityPlans({ kind, courses = [], planId, onChanged }: { kind:
           </section>
           {recentCompleted.length > 0 && <section aria-label="Đã hoàn thành gần đây">
             <h3>Đã hoàn thành gần đây</h3>
-            <div className="activity-list">{recentCompleted.map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>
+            <div className="activity-list">{recentCompleted.map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} editor={form !== 'new' && form?.id === plan.id ? <ActivityForm key={form.id} kind={kind} plan={form} courses={courses} onSaved={refresh} onClose={() => setForm(null)} /> : null} />)}</div>
           </section>}
           {history.length > 0 && <section aria-label="Lịch sử">
             <button type="button" aria-expanded={historyOpen} onClick={() => { setHistoryOpen(open => !open); setHistoryVisibleCount(10) }}>{historyOpen ? 'Thu gọn lịch sử' : 'Xem lịch sử'}</button>
             {historyOpen && <div>
               <h3>Lịch sử</h3>
-              <div className="activity-list">{history.slice(0, historyVisibleCount).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} />)}</div>
+              <div className="activity-list">{history.slice(0, historyVisibleCount).map(plan => <PlannedActivity key={plan.id + (plan.actualMinutes ?? '')} plan={plan} onEdit={() => setForm(plan)} onChanged={refresh} editor={form !== 'new' && form?.id === plan.id ? <ActivityForm key={form.id} kind={kind} plan={form} courses={courses} onSaved={refresh} onClose={() => setForm(null)} /> : null} />)}</div>
               <div className="activity-actions">
                 {historyVisibleCount < history.length && <button type="button" onClick={() => setHistoryVisibleCount(count => Math.min(count + 10, history.length))}>Xem thêm</button>}
                 {historyVisibleCount > 10 && <button type="button" onClick={() => setHistoryVisibleCount(10)}>Thu gọn</button>}
@@ -55,7 +55,7 @@ export function ActivityPlans({ kind, courses = [], planId, onChanged }: { kind:
     </>}
   </section>
 }
-function PlannedActivity({ plan, onEdit, onChanged }: { plan: ActivityPlan; onEdit: () => void; onChanged: () => void }) {
+function PlannedActivity({ plan, onEdit, onChanged, editor }: { plan: ActivityPlan; onEdit: () => void; onChanged: () => void; editor?: ReactNode }) {
   const now = useFamilyClock(), [completing, setCompleting] = useState(false), [minutes, setMinutes] = useState(String(plan.actualMinutes ?? Math.max(1, Math.round((Date.parse(plan.endsAt) - Date.parse(plan.startsAt)) / 60000)))), [note, setNote] = useState(plan.completionNote ?? ''), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), [cancel, setCancel] = useState(false)
   const due = localInputToUtc(shiftDay(familyDate(new Date(plan.endsAt)), 1) + 'T00:00')!
   const editable = !plan.completedAt && now.getTime() < Date.parse(due)
@@ -80,6 +80,7 @@ function PlannedActivity({ plan, onEdit, onChanged }: { plan: ActivityPlan; onEd
       <label>Ghi chú sau buổi (không bắt buộc)<textarea maxLength={1000} value={note} onChange={e => setNote(e.target.value)} /></label>
       <div className="activity-actions"><button className="activity-primary">{plan.completedAt ? 'Lưu thời lượng thực tế' : 'Xác nhận hoàn thành'}</button><button type="button" onClick={() => setCompleting(false)}>Để sau</button></div>
     </fieldset></form>}
+    {editor && <div className="activity-inline-editor">{editor}</div>}
   </article>
 }
 function ActivityForm({ kind, plan, courses, onSaved, onClose }: { kind: ActivityKind; plan: ActivityPlan | null; courses: { id: string; name: string }[]; onSaved: () => void; onClose: () => void }) {

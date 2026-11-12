@@ -31,7 +31,17 @@ export function CalendarDetails({
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
     heading.current?.focus()
-  }, [])
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [onClose])
   async function mutate(remove: boolean) {
     if (pending) return
     setPending(true)

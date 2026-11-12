@@ -54,6 +54,19 @@ export function FitnessSection() {
       })
     return () => controller.abort()
   }, [version])
+  useEffect(() => {
+    if (!remove) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRemove(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [remove])
   function reload() {
     setState('loading')
     setSessionVisibleCount(5)
@@ -62,7 +75,7 @@ export function FitnessSection() {
   }
   function edit(kind: FitnessKind, record: FitnessRecord | null) {
     setForm({ kind, record })
-    setManage(false)
+    setManage(kind === 'plans' || kind === 'days')
     setMessage(null)
     setError(null)
   }
@@ -106,6 +119,23 @@ export function FitnessSection() {
     onRemove: (kind: FitnessKind, record: FitnessRecord) =>
       setRemove({ kind, record }),
     onActivate: activate,
+  }
+  function editorFor(kind: FitnessKind, record: FitnessRecord) {
+    if (!form || form.kind !== kind || !form.record || form.record.id !== record.id)
+      return null
+    return (
+      <FitnessForm
+        key={`${form.kind}:${form.record.id}`}
+        kind={form.kind}
+        record={form.record}
+        data={data!}
+        onClose={() => {
+          setForm(null)
+          setError(null)
+        }}
+        onSaved={saved}
+      />
+    )
   }
   const sessions = data
     ? [...data.sessions].sort(
@@ -197,6 +227,7 @@ export function FitnessSection() {
                 kind="plans"
                 items={plansExpanded ? data.plans : data.plans.slice(0, 3)}
                 {...recordProps}
+                editor={(record) => editorFor('plans', record)}
               />
               {data.plans.length > 3 && (
                 <button type="button" onClick={() => setPlansExpanded((v) => !v)}>
@@ -204,7 +235,12 @@ export function FitnessSection() {
                 </button>
               )}
               <h4>Các ngày trong tuần</h4>
-              <FitnessRecords kind="days" items={data.days} {...recordProps} />
+              <FitnessRecords
+                kind="days"
+                items={data.days}
+                {...recordProps}
+                editor={(record) => editorFor('days', record)}
+              />
               <p className="fitness-muted">
                 Lịch tập chỉ riêng bạn xem, không tự thêm vào Lịch gia đình.
               </p>
@@ -216,7 +252,7 @@ export function FitnessSection() {
             </p>
           )}
           {error && <p role="alert">{error}</p>}
-          {form && (
+          {form && (form.record === null || form.kind === 'goals') && (
             <FitnessForm
               key={`${form.kind}:${form.record?.id ?? 'new'}`}
               kind={form.kind}
@@ -233,7 +269,8 @@ export function FitnessSection() {
             <section
               role="dialog"
               aria-label="Xác nhận xóa rèn luyện"
-              className="fitness-form"
+              aria-modal="true"
+              className="fitness-form fitness-delete-confirm"
             >
               <p>
                 Xóa {fitnessRecordName(remove.record)}? Thao tác này không thể
@@ -296,6 +333,7 @@ export function FitnessSection() {
               kind="sessions"
               items={sessions.slice(0, sessionVisibleCount)}
               {...recordProps}
+              editor={(record) => editorFor('sessions', record)}
             />
             {sessions.length > 5 && (
               <div className="fitness-actions">
